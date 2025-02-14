@@ -1,0 +1,5 @@
+#! /usr/bin/env fish 
+
+# gameinit creates this file on launch 
+set obsidian_file (cat /tmp/obsidian-game.txt)
+echo -e $argv[1] >> $obsidian_file \n 
