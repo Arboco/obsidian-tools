@@ -1,0 +1,44 @@
+#! /usr/bin/env fish
+
+#argv[1] is obsidian md file title
+
+# turning screen saver and display manager off so they never bother you during gameplay 
+xset s off; xset -dpms
+
+screenshot-obsidian.fish $argv[1] &
+set obsidian "/home/anon/ortup/important/notes/ortvault"
+set start (date +%s)
+set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' -type f -mtime -2)
+set launch (cat $a_path | grep 'launch:')
+set launch (echo $launch | grep -oP '(?<=launch: ).*')
+
+if grep "playtime:" $a_path
+else
+  sed -i "/^launch:/a\\playtime: 0" $a_path
+end
+
+
+echo $a_path > /tmp/obsidian-game.txt
+# launching the game, every command after this will only trigger once the game closes
+eval $launch
+
+xset s on; xset +dpms
+set end (date +%s)
+set result (math "($end - $start) / 60")
+set result (math round $result)
+
+set cur_date (date +%d.%m.%y)
+set cur_hour (date +%H:%M) 
+echo -e "\n>[!info] Played: $result minutes - $cur_hour - $cur_date\n" >> $a_path
+
+cp $a_path /tmp/clone.md
+awk -v var="$result" '/playtime/ { 
+    for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+} { print }' /tmp/clone.md > $a_path
+
+# Makes sure the screenshot script gets killed since it runs as a background process  
+kill $(jobs -p)
+
+rm /tmp/clone.md
