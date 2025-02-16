@@ -4,8 +4,8 @@
 
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off; xset -dpms
-
-screenshot-obsidian.fish $argv[1] &
+set script_dir (realpath (status dirname))
+$script_dir/scripts/screenshot-obsidian.fish $argv[1] &
 set obsidian "/home/anon/ortup/important/notes/ortvault"
 set start (date +%s)
 set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' -type f -mtime -2)
