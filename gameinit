@@ -32,7 +32,7 @@ end
 
 set obsidian "/home/anon/ortup/important/notes/ortvault"
 set start (date +%s)
-set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' -type f -mtime -2)
+set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' )
 set launch (cat $a_path | grep 'launch:')
 set launch (echo $launch | grep -oP '(?<=launch: ).*')
 
