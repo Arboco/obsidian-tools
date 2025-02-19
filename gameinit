@@ -8,6 +8,18 @@ function help_function
   echo "  -x       Activates media collector for Xbox Controller"
 end
 
+## conig creation
+set config_folder "$HOME/.config/obsidian-suit"
+
+if test -d $config_folder
+  echo "Loading Config"
+else
+  mkdir $config_folder
+  echo "Creating Config"
+  touch $config_folder/config.json
+  exit
+end
+
 argparse --name=gameinit 'v/visualnovel' 'x/xbox' 'h/help' 'n/name=' -- $argv
 or return
 
