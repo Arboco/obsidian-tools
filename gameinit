@@ -1,11 +1,35 @@
 #! /usr/bin/env fish
 
 #argv[1] is obsidian md file title
+function help_function
+  echo -e "Usage: gameinit [OPTION] \"title of md file with launch property\""
+  echo "Options:"
+  echo "  -v       Activates media collector on keyboard, specifically for Visual Novels"
+  echo "  -x       Activates media collector for Xbox Controller"
+end
 
+argparse --name=gameinit 'v/visualnovel' 'x/xbox' 'h/help' 'n/name=' -- $argv
+or return
+
+set script_dir (realpath (status dirname))
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off; xset -dpms
-set script_dir (realpath (status dirname))
-$script_dir/scripts/screenshot-obsidian.fish $argv[1] &
+
+if set -q _flag_h 
+  help_function
+  exit
+end
+
+if set -q _flag_v
+  $script_dir/scripts/vn-suit.fish $argv[1] &
+  echo "continuing..."
+end 
+
+if set -q _flag_x 
+  $script_dir/scripts/xbox-suit.fish $argv[1] &
+  echo "continuing..."
+end
+
 set obsidian "/home/anon/ortup/important/notes/ortvault"
 set start (date +%s)
 set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' -type f -mtime -2)
@@ -13,7 +37,7 @@ set launch (cat $a_path | grep 'launch:')
 set launch (echo $launch | grep -oP '(?<=launch: ).*')
 
 if grep "playtime:" $a_path
-else
+  else
   sed -i "/^launch:/a\\playtime: 0" $a_path
 end
 
@@ -33,10 +57,10 @@ echo -e "\n>[!info] Played: $result minutes - $cur_hour - $cur_date\n" >> $a_pat
 
 cp $a_path /tmp/clone.md
 awk -v var="$result" '/playtime/ { 
-    for (i = 1; i <= NF; i++) { 
+  for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
-} { print }' /tmp/clone.md > $a_path
+    } { print }' /tmp/clone.md > $a_path
 
 # Makes sure the screenshot script gets killed since it runs as a background process  
 kill $(jobs -p)

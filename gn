@@ -2,4 +2,37 @@
 
 # gameinit creates this file on launch 
 set obsidian_file (cat /tmp/obsidian-game.txt)
-echo -e $argv[1] >> $obsidian_file \n 
+
+function help_function
+    echo -e "Usage: gn \"message\""
+    echo "Options:"
+    echo "  -m       Generic message"
+    echo "  -t       Create genereic #task"
+    echo "  -r       Create something to #research"
+    echo "  -l       Create #highlight"
+end
+
+argparse --name=gn 'm/message' 'h/help' 't/task' 'r/research' 'l/highlight' 'n/name=' -- $argv
+or return
+
+if set -q _flag_m 
+  echo -e "$argv[1]\n" >> $obsidian_file 
+end
+
+if set -q _flag_h
+  help_function
+end
+
+if set -q _flag_t 
+  echo -e "- [ ] #task $argv[1]\n"  >> $obsidian_file 
+end 
+
+if set -q _flag_r 
+  echo -e "- [ ] #research $argv[1]\n"  >> $obsidian_file 
+end 
+
+if set -q _flag_l 
+  echo -e "- [ ] #highlight $argv[1]\n"  >> $obsidian_file 
+end
+
+

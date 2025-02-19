@@ -14,7 +14,7 @@ end
 
 # required since event number can change
 yes | evtest 2> /tmp/evtest-info.txt
-set devinput (cat /tmp/evtest-info.txt | grep -oP '/dev/input/event[0-9]+')
+set devinput (cat /tmp/evtest-info.txt | grep 'Xbox' | grep -oP '/dev/input/event[0-9]+')
 
 evtest $devinput | while read line
 
@@ -31,12 +31,13 @@ evtest $devinput | while read line
   # for screen capture
   if string match -q "*BTN_MODE), value 1" "$line"
     echo \a
+    sleep 0.5
     set timestamp (date +%s)
     set fv_name "$folder_title-vid-$timestamp.mp4"
     echo -e "![[$fv_name]]\n" >> "$note_file"
 
     # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
-    $script_dir/ffmpeg-escaper.fish &
+    $script_dir/xbox-ffmpeg-escaper.fish &
 
     # required to grab active window data so that in windowed mode only the game is captured 
     for line in (xdotool getactivewindow getwindowgeometry --shell)
