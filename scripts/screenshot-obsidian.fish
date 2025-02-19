@@ -1,7 +1,7 @@
 #! /usr/bin/env fish
 set obsidian "/home/anon/ortup/important/notes/ortvault"
 set filename "$argv[1]"
-set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' -type f -mtime -2)
+set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set screenshot_folder "$obsidian/resources/game/screenshots/$folder_title"
 set script_dir (realpath (status dirname))
