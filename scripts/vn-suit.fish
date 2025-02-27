@@ -19,7 +19,7 @@ set devinput (cat /tmp/evtest-info.txt | grep 'NuPhy' | head -n 1 | grep -oP '/d
 evtest $devinput | while read line
 
   # for screenshots 
-  if string match -q "*KEY_S), value 1" "$line"
+  if string match -q "*KEY_SYSRQ), value 1" "$line"
     echo \a
     set timestamp (date +%s)
     set fs_name "$folder_title$timestamp.jpg"
@@ -30,7 +30,7 @@ evtest $devinput | while read line
 
 
   # for screen capture
-  if string match -q "*KEY_R), value 1" "$line"
+  if string match -q "*KEY_INSERT), value 1" "$line"
     echo \a
     sleep 0.5
     set timestamp (date +%s)
@@ -56,7 +56,7 @@ evtest $devinput | while read line
   end
 
 
-  if string match -q "*KEY_A), value 1" "$line"
+  if string match -q "*KEY_HOME), value 1" "$line"
     echo \a
     sleep 0.5
     set timestamp (date +%s)

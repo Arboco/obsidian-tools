@@ -4,9 +4,8 @@ set devinput (cat /tmp/evtest-info.txt | grep 'Xbox' | grep -oP '/dev/input/even
 
 evtest $devinput | while read line
   if string match -q "*ABS_HAT0Y), value 1" "$line"
-    echo \a
-    echo "hello world"
     pkill -SIGINT ffmpeg
+    echo "hello world"
     exit
   end
 end
