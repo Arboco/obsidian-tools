@@ -44,7 +44,7 @@ end
 
 echo $a_path > /tmp/obsidian-game.txt
 # launching the game, every command after this will only trigger once the game closes
-eval $launch
+eval $launch; or true
 
 xset s on; xset +dpms
 set end (date +%s)
