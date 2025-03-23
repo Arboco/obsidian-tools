@@ -26,6 +26,7 @@ inotifywait -m -e create --format '%w%f' $a_path | while read FILE
     echo "hevc codec detected, conversion started."
     ffmpeg -i $FILE -c:v libx264 -crf 18 -preset slow -c:a aac -b:a 320k $screenshot_folder/$folder_title$timestamp.mp4
     echo -e "![[$folder_title$timestamp.mp4]]\n" >> $obsidian_md
+    rm $FILE
   else
     echo "File is compatible, going to move it as is."
     mv $FILE "$screenshot_folder/$folder_title$timestamp.$file_end"
