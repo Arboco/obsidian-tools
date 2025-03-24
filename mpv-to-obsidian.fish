@@ -33,7 +33,8 @@ rm /tmp/clone.md
 set cur_date (date +%d.%m.%y)
 set cur_hour (date +%H:%M) 
 set my_array (find $a_path/ -maxdepth 1 -iname "*.mkv" | sort)
-echo -e "\n>[!info] $argv[1] ($current_episode) - $cur_hour - $cur_date\n" >> $obsidian_md
+echo -e "\n# Episode $current_episode" >> $obsidian_md
+echo -e "$cur_hour - $cur_date\n" >> $obsidian_md
 mpv --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
 
 # inotify is very persistent so it needs to be explicitly killed
