@@ -1,0 +1,14 @@
+#! /usr/bin/env fish 
+
+
+
+argparse --name=gn 'd/dotfiles' 'h/help' 'n/name=' -- $argv
+
+if set -q _flag_d 
+  find ~/.config/ ~/.dotfiles/ ~/.local/bin/ -type f | fzf -0 --query "$argv[1]" --preview 'glow {}' | xargs -I {} nvim "{}"
+  exit
+end
+
+find * -type f | fzf -0 --query "$argv[1]" --preview 'glow {}' | xargs -I {} nvim "{}"
+
+

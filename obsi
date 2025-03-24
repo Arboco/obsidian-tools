@@ -1,0 +1,26 @@
+#! /usr/bin/env fish 
+
+set obsidian_path "/home/anon/ortup/important/notes/ortvault/notes/" 
+argparse --name=gn 'i/task' 't/tag' 'h/header' 'n/name=' -- $argv
+
+if set -q _flag_i 
+  grep -r '#task' $obsidian_path/*
+  exit
+end
+
+if set -q _flag_t 
+  grep -r -l "  \- $argv[1]" $obsidian_path/* | fzf -0 --preview 'glow {}' | xargs -I {} glow "{}"
+  exit 
+end
+
+if set -q _flag_h 
+  set content (find $obsidian_path -type f | fzf -0 --query "$argv[1]" --preview 'glow {}' | xargs -I {} cat "{}" | sed -n "/^# $argv[2]/I,/^# /{/^# /!p; /^# /d;}")
+  echo $content | glow
+  exit
+end 
+
+find $obsidian_path -type f | fzf -0 --query "$argv[1]" --preview 'glow {}' | xargs -I {} glow "{}"
+
+
+
+#glow /home/anon/ortup/important/notes/ortvault/notes/shell/$file

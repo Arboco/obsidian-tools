@@ -26,3 +26,6 @@ Obsidian md files require YAML property:
 - path (absolute path to folder of anime)
 - watched (number of episodes watched, used to find next episode and iterate watched count, has to be a number field)
 >>>>>>> obsidian-anime-suit/master
+
+# obsi 
+fzf made to find and print obsidian files, replaces cheat
