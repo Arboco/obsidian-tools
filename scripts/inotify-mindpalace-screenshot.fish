@@ -1,0 +1,20 @@
+#! /usr/bin/env fish
+
+set obsidian_md "$argv[1]"
+set title "$argv[2]"
+set a_path (cat $obsidian_md | grep 'path:')
+set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
+set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/game/mind-palace/$folder_title"
+
+if test -d $screenshot_folder
+    echo "folder exists"
+else
+    mkdir $screenshot_folder
+end
+
+inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
+    set timestamp (date +%s)
+    mv $FILE $screenshot_folder/$folder_title$timestamp.jpg
+    echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
+end

@@ -1,0 +1,25 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+echo "test $script_dir"
+set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian_md (find $obsidian -type f -name "$argv[1].md")
+
+$script_dir/scripts/inotify-mindpalace-clip.fish "$obsidian_md" "$argv[1]" &
+$script_dir/scripts/inotify-mindpalace-screenshot.fish "$obsidian_md" "$argv[1]" &
+set a_path (cat $obsidian_md | grep 'path:')
+set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
+set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/game/mind-palace/$folder_title"
+
+if test -d $screenshot_folder
+    echo "folder exists"
+else
+    mkdir $screenshot_folder
+end
+
+mpv --screenshot-directory="$screenshot_folder" $argv[2] &
+
+# inotify is very persistent so it needs to be explicitly killed
+# this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
+$script_dir/scripts/inotify-killer.fish $last_pid &
