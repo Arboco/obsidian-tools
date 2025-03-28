@@ -3,7 +3,7 @@
 argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
 or return
 
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian /home/anon/ortup/important/notes/ortvault/notes/
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 set title "$argv[1]"
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
@@ -72,6 +72,8 @@ inotifywait -m -e create --format '%w%f' ~/Downloads/ | while read FILE
             echo "WHERE source = this.origin AND map = this.map" >>$obsidian_md
             echo "SORT order ASC" >>$obsidian_md
             echo "```" >>$obsidian_md
+            echo "" >>$obsidian_md
+            echo "# " >>$obsidian_md
 
         else
             mv "$FILE" $screenshot_folder/$folder_title$timestamp.jpg
