@@ -1,0 +1,17 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+echo "test $script_dir"
+set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian_md (find $obsidian -type f -name "$argv[1].md")
+
+set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/$folder_title"
+
+if test -d $screenshot_folder
+    echo "folder exists"
+else
+    mkdir $screenshot_folder
+end
+
+$script_dir/scripts/inotify-ytmp.fish "$obsidian_md" "$argv[1]"
