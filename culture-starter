@@ -3,7 +3,7 @@
 argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
 or return
 
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian /home/anon/ortup/important/notes/ortvault/notes
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 set game_folder (cat $obsidian_md | grep -oP '(?<=origin: "\[\[)[^\]]*')
 set game_folder_f (echo $game_folder | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')

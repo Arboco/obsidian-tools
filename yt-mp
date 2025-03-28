@@ -22,10 +22,12 @@ end
 
 if set -q _flag_g
     set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/game/$folder_title"
+    set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/game/$argv[1].md"
 end
 
 if set -q _flag_l
     set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/location/$folder_title"
+    set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/location/$argv[1].md"
 end
 
 if test -d $screenshot_folder
@@ -53,7 +55,7 @@ inotifywait -m -e create --format '%w%f' ~/Downloads/ | while read FILE
             end
 
             echo "origin: placeholder" >>$obsidian_md
-            echo "map:" >>$obsidian_md
+            echo "map: $argv[1]" >>$obsidian_md
             mv "$FILE" $screenshot_folder/$folder_title-cover.jpg
             echo "cover-img: \"[[$folder_title-cover.jpg]]\"" >>$obsidian_md
             echo "cssclasses:" >>$obsidian_md
