@@ -1,0 +1,42 @@
+#! /usr/bin/env fish
+
+argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
+or return
+
+set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian_md (find $obsidian -type f -name "$argv[1].md")
+set game_folder (cat $obsidian_md | grep -oP '(?<=origin: "\[\[)[^\]]*')
+set game_folder_f (echo $game_folder | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set map_title (cat $obsidian_md | grep -oP '(?<=map: ).*')
+set map_title_f (echo $map_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set target_folder /home/anon/ortup/important/notes/ortvault/notes/mindpalace
+
+function help_function
+    echo "Options:"
+    echo "  -h       Help"
+end
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if test -d $target_folder/$game_folder_f/$map_title_f
+    echo "folder exists"
+else
+    mkdir $target_folder/$game_folder_f
+    mkdir $target_folder/$game_folder_f/$map_title_f
+end
+
+set md $target_folder/$game_folder_f/$map_title_f/$map_title_f-culture-starter.md
+
+echo --- >>$md
+echo "tags:" >>$md
+echo "source: \"[[$game_folder]]\"" >>$md
+echo "map: $map_title" >>$md
+echo "location:" >>$md
+echo "unique:" >>$md
+echo "next:" >>$md
+echo "last:" >>$md
+echo "order: 1" >>$md
+echo --- >>$md

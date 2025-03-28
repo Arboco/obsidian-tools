@@ -1,12 +1,32 @@
 #! /usr/bin/env fish
 
-set script_dir (realpath (status dirname))
-echo "test $script_dir"
+argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
+or return
+
 set obsidian /home/anon/ortup/important/notes/ortvault
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
-
-set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set title "$argv[1]"
+set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/$folder_title"
+
+function help_function
+    echo "Options:"
+    echo "  -g       For Video Game related mindpalaces"
+    echo "  -l       For real locations in the world"
+end
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_g
+    set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/game/$folder_title"
+end
+
+if set -q _flag_l
+    set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/location/$folder_title"
+end
 
 if test -d $screenshot_folder
     echo "folder exists"
@@ -14,4 +34,53 @@ else
     mkdir $screenshot_folder
 end
 
-$script_dir/scripts/inotify-ytmp.fish "$obsidian_md" "$argv[1]"
+set counter 0
+
+inotifywait -m -e create --format '%w%f' ~/Downloads/ | while read FILE
+    sleep 1
+    set timestamp (date +%s)
+    if test -e "$FILE"
+        if test -z (ls -A $screenshot_folder)
+            echo --- >>$obsidian_md
+            echo "tags:" >>$obsidian_md
+
+            if set -q _flag_g
+                echo "  - game" >>$obsidian_md
+            end
+
+            if set -q _flag_l
+                echo "  - location" >>$obsidian_md
+            end
+
+            echo "origin: placeholder" >>$obsidian_md
+            echo "map:" >>$obsidian_md
+            mv "$FILE" $screenshot_folder/$folder_title-cover.jpg
+            echo "cover-img: \"[[$folder_title-cover.jpg]]\"" >>$obsidian_md
+            echo "cssclasses:" >>$obsidian_md
+            echo "  - img-grid" >>$obsidian_md
+            echo "  - img-max" >>$obsidian_md
+            echo "obsidianUIMode: preview" >>$obsidian_md
+            echo --- >>$obsidian_md
+            sleep 1
+            echo "" >>$obsidian_md
+            echo "```dataview" >>$obsidian_md
+            echo "TABLE without id" >>$obsidian_md
+            echo "	order as \"Order\"," >>$obsidian_md
+            echo "	file.link as \"File\"," >>$obsidian_md
+            echo "	location as \"Location\"," >>$obsidian_md
+            echo "	unique as \"Detail\"" >>$obsidian_md
+            echo "WHERE source = this.origin AND map = this.map" >>$obsidian_md
+            echo "SORT order ASC" >>$obsidian_md
+            echo "```" >>$obsidian_md
+
+        else
+            mv "$FILE" $screenshot_folder/$folder_title$timestamp.jpg
+            echo -e "![[$folder_title$timestamp.jpg]]" >>$obsidian_md
+            set counter (math $counter + 1)
+            if test $counter = 8
+                echo -e "" >>$obsidian_md
+                set counter 0
+            end
+        end
+    end
+end
