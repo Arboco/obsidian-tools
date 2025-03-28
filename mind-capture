@@ -18,7 +18,7 @@ else
     mkdir $screenshot_folder
 end
 
-mpv --screenshot-directory="$screenshot_folder" $argv[2] &
+mpv --screenshot-directory="$screenshot_folder" $a_path &
 
 # inotify is very persistent so it needs to be explicitly killed
 # this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
