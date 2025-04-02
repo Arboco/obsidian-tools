@@ -54,7 +54,7 @@ inotifywait -m -e create --format '%w%f' ~/Downloads/ | while read FILE
                 echo "  - location" >>$obsidian_md
             end
 
-            echo "origin: placeholder" >>$obsidian_md
+            echo "origin: \"[[$argv[2]]]\"" >>$obsidian_md
             echo "map: $argv[1]" >>$obsidian_md
             mv "$FILE" $screenshot_folder/$folder_title-cover.jpg
             echo "cover-img: \"[[$folder_title-cover.jpg]]\"" >>$obsidian_md
@@ -71,7 +71,7 @@ inotifywait -m -e create --format '%w%f' ~/Downloads/ | while read FILE
             echo "	file.link as \"File\"," >>$obsidian_md
             echo "	location as \"Location\"," >>$obsidian_md
             echo "	unique as \"Detail\"" >>$obsidian_md
-            echo "WHERE source = this.origin AND map = this.map" >>$obsidian_md
+            echo "WHERE source = this.origin AND map = this.file.link" >>$obsidian_md
             echo "SORT order ASC" >>$obsidian_md
             echo "```" >>$obsidian_md
             echo "" >>$obsidian_md

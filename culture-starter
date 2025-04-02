@@ -33,7 +33,7 @@ set md $target_folder/$game_folder_f/$map_title_f/$map_title_f-culture-starter.m
 echo --- >>$md
 echo "tags:" >>$md
 echo "source: \"[[$game_folder]]\"" >>$md
-echo "map: $map_title" >>$md
+echo "map: \"[[$map_title]]\"" >>$md
 echo "location:" >>$md
 echo "unique:" >>$md
 echo "next:" >>$md
