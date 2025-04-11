@@ -15,10 +15,11 @@ end
 # required since event number can change
 yes | evtest 2>/tmp/evtest-info.txt
 set devinput (cat /tmp/evtest-info.txt | grep 'NuPhy' | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+rm /tmp/evtest_pipe
+mkfifo /tmp/evtest_pipe
 
 evtest $devinput | while read line
-
-    # for screenshots 
+    # for screenshots
     if string match -q "*KEY_SYSRQ), value 1" "$line"
         echo \a
         set timestamp (date +%s)

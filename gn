@@ -13,34 +13,32 @@ function help_function
     echo "  -q       Create #question"
 end
 
-argparse --name=gn 'h/help' 't/task' 'r/research' 'q/question' 'l/highlight' 'n/name=' -- $argv
+argparse --name=gn h/help t/task r/research q/question l/highlight 'n/name=' -- $argv
 or return
 
-
 if set -q _flag_h
-  help_function
-  exit
+    help_function
+    exit
 end
 
-if set -q _flag_t 
-  echo -e "- [ ] #task $argv[1]\n"  >> $obsidian_file 
-  exist
-end 
-
-if set -q _flag_r 
-  echo -e "- [ ] #research $argv[1]\n"  >> $obsidian_file 
-  exit 
-end 
-
-if set -q _flag_l 
-  echo -e "- [ ] #highlight $argv[1]\n"  >> $obsidian_file 
-  exit 
+if set -q _flag_t
+    echo -e "- [ ] #task $argv[1]\n" >>$obsidian_file
+    exist
 end
 
-if set -q _flag_q 
-  echo -e "- [ ] #question $argv[1]\n"  >> $obsidian_file 
-  exit
+if set -q _flag_r
+    echo -e "- [ ] #research $argv[1]\n" >>$obsidian_file
+    exit
 end
 
-echo -e "$argv[1]\n" >> $obsidian_file 
+if set -q _flag_l
+    echo -e "- [ ] #highlight $argv[1]\n" >>$obsidian_file
+    exit
+end
 
+if set -q _flag_q
+    echo -e "- [ ] #question $argv[1]\n" >>$obsidian_file
+    exit
+end
+
+echo -e "$argv[1]\n" >>$obsidian_file
