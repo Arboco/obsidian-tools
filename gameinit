@@ -43,16 +43,21 @@ else
 end
 
 echo $a_path >/tmp/obsidian-game.txt
+
+$script_dir/scripts/idle_watcher.fish &
+
 # launching the game, every command after this will only trigger once the game closes
 eval $launch; or true
+sleep 2
 
 set check_runtime (math (date +%s) - $start)
-if test $check_runtime -lw 10
+if test $check_runtime -lt 10
     while kill -0 (pidof $argv[2]) 2>/dev/null
         echo "Working..."
         sleep 2
     end
 end
+set second_reduction (cat /tmp/idle_counter.txt)
 
 if grep obsidian-tools $a_path
 else
@@ -62,7 +67,8 @@ end
 xset s on
 xset +dpms
 set end (date +%s)
-set result (math "($end - $start) / 60")
+echo "Time Calculation: "(math $end - $start) " - $second_reduction"
+set result (math "($end - $start - $second_reduction) / 60")
 set result (math round $result)
 
 set cur_date (date +%d.%m.%y)
