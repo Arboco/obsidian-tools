@@ -46,6 +46,14 @@ echo $a_path >/tmp/obsidian-game.txt
 # launching the game, every command after this will only trigger once the game closes
 eval $launch; or true
 
+set check_runtime (math (date +%s) - $start)
+if test $check_runtime -lw 10
+    while kill -0 (pidof $argv[2]) 2>/dev/null
+        echo "Working..."
+        sleep 2
+    end
+end
+
 if grep obsidian-tools $a_path
 else
     sed -i '/^tags:/a\  - obsidian-tools' $a_path
@@ -85,3 +93,5 @@ awk -v var="$result" '/playtime/ {
 kill $(jobs -p)
 
 rm /tmp/clone.md
+
+echo -e '\a'
