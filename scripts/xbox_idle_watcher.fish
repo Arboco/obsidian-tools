@@ -8,6 +8,7 @@ while true
     if test $window_id -eq (xdotool getwindowfocus)
         set window_id_counter (math $window_id_counter + 1)
         sleep 1
+        echo "Hooking Process... $window_id_counter/10"
     else
         set wind_id_counter 0
     end
@@ -15,21 +16,17 @@ while true
     if test $window_id_counter -eq 10
         set pid_active (xprop -id $window_id _NET_WM_PID | awk '{print $3}')
         echo "Process determined."
+        echo -e "\a"
         break
     end
 end
 
 while kill -0 $pid_active 2>/dev/null
-    if test $xbox_check -f /tmp/xbox_time.txt
-        set xbox_time (cat /tmp/xbox_time.txt)
-        set xbox_time_seconds (math (date +%s) - $xbox_time)
-    else
-        set xbox_time_seconds 60
-    end
+    set xbox_time (cat /tmp/xbox_time.txt)
+    set xbox_time_seconds (math (date +%s) - $xbox_time)
 
     if test $window_id -eq (xdotool getwindowfocus)
-        if test (xprintidle) -gt 10000
-            and test $xbox_time_seconds -gt 10
+        if test $xbox_time_seconds -gt 29
             set second_difference (math $second_difference + 1)
             sleep 1
         else

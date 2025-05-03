@@ -24,11 +24,13 @@ end
 if set -q _flag_v
     $script_dir/scripts/vn-suit.fish $argv[1] &
     echo "continuing..."
+    $script_dir/scripts/vn_idle_watcher.fish &
 end
 
 if set -q _flag_x
     $script_dir/scripts/xbox-suit.fish $argv[1] &
     echo "continuing..."
+    $script_dir/scripts/xbox_idle_watcher.fish &
 end
 
 set obsidian /home/anon/ortup/important/notes/ortvault
@@ -44,8 +46,6 @@ end
 
 echo $a_path >/tmp/obsidian-game.txt
 
-$script_dir/scripts/idle_watcher.fish &
-
 # launching the game, every command after this will only trigger once the game closes
 eval $launch; or true
 sleep 2
@@ -57,7 +57,12 @@ if test $check_runtime -lt 10
         sleep 2
     end
 end
-set second_reduction (cat /tmp/idle_counter.txt)
+
+if test -f /tmp/idle_counter.txt
+    set second_reduction (cat /tmp/idle_counter.txt)
+else
+    set second_reduction 0
+end
 
 if grep obsidian-tools $a_path
 else

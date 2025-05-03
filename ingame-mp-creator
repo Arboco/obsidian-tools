@@ -1,0 +1,20 @@
+#! /usr/bin/env fish 
+# yt-mp -g "Ancient Lake" "Diddy Kong Racing"
+
+argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
+or return
+
+set obsidian /home/anon/ortup/important/notes/ortvault/notes/
+set obsidian_md (find $obsidian -type f -name "$argv[1].md")
+set title "$argv[1]"
+set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/$folder_title"
+
+set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/game/$folder_title"
+set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/game/$argv[1].md"
+
+if test -d $screenshot_folder
+    echo "folder exists"
+else
+    mkdir $screenshot_folder
+end
