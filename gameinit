@@ -12,6 +12,12 @@ end
 argparse --name=gameinit v/visualnovel x/xbox h/help 'n/name=' -- $argv
 or return
 
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set session_limit (ot_config_grab "SessionLimit")
+set start (date +%s)
+set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' )
+set launch (cat $a_path | grep 'launch:')
+set launch (echo $launch | grep -oP '(?<=launch: ).*')
 set script_dir (realpath (status dirname))
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off
@@ -24,21 +30,15 @@ end
 
 if set -q _flag_v
     $script_dir/scripts/vn-suit.fish $argv[1] &
-    echo "continuing..."
     $script_dir/scripts/vn_idle_watcher.fish &
+    echo "Starting VN Mode"
 end
 
 if set -q _flag_x
     $script_dir/scripts/xbox-suit.fish $argv[1] &
-    echo "continuing..."
     $script_dir/scripts/xbox_idle_watcher.fish &
+    echo "Starting Controller Mode"
 end
-
-set obsidian (ot_config_grab "ObsidianMainFolder")
-set start (date +%s)
-set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' )
-set launch (cat $a_path | grep 'launch:')
-set launch (echo $launch | grep -oP '(?<=launch: ).*')
 
 if grep "playtime:" $a_path
 else
@@ -51,8 +51,7 @@ echo $a_path >/tmp/obsidian-game.txt
 eval $launch; or true
 sleep 2
 
-set check_runtime (math (date +%s) - $start)
-if test $check_runtime -lt 10
+if test (count $argv) -ge 2
     while kill -0 (pidof $argv[2]) 2>/dev/null
         echo "Working..."
         sleep 2
@@ -73,6 +72,13 @@ end
 
 xset s on
 xset +dpms
+
+if grep "# Info" $a_path
+else
+    echo "# Info" >>$a_path
+    echo "## Timeline" >>$a_path
+end
+
 set end (date +%s)
 echo "Time Calculation: "(math $end - $start) " - $second_reduction"
 set result (math "($end - $start - $second_reduction) / 60")
@@ -91,7 +97,7 @@ if grep "$cur_date" $a_path
         if ($i ~ /^[0-9]+$/) $i = $i + ex;} 
         }
         { print }' /tmp/clone.md >$a_path
-else
+else if test $result_minutes -gt $session_limit
     echo "date is not available"
     sed "/^## Timeline/{:a; n; /^#/!ba; i\
 \\

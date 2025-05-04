@@ -1,0 +1,23 @@
+# Must be put in .config/ortscripts/ 
+# Still not finished
+# Folders 
+ObsidianMainFolder: /home/anon/ortup/important/notes/ortvault
+ObsidianGameScreenshotFolder: /home/anon/ortup/important/notes/ortvault/resources/game/screenshots
+AnimeClipsFolder: /home/anon/ortup/important/notes/ortvault/resources/anime_db/media/clips
+AnimeScreenshotsFolder: /home/anon/ortup/important/notes/ortvault/resources/anime_db/media/screenshots
+
+MindPalaceFolder: /home/anon/ortup/important/notes/ortvault/resources/game/mind-palace
+
+
+# Keyboard
+# select your device with evtest
+KeyboardName: NuPhy
+
+# Gamepad 
+GamePadName: Xbox
+
+# Decides how much time must pass that a session is recorded in the note
+SessionLimit: 15
+
+
+
