@@ -9,11 +9,9 @@ while true
         set window_id_counter (math $window_id_counter + 1)
         sleep 1
         echo "Hooking Process... $window_id_counter/10"
-    else
-        set wind_id_counter 0
     end
 
-    if test $window_id_counter -eq 10
+    if test $window_id_counter -eq 20
         set pid_active (xprop -id $window_id _NET_WM_PID | awk '{print $3}')
         echo "Process determined."
         echo -e "\a"
