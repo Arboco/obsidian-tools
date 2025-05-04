@@ -1,0 +1,17 @@
+# Must be put into $HOME/.config/ortscripts/
+
+[folders]
+ObsidianMainFolder=/home/anon/ortup/important/notes/ortvault
+ObsidianGameScreenshotFolder=/home/anon/ortup/important/notes/ortvault/resources/game/screenshots
+AnimeClipsFolder=/home/anon/ortup/important/notes/ortvault/resources/anime_db/media/clips
+AnimeScreenshotsFolder=/home/anon/ortup/important/notes/ortvault/resources/anime_db/media/screenshots
+
+MindPalaceFolder=/home/anon/ortup/important/notes/ortvault/resources/game/mind-palace
+
+[keyboard]
+# select your device from evtest
+
+KeyboardName=NuPhy
+
+[gamepad]
+GamePadName=Xbox

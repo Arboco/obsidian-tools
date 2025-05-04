@@ -1,0 +1,4 @@
+#! /usr/bin/env fish 
+
+set folder_path (grep -oP "(?<=$argv[1]=).*" $HOME/.config/ortscripts/config)
+echo $folder_path

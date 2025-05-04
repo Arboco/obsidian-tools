@@ -1,6 +1,7 @@
 #! /usr/bin/env fish
 
 #argv[1] is obsidian md file title
+
 function help_function
     echo -e "Usage: gameinit [OPTION] \"title of md file with launch property\""
     echo "Options:"
@@ -33,7 +34,7 @@ if set -q _flag_x
     $script_dir/scripts/xbox_idle_watcher.fish &
 end
 
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian (ot_config_grab "ObsidianMainFolder")
 set start (date +%s)
 set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' )
 set launch (cat $a_path | grep 'launch:')
@@ -92,7 +93,7 @@ if grep "$cur_date" $a_path
         { print }' /tmp/clone.md >$a_path
 else
     echo "date is not available"
-    sed "/^## Times/{:a; n; /^#/!ba; i\
+    sed "/^## Timeline/{:a; n; /^#/!ba; i\
 \\
 >[!info] Played: $result_minutes Minutes - $cur_date
 }" $a_path >/tmp/clone2.md

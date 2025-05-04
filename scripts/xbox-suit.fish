@@ -1,9 +1,10 @@
 #! /usr/bin/env fish
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian (ot_config_grab "ObsidianMainFolder")
 set filename "$argv[1]"
 set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "$obsidian/resources/game/screenshots/$folder_title"
+set screenshot_folder (ot_config_grab "ObsidianGameScreenshotFolder")/$folder_title
+set device_name (ot_config_grab "GamePadName")
 set script_dir (realpath (status dirname))
 set idle_counter 0
 set arti_time 0
@@ -16,7 +17,7 @@ end
 
 # required since event number can change
 yes | evtest 2>/tmp/evtest-info.txt
-set devinput (cat /tmp/evtest-info.txt | grep 'Xbox' | grep -oP '/dev/input/event[0-9]+')
+set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | grep -oP '/dev/input/event[0-9]+')
 
 evtest $devinput | while read line
 

@@ -12,9 +12,10 @@ Scripts to capture anime and manga material and seamlessly integrate it into obs
 Dependencies:
 - mpv
 - mpv-cut plugin
-- memento
 - graphicsmagick
 - scrot
+- xprintidle
+- inotify-tools
 
 mpv-cut has to be inserted for mpv and memento separately since they don't share plugins/configs
 
