@@ -3,13 +3,14 @@
 argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
 or return
 
-set obsidian /home/anon/ortup/important/notes/ortvault/notes
+set main_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian $main_folder/(ot_config_grab "NotesFolder")
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 set game_folder (cat $obsidian_md | grep -oP '(?<=origin: "\[\[)[^\]]*')
 set game_folder_f (echo $game_folder | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set map_title (cat $obsidian_md | grep -oP '(?<=map: ).*')
 set map_title_f (echo $map_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set target_folder /home/anon/ortup/important/notes/ortvault/notes/mindpalace
+set target_folder $notes/(ot_config_grab "MindPalaceFolder")
 
 function help_function
     echo "Options:"

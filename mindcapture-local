@@ -2,7 +2,9 @@
 
 set script_dir (realpath (status dirname))
 echo "test $script_dir"
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set game_folder (ot_config_grab "GameFolder")
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 
 $script_dir/scripts/inotify-mindpalace-clip.fish "$obsidian_md" "$argv[1]" &
@@ -10,7 +12,7 @@ $script_dir/scripts/inotify-mindpalace-screenshot.fish "$obsidian_md" "$argv[1]"
 set a_path (cat $obsidian_md | grep 'path:')
 set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/game/mind-palace/$folder_title"
+set screenshot_folder $resource_folder/$game_folder/mind-palace/$folder_title"
 
 if test -d $screenshot_folder
     echo "folder exists"

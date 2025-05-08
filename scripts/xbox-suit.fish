@@ -3,11 +3,16 @@ set obsidian (ot_config_grab "ObsidianMainFolder")
 set filename "$argv[1]"
 set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder (ot_config_grab "ObsidianGameScreenshotFolder")/$folder_title
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set game_folder (ot_config_grab "GameFolder")
+set screenshot_folder $obsidian/$resource_folder/$game_folder/screenshots/$folder_title
 set device_name (ot_config_grab "GamePadName")
 set script_dir (realpath (status dirname))
 set idle_counter 0
 set arti_time 0
+
+set screenshot_button (ot_config_grab "Profile2ScreenshotButton")
+set record_button (ot_config_grab "Profile2RecordButton")
 
 if test -d $screenshot_folder
     echo "folder exists"
@@ -24,7 +29,7 @@ evtest $devinput | while read line
     echo $line | grep -oP "(?<=Event: time )[^.]*" >/tmp/xbox_time.txt
 
     # for screenshots 
-    if string match -q "*KEY_RECORD), value 1" "$line"
+    if string match -q "*$screenshot_button), value 1" "$line"
         echo \a
         set timestamp (date +%s)
         set fs_name "$folder_title$timestamp.jpg"
@@ -34,7 +39,7 @@ evtest $devinput | while read line
     end
 
     # for screen capture
-    if string match -q "*BTN_MODE), value 1" "$line"
+    if string match -q "*$record_button), value 1" "$line"
         echo \a
         sleep 0.5
         set timestamp (date +%s)

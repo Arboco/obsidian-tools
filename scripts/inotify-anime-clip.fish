@@ -5,7 +5,7 @@ set title "$argv[2]"
 set a_path (cat $obsidian_md | grep 'path:')
 set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder (ot_config_grab "AnimeClipsFolder")/$folder_title
+set screenshot_folder (ot_config_grab "AnimeFolder")/media/clips/$folder_title
 
 if test -d $screenshot_folder
     echo "folder exists"

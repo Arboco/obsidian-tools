@@ -4,14 +4,17 @@
 argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
 or return
 
-set obsidian /home/anon/ortup/important/notes/ortvault/notes/
+set main_folder (ot_config_grab "ObsidianMainFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
+set obsidian $main_folder/(ot_config_grab "NotesFolder")/
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 set title "$argv[1]"
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/$folder_title"
+set mindpalace_name (ot_config_grab "MindPalaceFolder")
+set screenshot_folder "$resources_folder/$mindpalace_name/youtube/$folder_title"
 
-set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/game/$folder_title"
-set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/game/$argv[1].md"
+set screenshot_folder "$resources_folder/$mindpalace_name/youtube/game/$folder_title"
+set obsidian_md "$obsidian/locations/game/$argv[1].md"
 
 if test -d $screenshot_folder
     echo "folder exists"

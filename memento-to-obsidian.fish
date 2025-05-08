@@ -1,8 +1,9 @@
 #! /usr/bin/env fish
 
-
 set script_dir (realpath (status dirname))
-set obsidian "/home/anon/ortup/important/notes/ortvault"
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set anime_folder (ot_config_grab "AnimeFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set start (date +%s)
 set obsidian_md (find $obsidian -type f -name "$argv[1].md" | grep 'anime/')
 
@@ -13,12 +14,12 @@ set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set current_episode (cat $obsidian_md | grep -oP '(?<=watched: )[0-9][0-9]?[0-9]?')
 set current_episode (math $current_episode + 1)
-set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/anime_db/media/screenshots/$folder_title"
+set screenshot_folder $resources_folder/$anime_folder/media/screenshots/$folder_title
 
 if test -d $screenshot_folder
-  echo "folder exists"
+    echo "folder exists"
 else
-  mkdir $screenshot_folder
+    mkdir $screenshot_folder
 end
 
 cp $obsidian_md /tmp/clone.md
@@ -27,12 +28,12 @@ awk '/watched/ {
     for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + 1; 
     } 
-} { print }' /tmp/clone.md > $obsidian_md
+} { print }' /tmp/clone.md >$obsidian_md
 rm /tmp/clone.md
 set cur_date (date +%d.%m.%y)
-set cur_hour (date +%H:%M) 
+set cur_hour (date +%H:%M)
 set my_array (find $a_path/ -maxdepth 1 -iname "*.mkv" | sort)
-echo -e "\n>[!info] $argv[1] ($current_episode) - $cur_hour - $cur_date\n" >> $obsidian_md
+echo -e "\n>[!info] $argv[1] ($current_episode) - $cur_hour - $cur_date\n" >>$obsidian_md
 
 # memento is just a mpv wrapper so nothing changes
 memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &

@@ -3,11 +3,15 @@
 argparse --name=gn h/help g/game l/location 'n/name=' -- $argv
 or return
 
-set obsidian /home/anon/ortup/important/notes/ortvault/notes/
+set obsidian (ot_config_grab "ObsidianMainFolder")/
+set notes_folder $obsidian(ot_config_grab "NotesFolder")
+set mindpalace_folder (ot_config_grab "MindPalaceFolder")
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set game_folder (ot_config_grab "GameFolder")
 set obsidian_md (find $obsidian -type f -name "$argv[1].md")
 set title "$argv[1]"
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/$folder_title"
+set screenshot_folder "$resource_folder/$mindpalace_folder/youtube/$folder_title"
 
 function help_function
     echo "Options:"
@@ -21,13 +25,13 @@ if set -q _flag_h
 end
 
 if set -q _flag_g
-    set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/game/$folder_title"
-    set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/game/$argv[1].md"
+    set screenshot_folder "$resource_folder/$mindpalace_folder/youtube/game/$folder_title"
+    set obsidian_md "$notes_folder/locations/game/$argv[1].md"
 end
 
 if set -q _flag_l
-    set screenshot_folder "/home/anon/ortup/important/notes/ortvault/resources/mindpalace/youtube/location/$folder_title"
-    set obsidian_md "/home/anon/ortup/important/notes/ortvault/notes/locations/location/$argv[1].md"
+    set screenshot_folder "$resource_folder/$mindpalace_folder/youtube/location/$folder_title"
+    set obsidian_md "$notes_folder/locations/location/$argv[1].md"
 end
 
 if test -d $screenshot_folder

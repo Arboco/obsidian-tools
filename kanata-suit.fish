@@ -1,11 +1,12 @@
 #! /usr/bin/env fish
-set obsidian /home/anon/ortup/important/notes/ortvault
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set game_folder (ot_config_grab "GameFolder")
 set fullpath_game (cat /tmp/obsidian-game.txt)
 set gamename (basename -s .md $fullpath_game)
 set filename "$gamename"
 set note_file (find $obsidian -type f -name "$gamename.md" -not -path '*/[@.]*')
 set folder_title (echo $gamename | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "$obsidian/resources/game/screenshots/$folder_title"
+set screenshot_folder "$obsidian/resources/$game_folder/screenshots/$folder_title"
 set script_dir (realpath (status dirname))
 
 if test -d $screenshot_folder

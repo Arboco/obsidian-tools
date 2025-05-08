@@ -1,7 +1,8 @@
 #! /usr/bin/env fish 
 
-set obsidian_folder "/home/anon/ortup/important/notes/ortvault"
-set media_folder "/home/anon/ortup/important/notes/ortvault/resources/anime_db/media/panels"
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set anime_folder (ot_config_grab "AnimeFolder")
+set media_folder "/home/anon/ortup/important/notes/ortvault/resources/$anime_folder/media/panels"
 set obsidian_md (grep 'status: Tracking' $obsidian_folder -rl)
 set manga_name (echo $obsidian_md | grep -oP '[^/]+(?=.{3}$)' | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set panel_folder (echo "$media_folder/$manga_name")
@@ -11,15 +12,15 @@ set info_bar ">[!info] $date - Volume: $read_volumes"
 
 if grep "$date - Volume: $read_volumes" $obsidian_md
 else
-  echo -e "\n$info_bar\n" >> $obsidian_md
+    echo -e "\n$info_bar\n" >>$obsidian_md
 end
 
 if test -d $panel_folder
-  echo "folder exists"
+    echo "folder exists"
 else
-  mkdir $panel_folder
+    mkdir $panel_folder
 end
 
 set timestamp (date +%s)
 scrot -s $panel_folder/$manga_name.$timestamp.jpg
-echo -e "![[$manga_name.$timestamp.jpg]]\n" >> $obsidian_md
+echo -e "![[$manga_name.$timestamp.jpg]]\n" >>$obsidian_md

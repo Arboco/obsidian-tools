@@ -4,9 +4,15 @@ set obsidian (ot_config_grab "ObsidianMainFolder")
 set filename "$argv[1]"
 set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder (ot_config_grab "ObsidianGameScreenshotFolder")/$folder_title
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set game_folder (ot_config_grab "GameFolder")
+set screenshot_folder $obsidian/$resource_folder/$game_folder/screenshots/$folder_title
 set script_dir (realpath (status dirname))
 set device_name (ot_config_grab "KeyboardName")
+
+set screenshot_button (ot_config_grab "Profile1ScreenshotButton")
+set record_button (ot_config_grab "Profile1RecordButton")
+set audio_button (ot_config_grab "Profile1AudioButton")
 
 if test -d $screenshot_folder
     echo "folder exists"
@@ -22,7 +28,7 @@ mkfifo /tmp/evtest_pipe
 
 evtest $devinput | while read line
     # for screenshots
-    if string match -q "*KEY_SYSRQ), value 1" "$line"
+    if string match -q "*$screenshot_button), value 1" "$line"
         echo \a
         set timestamp (date +%s)
         set fs_name "$folder_title$timestamp.jpg"
@@ -42,7 +48,7 @@ evtest $devinput | while read line
     end
 
     # for screen capture
-    if string match -q "*KEY_INSERT), value 1" "$line"
+    if string match -q "*$record_button), value 1" "$line"
         echo \a
         sleep 0.5
         set timestamp (date +%s)
@@ -67,7 +73,7 @@ evtest $devinput | while read line
             -c:v libx264 -preset ultrafast -vsync 1 -c:a aac $screenshot_folder/$fv_name
     end
 
-    if string match -q "*KEY_HOME), value 1" "$line"
+    if string match -q "*$audio_button), value 1" "$line"
         echo \a
         sleep 0.5
         set timestamp (date +%s)
