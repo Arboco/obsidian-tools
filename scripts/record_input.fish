@@ -8,11 +8,13 @@ set resource_folder (ot_config_grab "ObsidianResourceFolder")
 set game_folder (ot_config_grab "GameFolder")
 set screenshot_folder $obsidian/$resource_folder/$game_folder/screenshots/$folder_title
 set script_dir (realpath (status dirname))
-set device_name (ot_config_grab "KeyboardName")
+set id "$argv[2]"
+set device_name (ot_config_grab "Profile"$id"DeviceName")
+set controller_check (ot_config_grab "Profile"$id"ControllerCheck")
 
-set screenshot_button (ot_config_grab "Profile1ScreenshotButton")
-set record_button (ot_config_grab "Profile1RecordButton")
-set audio_button (ot_config_grab "Profile1AudioButton")
+set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
+set record_button (ot_config_grab "Profile"$id"RecordButton")
+set audio_button (ot_config_grab "Profile"$id"AudioButton")
 
 if test -d $screenshot_folder
     echo "folder exists"
@@ -23,10 +25,13 @@ end
 # required since event number can change
 yes | evtest 2>/tmp/evtest-info.txt
 set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
-rm /tmp/evtest_pipe
-mkfifo /tmp/evtest_pipe
 
 evtest $devinput | while read line
+
+    if test $controller_check -eq 1
+        echo $line | grep -oP "(?<=Event: time )[^.]*" >/tmp/xbox_time.txt
+    end
+
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
         echo \a
@@ -56,7 +61,7 @@ evtest $devinput | while read line
         echo -e "![[$fv_name]]\n" >>"$note_file"
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
-        $script_dir/vn-ffmpeg-escaper.fish &
+        $script_dir/input-ffmpeg-escaper.fish "$id" &
 
         # required to grab active window data so that in windowed mode only the game is captured 
         for line in (xdotool getactivewindow getwindowgeometry --shell)
@@ -81,7 +86,7 @@ evtest $devinput | while read line
         echo -e "![[$fv_name]]\n" >>"$note_file"
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
-        $script_dir/vn-ffmpeg-escaper.fish &
+        $script_dir/input-ffmpeg-escaper.fish "$id" &
 
         ffmpeg \
             -thread_queue_size 1024 -f pulse -i alsa_output.usb-FiiO_DigiHug_USB_Audio-01.analog-stereo.monitor \

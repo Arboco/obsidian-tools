@@ -9,7 +9,7 @@ function help_function
     echo "  -x       Activates media collector for Xbox Controller"
 end
 
-argparse --name=gameinit v/visualnovel x/xbox h/help 'n/name=' -- $argv
+argparse --name=gameinit v/visualnovel x/xbox h/help m/mambo 'n/name=' -- $argv
 or return
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
@@ -31,15 +31,21 @@ if set -q _flag_h
 end
 
 if set -q _flag_v
-    $script_dir/scripts/vn-suit.fish $argv[1] &
-    $script_dir/scripts/vn_idle_watcher.fish &
-    echo "Starting VN Mode"
+    $script_dir/scripts/record_input.fish $argv[1] 1 &
+    $script_dir/scripts/input_idle_watcher.fish 1 (ot_config_grab "Profile1ControllerCheck") &
+    echo "Starting Profile 1"
 end
 
 if set -q _flag_x
-    $script_dir/scripts/xbox-suit.fish $argv[1] &
-    $script_dir/scripts/xbox_idle_watcher.fish &
-    echo "Starting Controller Mode"
+    $script_dir/scripts/record_input.fish $argv[1] 2 &
+    $script_dir/scripts/input_idle_watcher.fish 2 (ot_config_grab "Profile2ControllerCheck") &
+    echo "Starting Profile 2"
+end
+
+if set -q _flag_m
+    $script_dir/scripts/record_input.fish $argv[1] 3 &
+    $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") &
+    echo "Starting Profile 3"
 end
 
 if grep "playtime:" $a_path
@@ -85,6 +91,7 @@ set end (date +%s)
 echo "Time Calculation: "(math $end - $start) " - $second_reduction"
 set result (math "($end - $start - $second_reduction) / 60")
 set result_minutes (math round $result)
+echo "This are approximately $result_minutes minutes"
 set result_seconds (math $end - $start - $second_reduction)
 if test $result_seconds -gt $startup_compensator
     set result_seconds (math $result_seconds - $startup_compensator)
@@ -99,7 +106,7 @@ set cur_hour (date +%H:%M)
 
 if test $timeline_option -eq 1
     if grep "$cur_date" $a_path
-        echo "date is available"
+        echo "existing date is getting updated"
         set ex_minutes (grep "$cur_date" $a_path | grep -oP '(?<=Played: )..?.?')
         cp $a_path /tmp/clone.md
         awk -v ex="$result_minutes" -v date="$cur_date" '$0 ~ date {
@@ -108,7 +115,7 @@ if test $timeline_option -eq 1
         }
         { print }' /tmp/clone.md >$a_path
     else if test $result_minutes -gt $session_limit
-        echo "date is not available"
+        echo "new date is inserted into timelinie"
         sed "/^## Timeline/{:a; n; /^#/!ba; i\
 \\
 >[!info] Played: $result_minutes Minutes - $cur_date
