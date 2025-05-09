@@ -16,8 +16,4 @@ set screenshot_folder "$resources_folder/$mindpalace_name/youtube/$folder_title"
 set screenshot_folder "$resources_folder/$mindpalace_name/youtube/game/$folder_title"
 set obsidian_md "$obsidian/locations/game/$argv[1].md"
 
-if test -d $screenshot_folder
-    echo "folder exists"
-else
-    mkdir $screenshot_folder
-end
+mkdir -p $screenshot_folder

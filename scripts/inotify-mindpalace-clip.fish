@@ -9,11 +9,7 @@ set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set resource_folder (ot_config_grab "ObsidianResourceFolder")
 set screenshot_folder $obsidian_folder/$resource_folder/(ot_config_grab "MindPalaceFolder")/$folder_title-clips
 
-if test -d $screenshot_folder
-    echo "folder exists"
-else
-    mkdir $screenshot_folder
-end
+mkdir -p $screenshot_folder
 
 inotifywait -m -e create --format '%w%f' $a_path | while read FILE
     sleep 3

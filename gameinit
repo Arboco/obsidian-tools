@@ -8,9 +8,11 @@ function help_function
     echo "  -v       Profile 1"
     echo "  -x       Profile 2"
     echo "  -w       Profile 3"
+    echo "  -d       Debug Mode"
+    echo "  -m       Don't save gameinit into history"
 end
 
-argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug h/help 'n/name=' -- $argv
+argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug m/minua h/help 'n/name=' -- $argv
 or return
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
@@ -23,6 +25,11 @@ set launch (cat $a_path | grep 'launch:')
 set launch (echo $launch | grep -oP '(?<=launch: ).*')
 set script_dir (realpath (status dirname))
 set info_start_playtime (grep -oP "(?<=playtime: ).*" $a_path)
+
+mkdir -p $obsidian/(ot_config_grab "GameFolder")
+mkdir -p $obsidian/(ot_config_grab "AnimeFolder")
+mkdir -p $obsidian/(ot_config_grab "MindPalaceFolder")
+
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off
 xset -dpms
@@ -37,6 +44,7 @@ if set -q _flag_v
     $script_dir/scripts/record_input.fish $argv[1] 1 &
     $script_dir/scripts/input_idle_watcher.fish 1 (ot_config_grab "Profile1ControllerCheck") &
     echo "Starting Profile 1 $profile_name"
+    set his_flag v
 end
 
 if set -q _flag_x
@@ -44,6 +52,7 @@ if set -q _flag_x
     $script_dir/scripts/record_input.fish $argv[1] 2 &
     $script_dir/scripts/input_idle_watcher.fish 2 (ot_config_grab "Profile2ControllerCheck") &
     echo "Starting Profile 2 $profile_name"
+    set his_flag x
 end
 
 if set -q _flag_w
@@ -51,6 +60,18 @@ if set -q _flag_w
     $script_dir/scripts/record_input.fish $argv[1] 3 &
     $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") &
     echo "Starting Profile 3 $profile_name"
+    set his_flag w
+end
+
+set history_option 1
+set history_config "$HOME/.config/ortscripts/history"
+if set -q _flag_m
+    set history_option 0
+end
+if test $history_option -eq 1
+    set game_info "gameinit -$his_flag \"$argv\""
+    sed -i "/$game_info/d" $history_config
+    sed -i "1i $game_info" $history_config
 end
 
 set debug 0

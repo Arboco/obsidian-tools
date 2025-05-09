@@ -7,11 +7,7 @@ set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set screenshot_folder (ot_config_grab "AnimeFolder")/media/screenshots/$folder_title
 
-if test -d $screenshot_folder
-    echo "folder exists"
-else
-    mkdir $screenshot_folder
-end
+mkdir -p $screenshot_folder
 
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
     set timestamp (date +%s)

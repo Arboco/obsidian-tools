@@ -4,10 +4,7 @@ set obsidian_main (ot_config_grab "ObsidianMainFolder")
 set notes_folder $obsidian_main/(ot_config_grab "NotesFolder")
 set resources_folder $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
 
-if test -e $obsidian_main/restrash
-else
-    mkdir $obsidian_main/restrash
-end
+mkdir -p $obsidian_main/restrash
 
 for i in $(find $resources_folder/* -type f)
     set filename (basename $i)

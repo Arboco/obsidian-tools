@@ -15,11 +15,7 @@ else
     echo -e "\n$info_bar\n" >>$obsidian_md
 end
 
-if test -d $panel_folder
-    echo "folder exists"
-else
-    mkdir $panel_folder
-end
+mkdir -p $panel_folder
 
 set timestamp (date +%s)
 scrot -s $panel_folder/$manga_name.$timestamp.jpg

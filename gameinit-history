@@ -1,0 +1,6 @@
+#! /usr/bin/env fish
+
+set gumoptions (cat $HOME/.config/ortscripts/history)
+set gumselect (gum choose $gumoptions)
+
+eval $gumselect

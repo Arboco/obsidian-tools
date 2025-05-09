@@ -17,12 +17,7 @@ set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 
-if test -d $screenshot_folder
-    echo "The resource folder for the game already exists."
-else
-    echo "The resource folder for the game will be created"
-    mkdir $screenshot_folder
-end
+mkdir -p $screenshot_folder
 
 # required since event number can change
 yes | evtest >/dev/null 2>/tmp/evtest-info.txt

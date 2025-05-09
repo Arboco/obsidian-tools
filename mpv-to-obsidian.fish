@@ -17,11 +17,7 @@ set current_episode (cat $obsidian_md | grep -oP '(?<=watched: )[0-9][0-9]?[0-9]
 set current_episode (math $current_episode + 1)
 set screenshot_folder $resources_folder/$anime_folder/media/screenshots/$folder_title
 
-if test -d $screenshot_folder
-    echo "folder exists"
-else
-    mkdir $screenshot_folder
-end
+mkdir -p $screenshot_folder
 
 cp $obsidian_md /tmp/clone.md
 echo $current_episode
