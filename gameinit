@@ -147,6 +147,8 @@ if test $timeline_option -eq 1
         set info_session_time (echo "The session limit of $session_limit minutes was not hit.")
         set info_session_why (echo "Only $result_minutes minutes accumulated.")
     end
+else
+    set info_session_time (echo "Timeline feature is deactivated.")
 end
 
 if test $debug -eq 1
@@ -183,6 +185,10 @@ gum style \
     --foreground 190 --border-foreground 190 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "$info_time_calculation_info" "$info_time_calculation_raw" "$info_time_added"
+
+if test $debug -eq 1
+    echo "Debug Mode is activated. Accumulated playtime will be ignored."
+end
 
 gum style \
     --foreground 79 --border-foreground 79 --border double \
