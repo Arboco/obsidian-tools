@@ -11,20 +11,23 @@ set script_dir (realpath (status dirname))
 set id "$argv[2]"
 set device_name (ot_config_grab "Profile"$id"DeviceName")
 set controller_check (ot_config_grab "Profile"$id"ControllerCheck")
+set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
 
 set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 
 if test -d $screenshot_folder
-    echo "folder exists"
+    echo "The resource folder for the game already exists."
 else
+    echo "The resource folder for the game will be created"
     mkdir $screenshot_folder
 end
 
 # required since event number can change
-yes | evtest 2>/tmp/evtest-info.txt
+yes | evtest >/dev/null 2>/tmp/evtest-info.txt
 set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+echo (date +%s) >/tmp/xbox_time.txt
 
 evtest $devinput | while read line
 
@@ -44,8 +47,6 @@ evtest $devinput | while read line
             set numcut (string split ' ' (grep -oP "(?<=cut: ).*" $note_file))
             gm mogrify -shave $numcut[1]x$numcut[2] $screenshot_folder/$fs_name
             sleep 1
-        else
-            echo "cut not found"
         end
 
         gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
@@ -70,8 +71,8 @@ evtest $devinput | while read line
 
         # first three lines are to be able to use two audice devices (headphones and speakers) and be able to capture audio no matter what, though don't switch audio device mid recording
         ffmpeg \
-            -thread_queue_size 1024 -f pulse -i alsa_output.usb-FiiO_DigiHug_USB_Audio-01.analog-stereo.monitor \
-            -thread_queue_size 1024 -f pulse -i alsa_output.pci-0000_0d_00.4.analog-stereo.monitor \
+            -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
+            -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
             -video_size "$WIDTH"x"$HEIGHT" \
             -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
@@ -89,8 +90,8 @@ evtest $devinput | while read line
         $script_dir/input-ffmpeg-escaper.fish "$id" &
 
         ffmpeg \
-            -thread_queue_size 1024 -f pulse -i alsa_output.usb-FiiO_DigiHug_USB_Audio-01.analog-stereo.monitor \
-            -thread_queue_size 1024 -f pulse -i alsa_output.pci-0000_0d_00.4.analog-stereo.monitor \
+            -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
+            -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
             -ac 2 -ar 44100 -b:a 192k $screenshot_folder/$fv_name
     end

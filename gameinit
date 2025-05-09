@@ -5,11 +5,12 @@
 function help_function
     echo -e "Usage: gameinit [OPTION] \"title of md file with launch property\""
     echo "Options:"
-    echo "  -v       Activates media collector on keyboard, specifically for Visual Novels"
-    echo "  -x       Activates media collector for Xbox Controller"
+    echo "  -v       Profile 1"
+    echo "  -x       Profile 2"
+    echo "  -w       Profile 3"
 end
 
-argparse --name=gameinit v/visualnovel x/xbox h/help m/mambo 'n/name=' -- $argv
+argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug h/help 'n/name=' -- $argv
 or return
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
@@ -21,6 +22,7 @@ set a_path (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*' )
 set launch (cat $a_path | grep 'launch:')
 set launch (echo $launch | grep -oP '(?<=launch: ).*')
 set script_dir (realpath (status dirname))
+set info_start_playtime (grep -oP "(?<=playtime: ).*" $a_path)
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off
 xset -dpms
@@ -31,24 +33,32 @@ if set -q _flag_h
 end
 
 if set -q _flag_v
+    set profile_name (ot_config_grab "Profile1DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 1 &
     $script_dir/scripts/input_idle_watcher.fish 1 (ot_config_grab "Profile1ControllerCheck") &
-    echo "Starting Profile 1"
+    echo "Starting Profile 1 $profile_name"
 end
 
 if set -q _flag_x
+    set profile_name (ot_config_grab "Profile2DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 2 &
     $script_dir/scripts/input_idle_watcher.fish 2 (ot_config_grab "Profile2ControllerCheck") &
-    echo "Starting Profile 2"
+    echo "Starting Profile 2 $profile_name"
 end
 
-if set -q _flag_m
+if set -q _flag_w
+    set profile_name (ot_config_grab "Profile3DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 3 &
     $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") &
-    echo "Starting Profile 3"
+    echo "Starting Profile 3 $profile_name"
 end
 
-if grep "playtime:" $a_path
+set debug 0
+if set -q _flag_d
+    set debug 1
+end
+
+if grep "playtime:" $a_path >/dev/null 2>&1
 else
     sed -i "/^launch:/a\\playtime: 0" $a_path
 end
@@ -56,24 +66,30 @@ end
 echo $a_path >/tmp/obsidian-game.txt
 
 # launching the game, every command after this will only trigger once the game closes
-eval $launch; or true
-sleep 2
+set -x WINEDEBUG -all
+begin
+    eval $launch
+end >/dev/null 2>&1
 
-if test (count $argv) -ge 2
-    while kill -0 (pidof $argv[2]) 2>/dev/null
-        echo "Working..."
+set inbetween (date +%s)
+set failsafe (math $inbetween - $start)
+if test $failsafe -lt 10
+    set window_id (xdotool getwindowfocus)
+    set pid_active (xprop -id $window_id _NET_WM_PID | awk '{print $3}')
+    set p_name (ps -p $pid_active -o comm=)
+    while kill -0 (pidof $pid_active) 2>/dev/null
+        echo "Something went wrong but failsafe for process $p_name is active"
         sleep 2
     end
 end
 
-if test -f /tmp/idle_counter.txt
-    and grep "[0-9]" /tmp/idle_counter.txt
-    set second_reduction (cat /tmp/idle_counter.txt)
-else
-    set second_reduction 0
+while not test -f /tmp/idle_counter.txt
+    sleep 1
 end
 
-if grep obsidian-tools $a_path
+set second_reduction (cat /tmp/idle_counter.txt)
+
+if grep obsidian-tools $a_path >/dev/null 2>&1
 else
     sed -i '/^tags:/a\  - obsidian-tools' $a_path
 end
@@ -81,32 +97,34 @@ end
 xset s on
 xset +dpms
 
-if grep "# Info" $a_path
+if grep "# Info" $a_path >/dev/null 2>&1
 else
     echo "# Info" >>$a_path
     echo "## Timeline" >>$a_path
+    echo "" >>$a_path
+    echo "#" >>$a_path
 end
 
 set end (date +%s)
-echo "Time Calculation: "(math $end - $start) " - $second_reduction"
+set calculation_seconds (math $end - $start)
 set result (math "($end - $start - $second_reduction) / 60")
 set result_minutes (math round $result)
-echo "This are approximately $result_minutes minutes"
 set result_seconds (math $end - $start - $second_reduction)
 if test $result_seconds -gt $startup_compensator
     set result_seconds (math $result_seconds - $startup_compensator)
-    echo "Seconds were reduced to $result_seconds"
 else
     set result_seconds 0
-    echo "Seconds are 0"
 end
+set info_time_calculation_info (echo "SecondsPlayed IdleSeconds StartupCompensator")
+set info_time_calculation_raw (echo "$calculation_seconds - $second_reduction - $startup_compensator = $result_seconds")
+set info_time_added (echo "$result_seconds seconds get added to playtime")
 
 set cur_date (date +%d.%m.%y)
 set cur_hour (date +%H:%M)
 
 if test $timeline_option -eq 1
     if grep "$cur_date" $a_path
-        echo "existing date is getting updated"
+        set info_session_time (echo "Existing session is getting increased by $result_minutes minutes.")
         set ex_minutes (grep "$cur_date" $a_path | grep -oP '(?<=Played: )..?.?')
         cp $a_path /tmp/clone.md
         awk -v ex="$result_minutes" -v date="$cur_date" '$0 ~ date {
@@ -114,29 +132,59 @@ if test $timeline_option -eq 1
         if ($i ~ /^[0-9]+$/) $i = $i + ex;} 
         }
         { print }' /tmp/clone.md >$a_path
-    else if test $result_minutes -gt $session_limit
-        echo "new date is inserted into timelinie"
-        sed "/^## Timeline/{:a; n; /^#/!ba; i\
+    else if test $result_minutes -ge $session_limit
+        set info_session_time (echo "The session limit of $session_limit was hit.")
+        set info_session_why (echo "New date with $result_minutes is inserted into timelinie.")
+
+        sed "/^## Timeline/{:a; n; /^#/!ba; i\\
 \\
->[!info] Played: $result_minutes Minutes - $cur_date
+>[!info] Played: $result_minutes minutes - $cur_date
 }" $a_path >/tmp/clone2.md
         mv /tmp/clone2.md $a_path
 
-        #echo -e "\n>[!info] Played: $result Minutes - $cur_date\n" >>$a_path
+        #echo -e "\n >[!info] Played: $result Minutes - $cur_date\n" >>$a_path
+    else
+        set info_session_time (echo "The session limit of $session_limit minutes was not hit.")
+        set info_session_why (echo "Only $result_minutes minutes accumulated.")
     end
 end
 
-cp $a_path /tmp/clone.md
-awk -v var="$result_seconds" '/playtime/ { 
+if test $debug -eq 1
+    set info_final_playtime (grep -oP "(?<=playtime: ).*" $a_path)
+else
+    cp $a_path /tmp/clone.md
+    awk -v var="$result_seconds" '/playtime/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$a_path
 
+    set info_final_playtime (grep -oP "(?<=playtime: ).*" $a_path)
+end
 # Makes sure the screenshot script gets killed since it runs as a background process  
 kill $(jobs -p)
 
-rm /tmp/clone.md
-rm /tmp/idle_counter.txt
+if test -f /tmp/clone.md
+    rm /tmp/clone.md
+end
+
+if test -f /tmp/idle_counter.txt
+    rm /tmp/idle_counter.txt
+end
 
 echo -e '\a'
+
+gum style \
+    --foreground 212 --border-foreground 212 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "$info_session_time" "$info_session_why"
+
+gum style \
+    --foreground 190 --border-foreground 190 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "$info_time_calculation_info" "$info_time_calculation_raw" "$info_time_added"
+
+gum style \
+    --foreground 79 --border-foreground 79 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Playtime updated from $info_start_playtime to $info_final_playtime seconds."

@@ -22,7 +22,8 @@ Profile1ScreenshotButton: KEY_SYSRQ
 Profile1RecordButton: KEY_INSERT
 Profile1AudioButton: KEY_HOME
 Profile1EscapeButton: KEY_END
-Profile1HookCounter: 10
+Profile1HookCounter: 15
+Profile1IdleCounter: 30
 
 # Profile 2 flag -x 
 Profile2DeviceName: Xbox
@@ -32,8 +33,9 @@ Profile2RecordButton: BTN_MODE
 Profile2AudioButton: BTN_SELECT 
 Profile2EscapeButton: ABS_HAT0Y
 Profile2HookCounter: 20
+Profile2IdleCounter: 30
 
-# Profile 3 flag -m 
+# Profile 3 flag -w  
 
 # This value shaves off seconds of the total playtime recorded in a session to compensate for startup time of the game.  
 StartupCompensator: 30
@@ -42,4 +44,4 @@ StartupCompensator: 30
 # Option to insert a timeline inside the note that tracks on what day you played for how many minutes, this has nothing to do with playtime recording, it's just an extra 
 TimelineOption: 1
 # Option to add a limit on how many minutes the first recorded session must be to be inserted into note, to avoid cluttering the timeline with pointless sessions 
-SessionLimit: 10
+SessionLimit: 0
