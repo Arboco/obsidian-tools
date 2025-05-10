@@ -16,6 +16,7 @@ MindPalaceFolder: mindpalace
 
 # Profile 1 flag -v 
 # select your device with evtest
+# hook counter can be customized per game with hook-values property 
 Profile1DeviceName: NuPhy
 Profile1ControllerCheck: 0
 Profile1ScreenshotButton: KEY_SYSRQ
@@ -37,7 +38,8 @@ Profile2IdleCounter: 30
 
 # Profile 3 flag -w  
 
-# This value shaves off seconds of the total playtime recorded in a session to compensate for startup time of the game.  
+# This value shaves off seconds of the total playtime recorded in a session to compensate for startup time of the game. 
+# Can be customized per game with hook-values property
 StartupCompensator: 30
 
 

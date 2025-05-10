@@ -27,7 +27,7 @@ echo (date +%s) >/tmp/xbox_time.txt
 evtest $devinput | while read line
 
     if test $controller_check -eq 1
-        echo $line | grep -oP "(?<=Event: time )[^.]*" >/tmp/xbox_time.txt
+        echo $line | grep -oP "(?<=Event: time )[^.]*" >>/tmp/xbox_time.txt
     end
 
     # for screenshots

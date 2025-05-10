@@ -5,6 +5,9 @@ set pid_second
 set second_difference 0
 set id "$argv[1]"
 set hook_counter (ot_config_grab "Profile"$id"HookCounter")
+if test $argv[3] -gt 0
+    set hook_counter $argv[3]
+end
 set idle_counter (ot_config_grab "Profile"$id"IdleCounter")
 set idle_counter_c (math $idle_counter x 1000)
 
@@ -35,10 +38,8 @@ if test $argv[2] -eq 1
     set xbox_time 0
     set xbox_time_seconds 0
     while kill -0 $pid_active 2>/dev/null
-        if grep '[0-9]' /tmp/xbox_time.txt >/dev/null 2>&1
-            set xbox_time (cat /tmp/xbox_time.txt)
-            set xbox_time_seconds (math (date +%s) - $xbox_time)
-        end
+        set xbox_time (tail -n 1 /tmp/xbox_time.txt)
+        set xbox_time_seconds (math (date +%s) - $xbox_time)
         if test $window_id -eq (xdotool getwindowfocus)
             if test $xbox_time_seconds -ge $idle_counter
                 set second_difference (math $second_difference + 1)

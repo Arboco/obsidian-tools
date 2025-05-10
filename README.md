@@ -17,6 +17,13 @@ Dependencies:
 - xprintidle
 - inotify-tools
 
+# Special yaml properties:
+## cut: x y 
+Takes two numbers that represent pixels that get cut off the side. First number is horizontal pixels, second number is vertical. Both numbers have to be filled, use 0 when you don't want to cut anything for a side. 
+## hook-values: x y 
+Takes two numbers. First replaces the hook counter, the seconds it takes to hook the first process. Second replaces the start up compensator. Both have to be filled. Use 0 when you want to keep using the default value. 
+
+
 mpv-cut has to be inserted for mpv and memento separately since they don't share plugins/configs
 
 

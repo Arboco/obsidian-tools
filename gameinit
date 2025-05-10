@@ -27,6 +27,15 @@ set launch (echo $launch | grep -oP '(?<=launch: ).*')
 set script_dir (realpath (status dirname))
 set info_start_playtime (grep -oP "(?<=playtime: ).*" $a_path)
 
+if grep 'hook-values: [0-9]* [0-9]*' $a_path
+    set hook_values (grep 'hook-values: [0-9]* [0-9]*' $a_path | grep -o '[0-9]*')
+else
+    set hook_values 0 0
+end
+if test $hook_values[2] -gt 0
+    set startup_compensator $hook_values[2]
+end
+
 mkdir -p $obsidian_resource/(ot_config_grab "GameFolder")
 mkdir -p $obsidian_resource/(ot_config_grab "AnimeFolder")
 mkdir -p $obsidian_resource/(ot_config_grab "MindPalaceFolder")
@@ -43,7 +52,7 @@ end
 if set -q _flag_v
     set profile_name (ot_config_grab "Profile1DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 1 &
-    $script_dir/scripts/input_idle_watcher.fish 1 (ot_config_grab "Profile1ControllerCheck") &
+    $script_dir/scripts/input_idle_watcher.fish 1 (ot_config_grab "Profile1ControllerCheck") $hook_values[1] &
     echo "Starting Profile 1 $profile_name"
     set his_flag v
 end
@@ -51,7 +60,7 @@ end
 if set -q _flag_x
     set profile_name (ot_config_grab "Profile2DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 2 &
-    $script_dir/scripts/input_idle_watcher.fish 2 (ot_config_grab "Profile2ControllerCheck") &
+    $script_dir/scripts/input_idle_watcher.fish 2 (ot_config_grab "Profile2ControllerCheck") $hook_values[1] &
     echo "Starting Profile 2 $profile_name"
     set his_flag x
 end
@@ -59,7 +68,7 @@ end
 if set -q _flag_w
     set profile_name (ot_config_grab "Profile3DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 3 &
-    $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") &
+    $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") $hook_values[1] &
     echo "Starting Profile 3 $profile_name"
     set his_flag w
 end
