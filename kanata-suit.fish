@@ -6,7 +6,7 @@ set gamename (basename -s .md $fullpath_game)
 set filename "$gamename"
 set note_file (find $obsidian -type f -name "$gamename.md" -not -path '*/[@.]*')
 set folder_title (echo $gamename | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder "$obsidian/resources/$game_folder/screenshots/$folder_title"
+set screenshot_folder "$obsidian/resources/$game_folder/media/$folder_title"
 set script_dir (realpath (status dirname))
 
 if test -d $screenshot_folder

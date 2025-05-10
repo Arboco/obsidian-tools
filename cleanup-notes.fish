@@ -16,7 +16,8 @@ end
 
 for i in $(find $obsidian_main/restrash/* -type f)
     set filename (basename $i)
-    if find $obsidian_main -iname "*.canvas" -exec grep "/$filename" {} +
+    if grep -r "/$filename" $obsidian_main/*
+        echo "Moving back canvas media."
         mv $i $resources_folder
     end
 end

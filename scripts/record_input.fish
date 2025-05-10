@@ -6,7 +6,7 @@ set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set resource_folder (ot_config_grab "ObsidianResourceFolder")
 set game_folder (ot_config_grab "GameFolder")
-set screenshot_folder $obsidian/$resource_folder/$game_folder/screenshots/$folder_title
+set screenshot_folder $obsidian/$resource_folder/$game_folder/media/$folder_title
 set script_dir (realpath (status dirname))
 set id "$argv[2]"
 set device_name (ot_config_grab "Profile"$id"DeviceName")

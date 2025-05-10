@@ -44,4 +44,4 @@ StartupCompensator: 30
 # Option to insert a timeline inside the note that tracks on what day you played for how many minutes, this has nothing to do with playtime recording, it's just an extra 
 TimelineOption: 1
 # Option to add a limit on how many minutes the first recorded session must be to be inserted into note, to avoid cluttering the timeline with pointless sessions 
-SessionLimit: 0
+SessionLimit: 15

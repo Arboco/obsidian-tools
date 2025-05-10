@@ -33,7 +33,7 @@ set my_array (find $a_path/ -maxdepth 1 -iname "*.mkv" | sort)
 echo -e "\n# Episode $current_episode" >>$obsidian_md
 echo -e "$cur_hour - $cur_date\n" >>$obsidian_md
 mpv --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
-
+#memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
 # inotify is very persistent so it needs to be explicitly killed
 # this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
 $script_dir/scripts/inotify-killer.fish $last_pid &

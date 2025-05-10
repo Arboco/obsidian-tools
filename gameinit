@@ -16,6 +16,7 @@ argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug m/minua h/help 'n/
 or return
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource $obsidian/(ot_config_grab "ObsidianResourceFolder")
 set session_limit (ot_config_grab "SessionLimit")
 set startup_compensator (ot_config_grab "StartupCompensator")
 set timeline_option (ot_config_grab "TimelineOption")
@@ -26,9 +27,9 @@ set launch (echo $launch | grep -oP '(?<=launch: ).*')
 set script_dir (realpath (status dirname))
 set info_start_playtime (grep -oP "(?<=playtime: ).*" $a_path)
 
-mkdir -p $obsidian/(ot_config_grab "GameFolder")
-mkdir -p $obsidian/(ot_config_grab "AnimeFolder")
-mkdir -p $obsidian/(ot_config_grab "MindPalaceFolder")
+mkdir -p $obsidian_resource/(ot_config_grab "GameFolder")
+mkdir -p $obsidian_resource/(ot_config_grab "AnimeFolder")
+mkdir -p $obsidian_resource/(ot_config_grab "MindPalaceFolder")
 
 # turning screen saver and display manager off so they never bother you during gameplay 
 xset s off
@@ -69,6 +70,10 @@ if set -q _flag_m
     set history_option 0
 end
 if test $history_option -eq 1
+    if test -f $history_config
+    else
+        echo "" >$history_config
+    end
     set game_info "gameinit -$his_flag \"$argv\""
     sed -i "/$game_info/d" $history_config
     sed -i "1i $game_info" $history_config
