@@ -64,7 +64,7 @@ evtest $devinput | while read line
             set -gx (echo $line | cut -d= -f1) (echo $line | cut -d= -f2)
         end
 
-        # first three lines are to be able to use two audice devices (headphones and speakers) and be able to capture audio no matter what, though don't switch audio device mid recording
+        # first three lines are to be able to use two audio devices (headphones and speakers) and be able to capture audio no matter what, though don't switch audio device mid recording
         ffmpeg \
             -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
             -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
