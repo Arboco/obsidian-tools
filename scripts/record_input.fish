@@ -10,7 +10,11 @@ set screenshot_folder $obsidian/$resource_folder/$game_folder/media/$folder_titl
 set script_dir (realpath (status dirname))
 set id "$argv[2]"
 set device_name (ot_config_grab "Profile"$id"DeviceName")
+
 set controller_check (ot_config_grab "Profile"$id"ControllerCheck")
+if test $controller_check -eq 1
+    set input_block (ot_config_grab "Profile"$id"InputBlock")
+end
 set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
 
 set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
@@ -27,9 +31,11 @@ echo (date +%s) >/tmp/xbox_time.txt
 evtest $devinput | while read line
 
     if test $controller_check -eq 1
-        echo $line | grep -oP "(?<=Event: time )[^.]*" >>/tmp/xbox_time.txt
+        if echo $line | grep -qP "$input_block"; or echo $line | grep -q SYN_REPORT
+        else
+            echo $line | grep -oP "(?<=Event: time )[^.]*" >>/tmp/xbox_time.txt
+        end
     end
-
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
         echo \a

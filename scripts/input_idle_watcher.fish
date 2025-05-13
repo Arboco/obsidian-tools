@@ -3,6 +3,9 @@ set window_id_counter 0
 set pid_active
 set pid_second
 set second_difference 0
+set payback 0
+set payback_cost 0
+set payback_times 0
 set id "$argv[1]"
 set hook_counter (ot_config_grab "Profile"$id"HookCounter")
 if test $argv[3] -gt 0
@@ -59,6 +62,7 @@ if test $argv[2] -eq 1
         if test $window_id -eq (xdotool getwindowfocus)
             if test $xbox_time_seconds -ge $idle_counter
                 set second_difference (math $second_difference + 1)
+                set payback 1
                 sleep 1
             else
                 sleep 1
@@ -67,14 +71,22 @@ if test $argv[2] -eq 1
             set second_difference (math $second_difference + 1)
             sleep 1
         end
+        if test $payback -eq 1
+            if test $xbox_time_seconds -lt 3
+                set payback_cost (math $payback_cost + $idle_counter)
+                set payback 0
+                set payback_times (math $payback_times + 1)
+            end
+        end
         echo -n -e "\rIdle seconds accumulated: $second_difference"
     end
+
 else
     while kill -0 $pid_active 2>/dev/null
-
         if test $window_id -eq (xdotool getwindowfocus) -o $window_id_2 -eq (xdotool getwindowfocus)
             if test (xprintidle) -ge $idle_counter_c
                 set second_difference (math $second_difference + 1)
+                set payback 1
                 sleep 1
             else
                 sleep 1
@@ -82,11 +94,20 @@ else
         else
             set second_difference (math $second_difference + 1)
             sleep 1
+        end
+        if test $payback -eq 1
+            if test (xprintidle) -lt 3000
+                set payback_cost (math $payback_cost + $idle_counter)
+                set payback 0
+                set payback_times (math $payback_times + 1)
+            end
         end
         echo -n -e "\rIdle seconds accumulated: $second_difference"
     end
 end
 
+set second_difference (math $second_difference + $payback_cost)
 echo " "
 echo ---
+echo "Payback was given $payback_times times!"
 echo $second_difference >/tmp/idle_counter.txt

@@ -23,8 +23,8 @@ Profile1ScreenshotButton: KEY_SYSRQ
 Profile1RecordButton: KEY_INSERT
 Profile1AudioButton: KEY_HOME
 Profile1EscapeButton: KEY_END
-Profile1HookCounter: 15
-Profile1IdleCounter: 30
+Profile1HookCounter: 10
+Profile1IdleCounter: 90
 
 # Profile 2 flag -x 
 Profile2DeviceName: Xbox
@@ -34,7 +34,8 @@ Profile2RecordButton: BTN_MODE
 Profile2AudioButton: BTN_SELECT 
 Profile2EscapeButton: ABS_HAT0Y
 Profile2HookCounter: 20
-Profile2IdleCounter: 30
+Profile2IdleCounter: 90
+Profile2InputBlock: ABS_R?[XY].*value -?[0-9]{1,4}([^0-9]|$) 
 
 # Profile 3 flag -w  
 
