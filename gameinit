@@ -158,7 +158,7 @@ set cur_date (date +%d.%m.%y)
 set cur_hour (date +%H:%M)
 
 if test $timeline_option -eq 1
-    if grep "$cur_date" $a_path
+    if grep "Played:.* $cur_date" $a_path
         set info_session_time (echo "Existing session is getting increased by $result_minutes minutes.")
         set ex_minutes (grep "$cur_date" $a_path | grep -oP '(?<=Played: )..?.?')
         cp $a_path /tmp/clone.md
