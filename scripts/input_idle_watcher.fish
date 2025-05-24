@@ -16,11 +16,9 @@ set idle_counter_c (math $idle_counter x 1000)
 
 while true
     set window_id (xdotool getwindowfocus)
-    if test $window_id -eq (xdotool getwindowfocus)
-        set window_id_counter (math $window_id_counter + 1)
-        sleep 1
-        echo -n -e "\rHooking Process... $window_id_counter/$hook_counter"
-    end
+    set window_id_counter (math $window_id_counter + 1)
+    sleep 1
+    echo -n -e "\rHooking Process... $window_id_counter/$hook_counter"
 
     if test $window_id_counter -eq $hook_counter
         set pid_active (xprop -id $window_id _NET_WM_PID | awk '{print $3}')
@@ -29,7 +27,7 @@ while true
             set pid_active (xprop -id $window_id WM_CLASS)
             echo "_NET_WIM_PID on first process not found, using WM_CLASS method."
             set p_name (echo $pid_active | grep -oP '(?<=WM_CLASS\(STRING\) = ")[^"]*')
-            set pid_active (pidof $p_name)
+            set pid_active (pgrep -i $p_name)
         end
 
         set p_name (ps -p $pid_active -o comm=)
@@ -43,7 +41,7 @@ while true
             set pid_active_2 (xprop -id $window_id_2 WM_CLASS)
             echo "_NET_WIM_PID on second process not found, using WM_CLASS method."
             set p_name (echo $pid_active_2 | grep -oP '(?<=WM_CLASS\(STRING\) = ")[^"]*')
-            set pid_active_2 (pidof $p_name)
+            set pid_active_2 (pgrep -i $p_name)
         end
 
         set p_name (ps -p $pid_active_2 -o comm=)
