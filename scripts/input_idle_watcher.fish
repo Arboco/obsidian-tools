@@ -23,7 +23,7 @@ while true
     if test $window_id_counter -eq $hook_counter
         set pid_active (xprop -id $window_id _NET_WM_PID | awk '{print $3}')
 
-        if echo $pid_active | grep found >/dev/null 2>&1
+        if echo $pid_active | grep found >/dev/null 2>&1; or not ps -p $pid_active >/dev/null 2>&1
             set pid_active (xprop -id $window_id WM_CLASS)
             echo "_NET_WIM_PID on first process not found, using WM_CLASS method."
             set p_name (echo $pid_active | grep -oP '(?<=WM_CLASS\(STRING\) = ")[^"]*')
@@ -37,7 +37,7 @@ while true
         set window_id_2 (xdotool getwindowfocus)
         set pid_active_2 (xprop -id $window_id_2 _NET_WM_PID | awk '{print $3}')
 
-        if echo $pid_active_2 | grep found >/dev/null 2>&1
+        if echo $pid_active_2 | grep found >/dev/null 2>&1; or not ps -p $pid_active_2 >/dev/null 2>&1
             set pid_active_2 (xprop -id $window_id_2 WM_CLASS)
             echo "_NET_WIM_PID on second process not found, using WM_CLASS method."
             set p_name (echo $pid_active_2 | grep -oP '(?<=WM_CLASS\(STRING\) = ")[^"]*')
