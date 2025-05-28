@@ -2,11 +2,10 @@
 
 set obsidian_main (ot_config_grab "ObsidianMainFolder")
 set notes_folder (ot_config_grab "NotesFolder")
-set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set sort_yaml $HOME/.config/ortscripts/sort.yaml
 set search_array (grep -oP '^.*?(?=:)' $sort_yaml)
 
-for i in (find /home/anon/ortup/important/notes/ortvault/ /home/anon/ortup/important/notes/ortvault/notes/ -maxdepth 1 -type f)
+for i in (find $obsidian_main $obsidian_main/$notes_folder -maxdepth 1 -type f)
     for inner in $search_array
         if grep -wq "  - $inner" $i; or grep "tags: .*$inner" $i
             set raw_grep (grep "  - $inner" $i; or  grep -oP "(?<=tags: )$inner" $i >/dev/null 2>&1)
