@@ -1,0 +1,73 @@
+#! /usr/bin/env fish
+
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+
+set term_one (rg -l "  - pool" $obsidian_folder/$notes)
+set term_two (rg -l "  - $argv[1]" $term_one)
+
+set array_length (count $term_two)
+set random_selection (random 1 $array_length)
+set target_md $term_two[$random_selection]
+
+obsidian "obsidian://$target_md" >/dev/null 2>&1
+set start (date +%s)
+
+if grep -q 'uuid:' $target_md
+else
+    set uuid (uuidgen)
+    sed -i "/^tags:/i\\uuid: $uuid" "$target_md"
+end
+
+echo "From 0-100 describe the value of this subject:"
+read user_value
+while true
+    if string match -qr '^(100|[1-9]?[0-9])$' -- $user_value
+        break
+    else
+        echo "Invalid input, only number 0-100 allowed, try again:"
+        read user_value
+    end
+end
+
+set end (date +%s)
+set cur_date (date +%d.%m.%y)
+set result (math $end - $start)
+set result_minutes (math round $result / 60)
+
+if grep -q 'session:' $target_md
+    cp $target_md /tmp/clone.md
+    awk '/session/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
+    } 
+    } { print }' /tmp/clone.md >$target_md
+else
+    sed -i "/^tags:/i\\session: 0" "$target_md"
+end
+
+if grep -q 'time:' $target_md
+    cp $target_md /tmp/clone.md
+    awk -v var="$result" '/playtime/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+    } { print }' /tmp/clone.md >$target_md
+else
+    sed -i "/^session:/i\\time: $result" "$target_md"
+end
+
+if grep -q 'value:' $target_md
+    sed -i '/value:/d' "$target_md"
+end
+sed -i "/^time:/a\\value: $user_value" "$target_md"
+
+set date_last (date +%Y-%m-%d)
+if grep -q 'date:' $target_md
+    sed -i '/date:/d' "$target_md"
+end
+sed -i "/^time:/i\\date: $date_last" "$target_md"
+
+set session_number (grep -oP "(?<=session: ).*" $target_md)
+echo "# Session $session_number" >>$target_md
+echo ">[!info] Learned: $result_minutes minutes - $cur_date" >>$target_md
