@@ -6,18 +6,34 @@ set notes (ot_config_grab "NotesFolder")
 set term_one (rg -l "  - pool" $obsidian_folder/$notes)
 set term_two (rg -l "  - $argv[1]" $term_one)
 
+set script_dir (realpath (status dirname))
 set array_length (count $term_two)
 set random_selection (random 1 $array_length)
 set target_md $term_two[$random_selection]
-
-obsidian "obsidian://$target_md" >/dev/null 2>&1
-set start (date +%s)
+echo $target_md >/tmp/the-pool.txt
 
 if grep -q 'uuid:' $target_md
+    set uuid (grep -oP '(?<=uuid: ).*' $target_md)
 else
     set uuid (uuidgen)
     sed -i "/^tags:/i\\uuid: $uuid" "$target_md"
 end
+
+if grep -qoP "(?<=session: ).*" $target_md
+    set session_number (grep -oP "(?<=session: ).*" $target_md)
+    set session_number (math $session_number + 1)
+else
+    set session_number 1
+end
+echo "# Session $session_number" >>$target_md
+echo "" >>$target_md
+
+xset s off
+xset -dpms
+$script_dir/scripts/pool-record_input.fish $uuid &
+
+obsidian "obsidian://$target_md" >/dev/null 2>&1
+set start (date +%s)
 
 echo "From 0-100 describe the value of this subject:"
 read user_value
@@ -29,6 +45,10 @@ while true
         read user_value
     end
 end
+
+xset s on
+xset +dpms
+kill $(jobs -p)
 
 set end (date +%s)
 set cur_date (date +%d.%m.%y)
@@ -67,7 +87,6 @@ if grep -q 'date:' $target_md
     sed -i '/date:/d' "$target_md"
 end
 sed -i "/^time:/i\\date: $date_last" "$target_md"
+sed -i "/^# Session $session_number/a\\>[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
 
-set session_number (grep -oP "(?<=session: ).*" $target_md)
-echo "# Session $session_number" >>$target_md
-echo ">[!info] Learned: $result_minutes minutes - $cur_date" >>$target_md
+rm /tmp/the-pool.txt
