@@ -39,7 +39,7 @@ evtest $devinput | while read line
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
         echo \a
-        set timestamp (date +%F_%T)
+        set timestamp (date +%F_%H%M%S)
         set fs_name "$folder_title-$timestamp.jpg"
         scrot -u $screenshot_folder/$fs_name
 
@@ -58,7 +58,7 @@ evtest $devinput | while read line
     if string match -q "*$record_button), value 1" "$line"
         echo \a
         sleep 0.5
-        set timestamp (date +%F_%T)
+        set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp4"
         echo -e "![[$fv_name]]\n" >>"$note_file"
 
@@ -83,7 +83,7 @@ evtest $devinput | while read line
     if string match -q "*$audio_button), value 1" "$line"
         echo \a
         sleep 0.5
-        set timestamp (date +%F_%T)
+        set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp3"
         echo -e "![[$fv_name]]\n" >>"$note_file"
 

@@ -1,0 +1,22 @@
+#! /usr/bin/env fish
+
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set notes_folder (ot_config_grab "NotesFolder")
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set final_folder "$obsidian_main/$resource_folder/thumbnail"
+set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g; s/.md//g"
+
+set last_active_file (find $obsidian_main/$notes_folder/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+
+set sanitized_name (basename $last_active_file | sed 's/[^a-zA-Z0-9 ]//g; s/.md//g; s/ /-/g' | tr '[:upper:]' '[:lower:]')
+
+mkdir -p $final_folder
+set timestamp (date +%F_%H%M%S)
+set fs_name "$sanitized_name-$timestamp.jpg"
+scrot -s $final_folder/$fs_name
+
+if grep "cover-img:" $last_active_file
+    echo -e "![[$fs_name]]\n" >>"$last_active_file"
+else
+    sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$last_active_file"
+end
