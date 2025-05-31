@@ -8,16 +8,8 @@ mkdir -p $obsidian_main/restrash
 
 for i in $(find $resources_folder/* -type f)
     set filename (basename $i)
-    if rg -F "[[$filename" $notes_folder/
+    if rg -F "$filename" $obsidian_main
     else
         mv $i $obsidian_main/restrash
-    end
-end
-
-for i in $(find $obsidian_main/restrash/* -type f)
-    set filename (basename $i)
-    if rg "/$filename" $obsidian_main/*
-        echo "Moving back canvas media."
-        mv $i $resources_folder
     end
 end
