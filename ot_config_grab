@@ -2,4 +2,5 @@
 
 set folder_path (grep -oP "(?<=$argv[1]:).*" $HOME/.config/ortscripts/config.yaml)
 set cleaned (string trim "$folder_path")
+
 echo $cleaned

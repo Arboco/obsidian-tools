@@ -4,12 +4,37 @@ set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 
 set term_one (rg -l "  - pool" $obsidian_folder/$notes)
-set term_two (rg -l "  - $argv[1]" $term_one)
 
 set script_dir (realpath (status dirname))
-set array_length (count $term_two)
-set random_selection (random 1 $array_length)
-set target_md $term_two[$random_selection]
+
+set pool_categories (ot_config_grab "PoolCategories")
+set pool_categories (string split "|" $pool_categories)
+set chosen_category (gum choose $pool_categories)
+set selection (gum choose "History" "Algorithm" "Select" "Unrated" "Random")
+
+if string match -q History $selection
+    set pool_history (cat $HOME/.config/ortscripts/pool-history)
+    set filterd_history (rg -l "$chosen_category" $pool_history)
+    set target_md (gum choose $filterd_history)
+end
+
+if string match -q Select $selection
+    set tag_selection (rg -l "  - $chosen_category" $term_one)
+    set target_md (gum choose $tag_selection)
+end
+
+if string match -q Random $selection
+    set tag_selection (rg -l "  - $chosen_category" $term_one)
+    set array_length (count $tag_selection)
+    set random_selection (random 1 $array_length)
+    set target_md $tag_selection[$random_selection]
+end
+
+set base_name (basename $target_md)
+set history_config "$HOME/.config/ortscripts/pool-history"
+sed -i "/$base_name/d" $history_config
+sed -i "1i $target_md" $history_config
+
 echo $target_md >/tmp/the-pool.txt
 
 if grep -q 'uuid:' $target_md
@@ -63,7 +88,7 @@ if grep -q 'session:' $target_md
     } 
     } { print }' /tmp/clone.md >$target_md
 else
-    sed -i "/^tags:/i\\session: 0" "$target_md"
+    sed -i "/^tags:/i\\session: 1" "$target_md"
 end
 
 if grep -q 'time:' $target_md

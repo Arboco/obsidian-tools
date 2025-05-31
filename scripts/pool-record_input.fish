@@ -5,18 +5,18 @@ set filename "$argv[1]"
 set note_file (cat /tmp/the-pool.txt)
 set folder_title (echo $argv[1] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set resource_folder (ot_config_grab "ObsidianResourceFolder")
-set pool_folder (ot_config_grab "ThePool")
+set pool_folder (ot_config_grab "ThePoolFolder")
 set screenshot_folder $obsidian/$resource_folder/$pool_folder/$folder_title
 set script_dir (realpath (status dirname))
 set id "$argv[2]"
-set device_name (ot_config_grab "Profile1DeviceName")
+set device_name (ot_config_grab "PoolDeviceName")
 
 set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
 
-set screenshot_button (ot_config_grab "Profile1ScreenshotButton")
-set record_button (ot_config_grab "Profile1RecordButton")
-set audio_button (ot_config_grab "Profile1AudioButton")
-set framed_screenshot (ot_config_grab "FrameScreenshotButton")
+set screenshot_button (ot_config_grab "PoolScreenshotButton")
+set record_button (ot_config_grab "PoolRecordButton")
+set audio_button (ot_config_grab "PoolAudioButton")
+set select_screenshot (ot_config_grab "PoolSelectScreenshotButton")
 
 mkdir -p $screenshot_folder
 
@@ -44,8 +44,8 @@ evtest $devinput | while read line
         echo -e "![[$fs_name]]\n" >>"$note_file"
     end
 
-    # for framed screenshots
-    if string match -q "*$framed_screenshot), value 1" "$line"
+    # for screenshots where you can select area
+    if string match -q "*$select_screenshot), value 1" "$line"
         echo \a
         set timestamp (date +%F_%T)
         set fs_name "$folder_title-$timestamp.jpg"
