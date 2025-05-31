@@ -3,14 +3,14 @@
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 
-set term_one (rg -l "  - pool" $obsidian_folder/$notes)
+set term_one (rg -l "  - pool" $obsidian_folder)
 
 set script_dir (realpath (status dirname))
 
 set pool_categories (ot_config_grab "PoolCategories")
 set pool_categories (string split "|" $pool_categories)
 set chosen_category (gum choose $pool_categories)
-set selection (gum choose "History" "Algorithm" "Select" "Unrated" "Random")
+set selection (gum choose "Select" "History" "Algorithm" "Unrated" "Random")
 
 if string match -q History $selection
     set pool_history (cat $HOME/.config/ortscripts/pool-history)
@@ -50,6 +50,7 @@ if grep -qoP "(?<=session: ).*" $target_md
 else
     set session_number 1
 end
+echo "" >>$target_md
 echo "# Session $session_number" >>$target_md
 echo "" >>$target_md
 
@@ -80,26 +81,28 @@ set cur_date (date +%d.%m.%y)
 set result (math $end - $start)
 set result_minutes (math round $result / 60)
 
-if grep -q 'session:' $target_md
-    cp $target_md /tmp/clone.md
-    awk '/session/ { 
+if test $user_value -gt 0
+    if grep -q 'session:' $target_md
+        cp $target_md /tmp/clone.md
+        awk '/session/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + 1; 
     } 
     } { print }' /tmp/clone.md >$target_md
-else
-    sed -i "/^tags:/i\\session: 1" "$target_md"
-end
+    else
+        sed -i "/^tags:/i\\session: 1" "$target_md"
+    end
 
-if grep -q 'time:' $target_md
-    cp $target_md /tmp/clone.md
-    awk -v var="$result" '/playtime/ { 
+    if grep -q 'time:' $target_md
+        cp $target_md /tmp/clone.md
+        awk -v var="$result" '/playtime/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$target_md
-else
-    sed -i "/^session:/i\\time: $result" "$target_md"
+    else
+        sed -i "/^session:/i\\time: $result" "$target_md"
+    end
 end
 
 if grep -q 'value:' $target_md
@@ -111,7 +114,7 @@ set date_last (date +%Y-%m-%d)
 if grep -q 'date:' $target_md
     sed -i '/date:/d' "$target_md"
 end
-sed -i "/^time:/i\\date: $date_last" "$target_md"
+sed -i "/^tags:/i\\date: $date_last" "$target_md"
 sed -i "/^# Session $session_number/a\\>[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
 
 rm /tmp/the-pool.txt
