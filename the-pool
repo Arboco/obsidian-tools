@@ -105,9 +105,14 @@ if test $user_value -gt 0
     end
 end
 
+if test $user_value -eq 0
+    sed -i "/# Session $session_number/d" "$target_md"
+end
+
 if grep -q 'value:' $target_md
     sed -i '/value:/d' "$target_md"
 end
+
 sed -i "/^time:/a\\value: $user_value" "$target_md"
 
 set date_last (date +%Y-%m-%d)
