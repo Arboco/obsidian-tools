@@ -70,14 +70,21 @@ evtest $devinput | while read line
             set -gx (echo $line | cut -d= -f1) (echo $line | cut -d= -f2)
         end
 
+        set crop "iw:ih:0:0"
+        if grep -q "crop:" $note_file
+            set crop (grep -oP "(?<=crop: ).*" $note_file)
+        end
+
         # first three lines are to be able to use two audio devices (headphones and speakers) and be able to capture audio no matter what, though don't switch audio device mid recording
         ffmpeg \
             -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
             -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
+            -f x11grab -draw_mouse 0 \
             -video_size "$WIDTH"x"$HEIGHT" \
             -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
-            -c:v libx264 -preset ultrafast -vsync 1 -c:a aac $screenshot_folder/$fv_name
+            -vf "crop=$crop" \
+            -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name
     end
 
     if string match -q "*$audio_button), value 1" "$line"

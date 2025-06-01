@@ -29,7 +29,7 @@ evtest $devinput | while read line
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
         echo \a
-        set timestamp (date +%F_%T)
+        set timestamp (date +%F_%H%M%S)
         set fs_name "$folder_title-$timestamp.jpg"
         scrot -u $screenshot_folder/$fs_name
 
@@ -80,9 +80,10 @@ evtest $devinput | while read line
             -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
             -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
+            -f x11grab -draw_mouse 0 \
             -video_size "$WIDTH"x"$HEIGHT" \
             -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
-            -c:v libx264 -preset ultrafast -vsync 1 -c:a aac $screenshot_folder/$fv_name
+            -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name
     end
 
     if string match -q "*$audio_button), value 1" "$line"
