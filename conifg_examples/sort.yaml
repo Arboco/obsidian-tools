@@ -1,6 +1,7 @@
 
 art:art 
 linux:linux 
+vim:linux/vim
 character:writing/characters 
 scenario:writing/scenario
 writing:writing
@@ -11,7 +12,10 @@ org:org
 misc:misc 
 anime:anime_db
 manga:anime_db
+
+weg:game_db/weg
 game:game_db
+
 gamedev:dev/gamedev
 book:book_db
 productivity:org/productivity
@@ -23,5 +27,6 @@ idea:dev/ideas
 japanese:japanese
 mindpalace:mindpalace
 computer:computer
+godot:godot
 article:articles
-weg:game_db/weg
+obsidian:obsidian

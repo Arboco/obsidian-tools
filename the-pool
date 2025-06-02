@@ -1,33 +1,70 @@
 #! /usr/bin/env fish
 
-set obsidian_folder (ot_config_grab "ObsidianMainFolder")
-set notes (ot_config_grab "NotesFolder")
+function help_function
+    echo "By default selection from all pool files."
 
-set term_one (rg -l "  - pool" $obsidian_folder)
+    echo "Options:"
+    echo "  -h       help"
+    echo "  -t       Filter selection based on a tag"
+    echo "  -i       History, selection decending from the most recent file"
+    echo "  -r       Random selection. Works with -t"
+    echo "  -u       Select unrated files. Works with -t and/or -r"
+end
+
+argparse --name=pool t/tag i/history r/random u/unrated h/help 'n/name=' -- $argv
+or return
 
 set script_dir (realpath (status dirname))
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set default_pool_array (rg -l "\- pool" $obsidian_folder)
 
-set pool_categories (ot_config_grab "PoolCategories")
-set pool_categories (string split "|" $pool_categories)
-set chosen_category (gum choose $pool_categories)
-set selection (gum choose "Select" "History" "Algorithm" "Unrated" "Random")
-
-if string match -q History $selection
-    set pool_history (cat $HOME/.config/ortscripts/pool-history)
-    set filterd_history (rg -l "$chosen_category" $pool_history)
-    set target_md (gum choose $filterd_history)
+if set -q _flag_h
+    help_function
+    exit
 end
 
-if string match -q Select $selection
-    set tag_selection (rg -l "  - $chosen_category" $term_one)
-    set target_md (gum choose $tag_selection)
+if set -q _flag_t
+    set chosen_tag (rg -o --no-filename "  - .*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
+    set multi_flag_check 0
 end
 
-if string match -q Random $selection
-    set tag_selection (rg -l "  - $chosen_category" $term_one)
-    set array_length (count $tag_selection)
+if set -q _flag_i
+    set target_md (gum choose (cat $HOME/.config/ortscripts/pool-history))
+end
+
+if set -q _flag_r
+    if set -q _flag_t
+        set multi_flag_check 1
+        set default_pool_array (rg -l "\- $chosen_tag" $default_pool_array)
+    end
+    set array_length (count $default_pool_array)
     set random_selection (random 1 $array_length)
-    set target_md $tag_selection[$random_selection]
+    set target_md $default_pool_array[$random_selection]
+end
+
+if set -q _flag_u
+    if set -q _flag_t
+        set multi_flag_check 1
+        set default_pool_array (rg -l "\- $chosen_tag" $default_pool_array)
+    end
+
+    if set -q _flag_r
+        set default_pool_array (grep -L "session:" $default_pool_array)
+        set array_length (count $default_pool_array)
+        set random_selection (random 1 $array_length)
+        set target_md $default_pool_array[$random_selection]
+    else
+        set target_md (grep -L "session:" $default_pool_array | fzf)
+    end
+end
+
+if test $multi_flag_check -eq 0
+    set target_md (rg -l "\- $chosen_tag" $default_pool_array | fzf)
+end
+
+if test -z "$target_md"
+    set target_md (rg -l "\- pool" $obsidian_folder | fzf)
 end
 
 set base_name (basename $target_md)

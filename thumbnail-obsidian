@@ -11,7 +11,7 @@ set final_folder "$obsidian_main/$resource_folder/thumbnail"
 set pool_folder (ot_config_grab "ThePoolFolder")
 set screenshot_folder $obsidian_main/$resource_folder/$pool_folder
 
-set last_active_file (find $obsidian_main/$notes_folder/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+set last_active_file (find $obsidian_main/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
 
 set sanitized_name (basename $last_active_file | sed 's/[^a-zA-Z0-9 ]//g; s/.md//g; s/ /-/g' | tr '[:upper:]' '[:lower:]')
 

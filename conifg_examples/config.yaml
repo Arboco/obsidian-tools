@@ -22,7 +22,6 @@ PoolSelectScreenshotButton: KEY_DELETE
 PoolRecordButton: KEY_INSERT
 PoolAudioButton: KEY_HOME
 PoolEscapeButton: KEY_BACKSPACE
-PoolCategories: art|godot|computer|linux|gamedev
 
 
 # Profile 1 flag -v 
