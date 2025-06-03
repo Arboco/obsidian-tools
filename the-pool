@@ -237,6 +237,21 @@ if grep -q 'parent:' $target_md
         sed -i "/^tags:/i\\child:" "$parent_md"
         sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
     end
+
+    if grep -q "```dataview" $parent_md
+    else
+        set input_file $parent_md
+        set insert_file $HOME/.config/ortscripts/pool-parent-insert
+
+        set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+        set after_line (math $last_delim_line + 1)
+
+        head -n $last_delim_line $input_file >/tmp/temp_before.txt
+        tail -n +$after_line $input_file >/tmp/temp_after.txt
+        cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+        mv /tmp/temp_combined.txt $input_file
+    end
 end
 
 rm /tmp/the-pool.txt
