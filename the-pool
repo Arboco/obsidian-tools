@@ -120,8 +120,9 @@ kill $(jobs -p)
 
 set end (date +%s)
 set cur_date (date +%d.%m.%y)
-set result (math $end - $start)
-set result_minutes (math round $result / 60)
+set result_time (math $end - $start)
+set result_minutes (math round $result_time / 60)
+echo "result: $result_time"
 
 if test $user_value -gt 0
     if grep -q 'session:' $target_md
@@ -137,13 +138,13 @@ if test $user_value -gt 0
 
     if grep -q 'time:' $target_md
         cp $target_md /tmp/clone.md
-        awk -v var="$result" '/playtime/ { 
+        awk -v var="$result_time" '/time/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$target_md
     else
-        sed -i "/^session:/i\\time: $result" "$target_md"
+        sed -i "/^session:/i\\time: $result_time" "$target_md"
     end
 end
 
@@ -163,5 +164,79 @@ if grep -q 'date:' $target_md
 end
 sed -i "/^tags:/i\\date: $date_last" "$target_md"
 sed -i "/^# Session $session_number/a\\>[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
+
+# parent child functionality 
+if grep -q 'parent:' $target_md
+    set parent_title (grep -oP "(?<=parent: \"\[\[)[^\]]*" "$target_md")
+    echo $parent_title
+    set parent_md (find $obsidian_folder -type f -name "$parent_title.md")
+    echo $parent_md
+    set clean_target_name (basename -s ".md" $target_md)
+    echo $clean_target_name
+
+    set sesssion_child (grep -oP "(?<=session: ).*" $target_md)
+    set time_child (grep -oP "(?<=time: ).*" $target_md)
+
+    echo "TImechild $time_child"
+
+    if grep -q "[[$clean_target_name]]" $parent_md
+        if grep -q 'session:' $parent_md
+            cp $parent_md /tmp/clone.md
+            awk '/session/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
+    } 
+    } { print }' /tmp/clone.md >$parent_md
+        else
+            sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
+        end
+
+        if grep -q 'time:' $parent_md
+            cp $parent_md /tmp/clone.md
+            awk -v var="$result_time" '/time/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+    } { print }' /tmp/clone.md >$parent_md
+        else
+            sed -i "/^session:/i\\time: $result_time" "$parent_md"
+        end
+
+    else
+
+        if grep -q 'session:' $parent_md
+            cp $parent_md /tmp/clone.md
+            awk -v var="$sesssion_child" '/session/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+    } { print }' /tmp/clone.md >$parent_md
+        else
+            sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
+        end
+
+        if grep -q 'time:' $parent_md
+            cp $parent_md /tmp/clone.md
+            awk -v var="$time_child" '/time/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+    } { print }' /tmp/clone.md >$parent_md
+        else
+            sed -i "/^session:/i\\time: $time_child" "$parent_md"
+        end
+
+    end
+
+    if grep -q 'child:' $parent_md
+        if grep -q "[[$clean_target_name]]" $parent_md
+        else
+            sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
+        end
+    else
+        sed -i "/^tags:/i\\child:" "$parent_md"
+        sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
+    end
+end
 
 rm /tmp/the-pool.txt
