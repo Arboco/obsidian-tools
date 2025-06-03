@@ -6,19 +6,23 @@ function help_function
     echo "Options:"
     echo "  -h       help"
     echo "  -t       Filter selection based on a tag"
+    echo "  -d       Filter selection based on two tags"
     echo "  -i       History, selection decending from the most recent file"
-    echo "  -r       Random selection. Works with -t"
-    echo "  -u       Select unrated files. Works with -t and/or -r"
+    echo "  -r       Random selection. Works with -t and -d"
+    echo "  -u       Select unrated files. Works with -t, -d and/or -r"
     echo "  -b       100 Value (bookmarked)"
+    echo "  -o       Filter selection based on origin"
+    echo "  -p       Filter selection based on parent"
 end
 
-argparse --name=pool t/tag i/history r/random u/unrated b/bookmark h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double i/history r/random u/unrated b/bookmark o/origin p/parent h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set default_pool_array (rg -l "^  - pool\$" $obsidian_folder)
+set multi_flag_check 1
 
 if set -q _flag_h
     help_function
@@ -28,6 +32,23 @@ end
 if set -q _flag_t
     set chosen_tag (rg -o --no-filename "^  - .*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
     set multi_flag_check 0
+end
+
+if set -q _flag_d
+    set chosen_tag (rg -o --no-filename "^  - [a-z]*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
+    set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
+    set chosen_tag (rg -o --no-filename "^  - [a-z]*" $filtered_pool | sed 's/[ -]//g' | sort -u | fzf)
+    set multi_flag_check 0
+end
+
+if set -q _flag_o
+    set chosen_tag (rg -oP --no-filename "(?<=origin: ).*" $default_pool_array | sort -u | fzf)
+    set target_md (rg -l "origin: $chosen_tag" $default_pool_array | fzf)
+end
+
+if set -q _flag_p
+    set chosen_tag (rg -oP --no-filename "(?<=parent: \"\[\[)[^\]]*" $default_pool_array | sort -u | fzf)
+    set target_md (rg -l "parent: \"\[\[$chosen_tag" $default_pool_array | fzf)
 end
 
 if set -q _flag_i
@@ -100,7 +121,7 @@ xset s off
 xset -dpms
 $script_dir/scripts/pool-record_input.fish $uuid &
 
-obsidian "obsidian://$target_md" >/dev/null 2>&1
+obsidian "obsidian://$target_md" >/dev/null 2>&1 &
 set start (date +%s)
 
 echo "From 0-100 describe the value of this subject:"
@@ -122,7 +143,6 @@ set end (date +%s)
 set cur_date (date +%d.%m.%y)
 set result_time (math $end - $start)
 set result_minutes (math round $result_time / 60)
-echo "result: $result_time"
 
 if test $user_value -gt 0
     if grep -q 'session:' $target_md
@@ -163,83 +183,79 @@ if grep -q 'date:' $target_md
     sed -i '/date:/d' "$target_md"
 end
 sed -i "/^tags:/i\\date: $date_last" "$target_md"
-sed -i "/^# Session $session_number/a\\>[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
+sed -i "/^# Session $session_number/a\\ >[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
 
 # parent child functionality 
 if grep -q 'parent:' $target_md
     set parent_title (grep -oP "(?<=parent: \"\[\[)[^\]]*" "$target_md")
-    echo $parent_title
     set parent_md (find $obsidian_folder -type f -name "$parent_title.md")
-    echo $parent_md
     set clean_target_name (basename -s ".md" $target_md)
-    echo $clean_target_name
 
     set sesssion_child (grep -oP "(?<=session: ).*" $target_md)
     set time_child (grep -oP "(?<=time: ).*" $target_md)
 
-    echo "TImechild $time_child"
-
-    if grep -q "[[$clean_target_name]]" $parent_md
-        if grep -q 'session:' $parent_md
-            cp $parent_md /tmp/clone.md
-            awk '/session/ { 
+    if test $user_value -gt 0
+        if grep -q "[[$clean_target_name]]" $parent_md
+            if grep -q 'session:' $parent_md
+                cp $parent_md /tmp/clone.md
+                awk '/session/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + 1; 
     } 
     } { print }' /tmp/clone.md >$parent_md
-        else
-            sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
-        end
+            else
+                sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
+            end
 
-        if grep -q 'time:' $parent_md
-            cp $parent_md /tmp/clone.md
-            awk -v var="$result_time" '/time/ { 
+            if grep -q 'time:' $parent_md
+                cp $parent_md /tmp/clone.md
+                awk -v var="$result_time" '/time/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$parent_md
+            else
+                sed -i "/^session:/i\\time: $result_time" "$parent_md"
+            end
+
         else
-            sed -i "/^session:/i\\time: $result_time" "$parent_md"
-        end
 
-    else
-
-        if grep -q 'session:' $parent_md
-            cp $parent_md /tmp/clone.md
-            awk -v var="$sesssion_child" '/session/ { 
+            if grep -q 'session:' $parent_md
+                cp $parent_md /tmp/clone.md
+                awk -v var="$sesssion_child" '/session/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$parent_md
-        else
-            sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
-        end
+            else
+                sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
+            end
 
-        if grep -q 'time:' $parent_md
-            cp $parent_md /tmp/clone.md
-            awk -v var="$time_child" '/time/ { 
+            if grep -q 'time:' $parent_md
+                cp $parent_md /tmp/clone.md
+                awk -v var="$time_child" '/time/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
     } { print }' /tmp/clone.md >$parent_md
-        else
-            sed -i "/^session:/i\\time: $time_child" "$parent_md"
+            else
+                sed -i "/^session:/i\\time: $time_child" "$parent_md"
+            end
         end
 
-    end
-
-    if grep -q 'child:' $parent_md
-        if grep -q "[[$clean_target_name]]" $parent_md
+        if grep -q 'child:' $parent_md
+            if grep -q "\[\[$clean_target_name\]\]" $parent_md
+                echo "Clean: $clean_target_name"
+            else
+                sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
+            end
         else
+            sed -i "/^tags:/i\\child:" "$parent_md"
             sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
         end
-    else
-        sed -i "/^tags:/i\\child:" "$parent_md"
-        sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
     end
 
-    if grep -q "```dataview" $parent_md
-    else
+    if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/pool-parent-insert
         set input_file $parent_md
         set insert_file $HOME/.config/ortscripts/pool-parent-insert
 
