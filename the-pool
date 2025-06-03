@@ -9,15 +9,16 @@ function help_function
     echo "  -i       History, selection decending from the most recent file"
     echo "  -r       Random selection. Works with -t"
     echo "  -u       Select unrated files. Works with -t and/or -r"
+    echo "  -b       100 Value (bookmarked)"
 end
 
-argparse --name=pool t/tag i/history r/random u/unrated h/help 'n/name=' -- $argv
+argparse --name=pool t/tag i/history r/random u/unrated b/bookmark h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "\- pool" $obsidian_folder)
+set default_pool_array (rg -l "^  - pool\$" $obsidian_folder)
 
 if set -q _flag_h
     help_function
@@ -25,7 +26,7 @@ if set -q _flag_h
 end
 
 if set -q _flag_t
-    set chosen_tag (rg -o --no-filename "  - .*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
+    set chosen_tag (rg -o --no-filename "^  - .*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
     set multi_flag_check 0
 end
 
@@ -57,6 +58,10 @@ if set -q _flag_u
     else
         set target_md (grep -L "session:" $default_pool_array | fzf)
     end
+end
+
+if set -q _flag_b
+    set target_md (grep -l "value: 100" $default_pool_array | fzf)
 end
 
 if test $multi_flag_check -eq 0

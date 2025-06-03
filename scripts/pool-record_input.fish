@@ -51,7 +51,7 @@ evtest $devinput | while read line
         set fs_name "$folder_title-$timestamp.jpg"
         scrot -s $screenshot_folder/$fs_name
 
-        if grep "cover-img:" $note_file
+        if grep -q "cover-img:" $note_file
             echo -e "![[$fs_name]]\n" >>"$note_file"
         else
             sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$note_file"
@@ -83,7 +83,7 @@ evtest $devinput | while read line
             -f x11grab -draw_mouse 0 \
             -video_size "$WIDTH"x"$HEIGHT" \
             -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
-            -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name
+            -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name >/dev/null 2>&1
     end
 
     if string match -q "*$audio_button), value 1" "$line"
@@ -100,6 +100,6 @@ evtest $devinput | while read line
             -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
             -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
-            -ac 2 -ar 44100 -b:a 192k $screenshot_folder/$fv_name
+            -ac 2 -ar 44100 -b:a 192k $screenshot_folder/$fv_name >/dev/null 2>&1
     end
 end
