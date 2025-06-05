@@ -1,54 +1,145 @@
 #! /usr/bin/env fish
 
+function help_function
+    echo "Options:"
+    echo "  -p       Create parent note"
+    echo "  -c       Create child note"
+    echo "  -e       Create extra property"
+end
+
+argparse --name=theidea p/parent c/child e/extra h/help d/debug 'n/name=' -- $argv
+or return
+
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 
 set config_path $HOME/.config/ortscripts/the-idea.json
-set protocol (jq '.[]' $config_path | jq '.protocol' | fzf)
+set protocol (jq -r ".[] | .protocol" $config_path | fzf)
+set protocol "\"$protocol\""
 set folder (jq -r ".[] | select(.protocol == $protocol) | .folder" $config_path)
 set tags (jq -r ".[] | select(.protocol == $protocol) | .tags[]" $config_path)
-set properties (jq -r ".[] | select(.protocol == $protocol) | .properties[]" $config_path)
 
-set title (gum input --placeholder "Title")
-set final_path "$obsidian_folder/$notes/$folder/$title.md"
-
-echo --- >>$final_path
-echo "tags:" >>$final_path
-for i in $tags
-    echo "  - $i" >>$final_path
+if set -q _flag_h
+    help_function
+    exit
 end
 
-for i in $properties
-    echo "$i:" >>$final_path
-    set check
-    while not string match 0 $check
-        set check (gum input --placeholder $i)
-        if not string match 0 $check
-            echo "  - $check" >>$final_path
+set debug 0
+if set -q _flag_d
+    set debug 1
+end
+
+if set -q _flag_e
+    set extra (gum choose --limit 1 "list" "number" "text")
+    set extra_property (gum input --placeholder "Extra Property")
+end
+
+if set -q _flag_c
+    set parent_md (rg -l "^  - parent\$" $obsidian_folder | fzf)
+    set base_parent $(basename -s ".md" $parent_md)
+end
+
+set title (gum input --placeholder "Title")
+set temp_path "$HOME/Documents/$title.md"
+
+echo --- >>$temp_path
+echo "tags:" >>$temp_path
+for i in $tags
+    echo "  - $i" >>$temp_path
+end
+if set -q _flag_p
+    echo "  - parent" >>$temp_path
+end
+
+set list_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("list")')
+if $list_exists
+    set list (jq -r ".[] | select(.protocol == $protocol) | .list[]" $config_path)
+    for i in $list
+        echo "$i:" >>$temp_path
+        set check
+        while not string match 0 $check
+            set check (gum input --placeholder $i)
+            if not string match 0 $check
+                echo "  - $check" >>$temp_path
+            end
         end
     end
+end
+
+set check_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("check")')
+if $check_exists
+    echo "check_true:" >>$temp_path
+    set all_list (jq -r ".[] | select(.protocol == $protocol) | .check[]" $config_path)
+    set true_list (gum choose --no-limit $all_list)
+    for i in $true_list
+        echo "  - $i" >>$temp_path
+    end
+    echo "check_all:" >>$temp_path
+    for i in $all_list
+        echo "  - $i" >>$temp_path
+    end
+end
+
+set text_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("text")')
+if $text_exists; and not set _flag_c
+    set text (jq -r ".[] | select(.protocol == $protocol) | .text[]" $config_path)
+    for i in $text
+        echo "$i: $(gum input --placeholder $i)" >>$temp_path
+    end
+
 end
 
 set number_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("number")')
 if $number_exists
-    set number_property (jq -r ".[] | select(.protocol == $protocol) | .number" $config_path)
-    echo "$number_property: $(gum input --placeholder $number_property)" >>$final_path
+    set number (jq -r ".[] | select(.protocol == $protocol) | .number[]" $config_path)
+    for i in $number
+        echo "$i: $(gum input --placeholder $i)" >>$temp_path
+    end
+
 end
-echo --- >>$final_path
-echo "" >>$final_path
-echo "# Core" >>$final_path
-echo $(gum input --placeholder "Core Text") >>$final_path
-echo "" >>$final_path
+
+if set -q _flag_c
+    echo "parent: \"[[$base_parent]]\"" >>$temp_path
+end
+
+if not test -z $extra
+    if string match list $extra
+        echo "$extra_property:" >>$temp_path
+        set check
+        while not string match 0 $check
+            set check (gum input --placeholder $extra)
+            if not string match 0 $check
+                echo "  - $check" >>$temp_path
+            end
+        end
+    else if string match number $extra
+        echo "$extra_property: $(gum input --placeholder $extra_property)" >>$temp_path
+    else if string match text $extra
+        echo "$extra_property: $(gum input --placeholder $extra_property)" >>$temp_path
+    end
+end
+
+echo --- >>$temp_path
+echo "" >>$temp_path
+echo $(gum input --placeholder "Core Text") >>$temp_path
+echo "" >>$temp_path
 
 set check 1
-while not string match 0 $check
+while not string match "" $check
     set check (gum input --placeholder "Brainstorming")
-    if not string match 0 $check
-        if grep -q "# Brainstorming" $final_path
+    if not string match "" $check
+        if grep -q "# Brainstorming" $temp_path
         else
-            echo "# Brainstorming" >>$final_path
+            echo "# Brainstorming" >>$temp_path
         end
-        echo "- $check" >>$final_path
+        echo "- $check" >>$temp_path
     end
+end
+
+if test $debug -eq 1
+else
+    mv $temp_path "$obsidian_folder/$notes/$folder/$title.md"
+    sleep 1
+    touch "$obsidian_folder/$notes/$folder/$title.md"
 end
