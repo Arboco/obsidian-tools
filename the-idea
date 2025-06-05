@@ -1,41 +1,12 @@
 #! /usr/bin/env fish
 
-function help_function
-    echo "By default selection from all pool files."
-
-    echo "Options:"
-    echo "  -h       help"
-    echo "  -t       Filter selection based on a tag"
-    echo "  -d       Filter selection based on two tags"
-    echo "  -i       History, selection decending from the most recent file"
-    echo "  -r       Random selection. Works with -t and -d"
-    echo "  -u       Select unrated files. Works with -t, -d and/or -r"
-    echo "  -b       100 Value (bookmarked)"
-    echo "  -o       Filter selection based on origin"
-    echo "  -p       Filter selection based on parent"
-end
-
-argparse --name=pool t/tag d/double i/history r/random u/unrated b/bookmark o/origin p/parent h/help 'n/name=' -- $argv
-or return
-
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "^  - pool\$" $obsidian_folder)
-set multi_flag_check 1
 
-if set -q _flag_h
-    help_function
-    exit
-end
-
-set config_path $HOME/.config/ortscripts/the-question.json
+set config_path $HOME/.config/ortscripts/the-idea.json
 set protocol (jq '.[]' $config_path | jq '.protocol' | fzf)
-echo "$protocol"
 set folder (jq -r ".[] | select(.protocol == $protocol) | .folder" $config_path)
-echo "$folder"
-#set tags (jq -r '.[].tags[]' $config_path)
-#set properties (jq -r '.[].properties[]' $config_path)
 set tags (jq -r ".[] | select(.protocol == $protocol) | .tags[]" $config_path)
 set properties (jq -r ".[] | select(.protocol == $protocol) | .properties[]" $config_path)
 
@@ -59,7 +30,8 @@ for i in $properties
     end
 end
 
-if jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("number")'
+set number_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("number")')
+if $number_exists
     set number_property (jq -r ".[] | select(.protocol == $protocol) | .number" $config_path)
     echo "$number_property: $(gum input --placeholder $number_property)" >>$final_path
 end
