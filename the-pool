@@ -21,7 +21,7 @@ or return
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "^  - pool\$" $obsidian_folder)
+set default_pool_array (rg -l "^  - pool\$" $obsidian_folder/$notes)
 set multi_flag_check 1
 
 if set -q _flag_h
@@ -30,12 +30,12 @@ if set -q _flag_h
 end
 
 if set -q _flag_t
-    set chosen_tag (rg -o --no-filename "^  - .*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
+    set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
     set multi_flag_check 0
 end
 
 if set -q _flag_d
-    set chosen_tag (rg -o --no-filename "^  - [a-z]*" $default_pool_array | sed 's/[ -]//g' | sort -u | fzf)
+    set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
     set chosen_tag (rg -o --no-filename "^  - [a-z]*" $filtered_pool | sed 's/[ -]//g' | sort -u | fzf)
     set multi_flag_check 0
@@ -90,7 +90,7 @@ if test $multi_flag_check -eq 0
 end
 
 if test -z "$target_md"
-    set target_md (rg -l "\- pool" $obsidian_folder | fzf)
+    set target_md (rg -l "\- pool" $obsidian_folder/$notes | fzf)
 end
 
 set base_name (basename $target_md)
@@ -189,7 +189,7 @@ sed -i "/^# Session $session_number/a\\ >[!info] Learned: $result_minutes minute
 # parent child functionality 
 if grep -q 'parent:' $target_md
     set parent_title (grep -oP "(?<=parent: \"\[\[)[^\]]*" "$target_md")
-    set parent_md (find $obsidian_folder -type f -name "$parent_title.md")
+    set parent_md (find $obsidian_folder/$notes -type f -name "$parent_title.md")
     set clean_target_name (basename -s ".md" $target_md)
 
     set sesssion_child (grep -oP "(?<=session: ).*" $target_md)
@@ -257,6 +257,10 @@ if grep -q 'parent:' $target_md
     end
 
     if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/pool-parent-insert
+        sed -i "/^tags:/i\\cssclasses:" "$parent_md"
+        sed -i "/^cssclasses:/a\\  - cards" "$parent_md"
+        sed -i "/^cssclasses:/a\\  - cards-16-9" "$parent_md"
+        sed -i "/^cssclasses:/a\\  - table-max" "$parent_md"
         set input_file $parent_md
         set insert_file $HOME/.config/ortscripts/pool-parent-insert
 

@@ -11,9 +11,10 @@ function help_function
     echo "  -r       Create something to #research"
     echo "  -l       Create #highlight"
     echo "  -q       Create quote"
+    echo "  -s       Add newline after quote"
 end
 
-argparse --name=gn h/help t/task r/research q/question l/highlight 'n/name=' -- $argv
+argparse --name=gn h/help t/task r/research q/question s/space l/highlight 'n/name=' -- $argv
 or return
 
 if set -q _flag_h
@@ -57,6 +58,10 @@ if set -q _flag_q
             echo -n | xclip -selection clipboard
             set -e highlight
             echo "Insert Quote"
+
+            if set -q _flag_s
+                echo "" >>$obsidian_file
+            end
         end
         sleep 1
     end

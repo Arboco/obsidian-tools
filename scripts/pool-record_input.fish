@@ -68,7 +68,7 @@ evtest $devinput | while read line
         echo -e "![[$fv_name]]\n" >>"$note_file"
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
-        $script_dir/input-ffmpeg-escaper.fish 1 &
+        $script_dir/pool-escaper.fish 1 &
 
         # required to grab active window data so that in windowed mode only the game is captured 
         for line in (xdotool getactivewindow getwindowgeometry --shell)
@@ -94,7 +94,7 @@ evtest $devinput | while read line
         echo -e "![[$fv_name]]\n" >>"$note_file"
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
-        $script_dir/input-ffmpeg-escaper.fish 1 &
+        $script_dir/pool-escaper.fish 1 &
 
         ffmpeg \
             -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
