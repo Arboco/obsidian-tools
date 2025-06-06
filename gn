@@ -1,7 +1,7 @@
 #! /usr/bin/env fish 
 
 # gameinit creates this file on launch 
-set obsidian_file (cat /tmp/obsidian-game.txt)
+set obsidian_file (cat /tmp/obsidian_last.txt)
 
 function help_function
     echo -e "Usage: gn \"message\""
@@ -10,7 +10,7 @@ function help_function
     echo "  -t       Create genereic #task"
     echo "  -r       Create something to #research"
     echo "  -l       Create #highlight"
-    echo "  -q       Create #question"
+    echo "  -q       Create quote"
 end
 
 argparse --name=gn h/help t/task r/research q/question l/highlight 'n/name=' -- $argv
@@ -37,8 +37,30 @@ if set -q _flag_l
 end
 
 if set -q _flag_q
-    echo -e "- [ ] #question $argv[1]\n" >>$obsidian_file
-    exit
+    set raw_quote
+    set highlight
+    echo -n | xclip -selection clipboard
+    echo "Insert Quote"
+    while true
+        set clipboard (xclip -o -selection clipboard)
+        if not test -z $clipboard
+            set raw_quote (echo $clipboard)
+            echo -n | xclip -selection clipboard
+            echo "Insert Highlight"
+            while test -z $highlight
+                set highlight (xclip -o -selection clipboard)
+                sleep 1
+            end
+            set format_quote (echo $raw_quote | sed "s/$highlight/==$highlight==/g")
+            echo "" >>$obsidian_file
+            echo ">[!quote] $format_quote" >>$obsidian_file
+            echo -n | xclip -selection clipboard
+            set -e highlight
+            echo "Insert Quote"
+        end
+        sleep 1
+    end
 end
 
-echo -e "$argv[1]\n" >>$obsidian_file
+echo "" >>$obsidian_file
+echo "$argv[1]" >>$obsidian_file

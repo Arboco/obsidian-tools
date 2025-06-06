@@ -98,7 +98,7 @@ else
     sed -i "/^launch:/a\\playtime: 0" $a_path
 end
 
-echo $a_path >/tmp/obsidian-game.txt
+echo $a_path >/tmp/obsidian_last.txt
 
 # launching the game, every command after this will only trigger once the game closes
 set -x WINEDEBUG -all

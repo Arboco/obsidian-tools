@@ -1,6 +1,6 @@
 #! /usr/bin/env fish
 
-argparse --name=gameinit p/pool h/help 'n/name=' -- $argv
+argparse --name=gameinit p/pool h/help l/last 'n/name=' -- $argv
 or return
 
 set obsidian_main (ot_config_grab "ObsidianMainFolder")
@@ -11,9 +11,13 @@ set final_folder "$obsidian_main/$resource_folder/thumbnail"
 set pool_folder (ot_config_grab "ThePoolFolder")
 set screenshot_folder $obsidian_main/$resource_folder/$pool_folder
 
-set last_active_file (find $obsidian_main/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+set last_active_file (cat /tmp/the-idea)
 
 set sanitized_name (basename $last_active_file | sed 's/[^a-zA-Z0-9 ]//g; s/.md//g; s/ /-/g' | tr '[:upper:]' '[:lower:]')
+
+if set -q _flag_l
+    set last_active_file (find $obsidian_main/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+end
 
 if set -q _flag_p
     if grep -q 'uuid:' $last_active_file

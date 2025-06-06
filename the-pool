@@ -120,6 +120,7 @@ echo "" >>$target_md
 xset s off
 xset -dpms
 $script_dir/scripts/pool-record_input.fish $uuid &
+echo $target_md >/tmp/obsidian_last.txt
 
 obsidian "obsidian://$target_md" >/dev/null 2>&1 &
 set start (date +%s)

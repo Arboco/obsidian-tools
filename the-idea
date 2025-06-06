@@ -82,7 +82,7 @@ if $check_exists
 end
 
 set text_exists (jq ".[] | select(.protocol == $protocol)" $config_path | jq 'has("text")')
-if $text_exists; and not set _flag_c
+if $text_exists; and not set -q _flag_c
     set text (jq -r ".[] | select(.protocol == $protocol) | .text[]" $config_path)
     for i in $text
         echo "$i: $(gum input --placeholder $i)" >>$temp_path
@@ -139,7 +139,6 @@ end
 
 if test $debug -eq 1
 else
+    echo "$obsidian_folder/$notes/$folder/$title.md" >/tmp/the-idea
     mv $temp_path "$obsidian_folder/$notes/$folder/$title.md"
-    sleep 1
-    touch "$obsidian_folder/$notes/$folder/$title.md"
 end
