@@ -1,0 +1,31 @@
+[
+  { "protocol": "Female Character",
+    "folder": "writing/characters",
+    "tags": ["female", "character", "original"],
+    "list": ["traits"]
+  },
+
+  { "protocol": "Idea",
+    "folder": "idea",
+    "tags": ["idea"]
+  },
+
+  { "protocol": "Artist",
+    "folder": "art/artist",
+    "tags": ["art", "artist"],
+    "list": ["specification"],
+    "check": ["nsfw", "creative", "original", "quality"]
+  },
+
+  { "protocol": "Art - The Pool",
+    "folder": "art",
+    "text": ["origin"],
+    "tags": ["art", "pool"]
+  },
+
+  { "protocol": "Godot - The Pool",
+    "folder": "godot",
+    "text": ["origin"],
+    "tags": ["godot", "pool"]
+  }
+]

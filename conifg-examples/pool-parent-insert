@@ -1,0 +1,20 @@
+
+```dataview
+table without id
+	embed(link(meta(cover-img).path, "100")),
+	file.link,
+	"Value: " + value,
+	"Sessions: " + session,
+		choice(trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) >= 30,
+	"<span style='color: red;'>" + trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) + " days</span>",
+		choice(trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) >= 14,
+			"<span style='color: yellow;'>" + trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) + "days </span>",
+			choice(trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000)> 7,
+				"<span style='color: greenyellow;'>" + trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) + "days </span>",
+				"<span style='color: lime;'>" + trunc((number(dateformat(date(now),"x")) - number(dateformat(date,"x"))) / 60 / 60 / 24 / 1000) + " days </span>"
+				  )
+			  ) 
+		   )
+Where contains(parent, this.file.link)
+Sort file.link DESC
+```
