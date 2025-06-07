@@ -82,9 +82,9 @@ evtest $devinput | while read line
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
             -f x11grab -draw_mouse 0 \
             -video_size "$WIDTH"x"$HEIGHT" \
-            -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
+            -thread_queue_size 1024 -f x11grab -framerate 60 -i :0.0+$X,$Y \
             -vf "crop=$crop" \
-            -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name
+            -c:v libx264 -preset ultrafast -vsync 1 -c:a aac $screenshot_folder/$fv_name
     end
 
     if string match -q "*$audio_button), value 1" "$line"
