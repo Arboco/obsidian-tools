@@ -196,7 +196,7 @@ if grep -q 'parent:' $target_md
     set time_child (grep -oP "(?<=time: ).*" $target_md)
 
     if test $user_value -gt 0
-        if grep -q "[[$clean_target_name]]" $parent_md
+        if grep -q "\[\[$clean_target_name\]\]" $parent_md
             if grep -q 'session:' $parent_md
                 cp $parent_md /tmp/clone.md
                 awk '/session/ { 
@@ -216,7 +216,7 @@ if grep -q 'parent:' $target_md
     } 
     } { print }' /tmp/clone.md >$parent_md
             else
-                sed -i "/^session:/i\\time: $result_time" "$parent_md"
+                sed -i "/^session:/i\\time: $time_child" "$parent_md"
             end
 
         else
