@@ -123,6 +123,11 @@ $script_dir/scripts/pool-record_input.fish $uuid &
 echo $target_md >/tmp/obsidian_last.txt
 
 obsidian "obsidian://$target_md" >/dev/null 2>&1 &
+if grep 'launch:' $target_md
+    set tar_launch (grep -oP '(?<=launch: ).*' $target_md)
+    eval "nohup $tar_launch &"
+end
+
 set start (date +%s)
 
 echo "From 0-100 describe the value of this subject:"
