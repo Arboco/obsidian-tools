@@ -2,10 +2,29 @@
 
 function help_function
     echo "By default selection from all pool files."
-
     echo "Options:"
     echo "  -h       help"
     echo "  -p       Include questions and reminders from the parent"
+end
+
+function icat_half
+    set image $argv[1]
+
+    if not test -f "$image"
+        echo "Error: File not found: $image"
+        return 1
+    end
+
+    set rows (tput lines)
+    set row_height_px 18
+    set max_height (math "$rows * $row_height_px / 2")
+
+    set tmpimg (mktemp --suffix=.png)
+    magick "$image" -resize x$max_height\> "$tmpimg"
+
+    kitty +kitten icat "$tmpimg"
+    sleep 0.3
+    rm $tmpimg
 end
 
 argparse --name=pool t/tag d/double i/history r/random u/unrated b/bookmark o/origin p/parent h/help 'n/name=' -- $argv
@@ -13,6 +32,7 @@ or return
 
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_file (cat /tmp/obsidian_last.txt)
 set filtered_pool $obsidian_file
@@ -52,22 +72,34 @@ set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_p
 clear
 
 for i in $question_array
-    echo "$i" | glow
+
+    if string match Question $choice
+        echo "$i" | glow
+    end
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
-    gum input --placeholder "Press Enter to continue..."
-    clear
+    if string match Question $choice
+        gum input --placeholder "Press Enter to continue..."
+        clear
+    end
     awk -v search="$trimmed" '
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
-                              ' $target_md | glow
+                              ' $target_md | tee /tmp/img_treasure | glow
+    set img_array (cat /tmp/img_treasure | grep -oP "(?<=!\[\[)[^\]]*")
+    for img in $img_array
+        echo $img
+        set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
+        icat_half $img_path
+    end
+
     echo ""
     if not echo $i | rg -qP '`'
 
-        set user_input (gum input --placeholder "1 - Correct | 2 - False | 0 - Exit | s - Star | r - Revise")
+        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
         if string match 0 $user_input
@@ -85,7 +117,7 @@ for i in $question_array
             clear
         end
     else
-        set user_input (gum input --placeholder "1 - Correct | 2 - False | 0 - Exit | s - Star | r - Revise")
+        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise")
         set old_date (echo $i | grep -o "`.*`")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
         if string match 0 $user_input
@@ -105,5 +137,8 @@ for i in $question_array
             clear
         end
     end
+
     set -e target_md
 end
+
+rm /tmp/img_treasure

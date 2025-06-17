@@ -189,7 +189,7 @@ if grep -q 'date:' $target_md
     sed -i '/date:/d' "$target_md"
 end
 sed -i "/^tags:/i\\date: $date_last" "$target_md"
-sed -i "/^# Session $session_number/a\\ >[!info] Learned: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
+sed -i "/^# Session $session_number/a\\ >[!info] Invested: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
 
 # parent child functionality 
 if grep -q 'parent:' $target_md
