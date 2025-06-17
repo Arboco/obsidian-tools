@@ -9,7 +9,7 @@ function help_function
     echo "  -m       Generic message"
     echo "  -t       Create genereic #task"
     echo "  -r       Create something to #research"
-    echo "  -l       Create #highlight"
+    echo "  -l       Create link"
     echo "  -q       Create quote"
     echo "  -s       Add newline after quote"
     echo "  -d       Create message to delete"

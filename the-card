@@ -5,6 +5,8 @@ function help_function
     echo "Options:"
     echo "  -h       help"
     echo "  -p       Include questions and reminders from the parent"
+    echo "  -t       All Q&R from a particular tag"
+    echo "  -d       All Q&R from two combined tags"
 end
 
 function icat_half
@@ -37,6 +39,9 @@ set notes (ot_config_grab "NotesFolder")
 set obsidian_file (cat /tmp/obsidian_last.txt)
 set filtered_pool $obsidian_file
 
+set default_pool_array (rg -l "^  - pool\$" $obsidian_folder/$notes)
+set multi_flag_check 1
+
 if set -q _flag_h
     help_function
     exit
@@ -46,6 +51,18 @@ if set -q _flag_p
     set parent_name (rg -oP "(?<=parent: \"\[\[)[^\]]*" $obsidian_file)
     set parent_file (find $obsidian_folder/$notes/* -type f -iname "$parent_name.md")
     set filtered_pool $filtered_pool $parent_file
+end
+
+if set -q _flag_t
+    set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
+    set filtered_pool (rg -l "^  - $chosen_tag\$" $obsidian_folder/$notes)
+end
+
+if set -q _flag_d
+    set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
+    set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
+    set chosen_tag (rg -o --no-filename "^  - [a-z]*" $filtered_pool | sed 's/[ -]//g' | sort -u | fzf)
+    set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
 set choice (gum choose --limit 1 "Question" "Reminder")
