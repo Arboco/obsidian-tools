@@ -12,9 +12,10 @@ function help_function
     echo "  -l       Create #highlight"
     echo "  -q       Create quote"
     echo "  -s       Add newline after quote"
+    echo "  -d       Create message to delete"
 end
 
-argparse --name=gn h/help t/task r/research q/question s/space l/highlight 'n/name=' -- $argv
+argparse --name=gn h/help t/task d/delete r/research q/question s/space l/link 'n/name=' -- $argv
 or return
 
 if set -q _flag_h
@@ -24,7 +25,12 @@ end
 
 if set -q _flag_t
     echo -e "- [ ] #task $argv[1]\n" >>$obsidian_file
-    exist
+    exit
+end
+
+if set -q _flag_d
+    echo -e "- [f] #delete $argv[1]\n" >>$obsidian_file
+    exit
 end
 
 if set -q _flag_r
@@ -33,7 +39,7 @@ if set -q _flag_r
 end
 
 if set -q _flag_l
-    echo -e "- [ ] #highlight $argv[1]\n" >>$obsidian_file
+    echo -e "[$argv[1]]($argv[2])\n" >>$obsidian_file
     exit
 end
 

@@ -1,0 +1,102 @@
+#! /usr/bin/env fish
+
+function help_function
+    echo "By default selection from all pool files."
+
+    echo "Options:"
+    echo "  -h       help"
+    echo "  -p       Include questions and reminders from the parent"
+end
+
+argparse --name=pool t/tag d/double i/history r/random u/unrated b/bookmark o/origin p/parent h/help 'n/name=' -- $argv
+or return
+
+set script_dir (realpath (status dirname))
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set obsidian_file (cat /tmp/obsidian_last.txt)
+set filtered_pool $obsidian_file
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_p
+    set parent_name (rg -oP "(?<=parent: \"\[\[)[^\]]*" $obsidian_file)
+    set parent_file (find $obsidian_folder/$notes/* -type f -iname "$parent_name.md")
+    set filtered_pool $filtered_pool $parent_file
+end
+
+set choice (gum choose --limit 1 "Question" "Reminder")
+if string match Question $choice
+    set selection Q
+else if string match Reminder $choice
+    set selection R
+end
+
+set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool | awk '
+{
+  match($0, /`([^`]*)`/, arr)
+  if (arr[1] != "") {
+    cmd = "date -d \"" arr[1] "\" +%s"
+    cmd | getline ts
+    close(cmd)
+    print ts "\t" $0
+  } else {
+    print "0\t" $0
+  }
+}
+' | sort -n | cut -f2-)
+
+clear
+
+for i in $question_array
+    echo "$i" | glow
+    set i_trim (string trim -r -- $i)
+    set trimmed (string split '`' -- $i_trim)[1]
+    set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
+    if not echo $i | rg -qP '`'
+        set user_input (gum input --placeholder "Empty for default, 0 for exit, s for star, r for revise")
+        set new_date (date +"%Y-%m-%d %H:%M:%S")
+
+        if string match 0 $user_input
+            exit
+        else if string match s $user_input
+            clear
+            sed -i "s/$i/$i_trim `$new_date` ⭐/g" $target_md
+        else if string match r $user_input
+            clear
+            sed -i "s/$i/ - [?] $i_trim/g" $target_md
+        else
+            clear
+            sed -i "s/$i/$i_trim `$new_date`/g" $target_md
+
+        end
+    else
+        set user_input (gum input --placeholder "Empty for default, 0 for exit, s for star, r for revise")
+        set old_date (echo $i | grep -o "`.*`")
+        set new_date (date +"%Y-%m-%d %H:%M:%S")
+        if string match 0 $user_input
+            exit
+        else if string match s $user_input
+            clear
+            sed -i "s/$i/& ⭐/" $target_md
+            sed -i "s/$old_date/`$new_date`/g" $target_md
+        else if string match r $user_input
+            clear
+            sed -i "s/$i/ - [?] $i/g" $target_md
+            sed -i "s/$old_date/`$new_date`/g" $target_md
+        else
+            clear
+            sed -i "s/$old_date/`$new_date`/g" $target_md
+        end
+    end
+    awk -v search="$trimmed" '
+      index($0, search) {flag=1}
+      flag {print}
+      /^$/ && flag {flag=0}
+                            ' $target_md | glow
+    echo ""
+    set -e target_md
+end
