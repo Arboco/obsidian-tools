@@ -56,8 +56,18 @@ for i in $question_array
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
+
+    gum input --placeholder "Press Enter to continue..."
+    clear
+    awk -v search="$trimmed" '
+      index($0, search) {flag=1}
+      flag {print}
+      /^$/ && flag {flag=0}
+                              ' $target_md | glow
+    echo ""
     if not echo $i | rg -qP '`'
-        set user_input (gum input --placeholder "Empty for default, 0 for exit, s for star, r for revise")
+
+        set user_input (gum input --placeholder "1 - Correct | 2 - False | 0 - Exit | s - Star | r - Revise")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
         if string match 0 $user_input
@@ -68,13 +78,14 @@ for i in $question_array
         else if string match r $user_input
             clear
             sed -i "s/$i/ - [?] $i_trim/g" $target_md
-        else
+        else if string match 1 $user_input
             clear
             sed -i "s/$i/$i_trim `$new_date`/g" $target_md
-
+        else if string match 2 $user_input
+            clear
         end
     else
-        set user_input (gum input --placeholder "Empty for default, 0 for exit, s for star, r for revise")
+        set user_input (gum input --placeholder "1 - Correct | 2 - False | 0 - Exit | s - Star | r - Revise")
         set old_date (echo $i | grep -o "`.*`")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
         if string match 0 $user_input
@@ -87,16 +98,12 @@ for i in $question_array
             clear
             sed -i "s/$i/ - [?] $i/g" $target_md
             sed -i "s/$old_date/`$new_date`/g" $target_md
-        else
+        else if string match 1 $user_input
             clear
             sed -i "s/$old_date/`$new_date`/g" $target_md
+        else if string match 2 $user_input
+            clear
         end
     end
-    awk -v search="$trimmed" '
-      index($0, search) {flag=1}
-      flag {print}
-      /^$/ && flag {flag=0}
-                            ' $target_md | glow
-    echo ""
     set -e target_md
 end
