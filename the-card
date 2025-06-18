@@ -3,6 +3,7 @@
 function help_function
     echo "Options:"
     echo "  default  Card pool comes from current the-pool target or if not available generic selection"
+    echo "  -o       override file used for default option so you can skip using the-pool directly"
     echo "  -p       Include card pool from the parent of the-pool target"
     echo "  -c       Include card pool from siblings (other children of your parent), combinable with -p"
     echo "  -e       Include card pool from every file you link to from the-pool target, combinable with -c and -p"
@@ -34,7 +35,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive f/filter h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive o/override f/filter h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -45,11 +46,14 @@ set obsidian_file (cat /tmp/obsidian_last.txt)
 set filtered_pool $obsidian_file
 
 set default_pool_array (rg -l "^  - pool\$" $obsidian_folder/$notes)
-set multi_flag_check 1
 
 if set -q _flag_h
     help_function
     exit
+end
+
+if set -q _flag_o
+    set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --preview 'glow {}')
 end
 
 if set -q _flag_p
@@ -121,8 +125,8 @@ if set -q _flag_d
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
-if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
-    set filtered_pool (rg -l "^(I|Q|W):" $obsidian_folder/$notes)
+if set -q _flag_s
+    set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 end
 
 if set -q _flag_f
@@ -143,16 +147,22 @@ end
 set count_q (rg "Q:" $filtered_pool | count)
 set count_i (rg "I:" $filtered_pool | count)
 set count_w (rg "W:" $filtered_pool | count)
-set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)"| string split " ")[1]
+set count_d (rg "D:" $filtered_pool | count)
+set count_c (rg "(Q|I|W|D):" $filtered_pool | count)
+set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Drill ($count_d)" "Combined ($count_c)"| string split " ")[1]
 if string match Question $choice
     set selection Q
 else if string match Inspiration $choice
     set selection I
 else if string match Wiki $choice
     set selection W
+else if string match Drill $choice
+    set selection D
+else if string match Combined $choice
+    set selection "(Q|I|W|D)"
 end
 
-if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
+if set -q _flag_s
     set filtered_pool (rg -l "^$selection:" $filtered_pool)
 end
 
@@ -178,13 +188,13 @@ set sorted_unix_array (for i in $unix_array
 end | sort -n)
 
 for i in $sorted_unix_array
-    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W).*")
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
 end
 
 clear
 for i in $final_sorted_array
 
-    if string match -q Question $choice
+    if string match -q Question $choice; or string match -q Drill $choice
         echo "$i" | glow
     end
 
@@ -193,12 +203,12 @@ for i in $final_sorted_array
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
     if string match -q Wiki $choice
-        set wiki_choice (for w in $question_array; echo $w; end | fzf )
+        set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "rg --no-filename -A 10 {} $obsidian_folder/$notes | glow")
         set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
         set trimmed (string split '`' -- $wiki_choice)[1]
     end
 
-    if string match -q Question $choice
+    if string match -q Question $choice; or string match -q Drill $choice
         gum input --placeholder "Press Enter to continue..."
         clear
     end
