@@ -1,12 +1,14 @@
 #! /usr/bin/env fish
 
 function help_function
-    echo "By default selection from all pool files."
     echo "Options:"
-    echo "  -h       help"
-    echo "  -p       Include Q&I from the parent"
-    echo "  -t       All Q&I from a particular tag"
-    echo "  -d       All Q&I from two combined tags"
+    echo "  default  Card pool comes from current the-pool target"
+    echo "  -p       Include card pool from the parent of the-pool target"
+    echo "  -c       Include card pool from siblings (other children of your parent), combinable with -p"
+    echo "  -e       Include card pool from every file you link to from the-pool target, combinable with -c and -p"
+    echo "  -t       Include card pool from a particular tag"
+    echo "  -d       The card pool from two combined tags"
+    echo "  -s       Select file directly from given card pool"
 end
 
 function icat_half
@@ -29,7 +31,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double i/history r/random u/unrated b/bookmark o/origin p/parent h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/selection c/child e/every p/parent h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -53,6 +55,25 @@ if set -q _flag_p
     set filtered_pool $filtered_pool $parent_file
 end
 
+if set -q _flag_c
+    set parent_name (rg -oP "(?<=parent: \"\[\[)[^\]]*" $obsidian_file)
+    set parent_file (find $obsidian_folder/$notes/* -type f -iname "$parent_name.md")
+    set child_names (awk '/^child:/ {flag=1; next} flag && /^  - / {print $0} flag && !/^  - / {flag=0}' $parent_file | sed 's/[][]//g; s/"//g; s/-//g; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    for i in $child_names
+        set child_file (find $obsidian_folder/$notes/* -type f -iname "$i.md")
+        set filtered_pool $filtered_pool $child_file
+    end
+    set filtered_pool (for i in $filtered_pool; echo $i; end | sort -u)
+end
+
+if set -q _flag_e
+    set network_names (rg "^\[\[" $obsidian_file | sed 's/[][]//g')
+    for i in $network_names
+        set network_file (find $obsidian_folder/$notes/* -type f -iname "$i.md")
+        set filtered_pool $filtered_pool $network_file
+    end
+end
+
 if set -q _flag_t
     set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
     set filtered_pool (rg -l "^  - $chosen_tag\$" $obsidian_folder/$notes)
@@ -65,13 +86,24 @@ if set -q _flag_d
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
+if set -q _flag_s
+    set filtered_pool (rg -l "^(R|Q|W):" $obsidian_folder/$notes)
+end
+
 set count_q (rg "Q:" $filtered_pool | count)
 set count_i (rg "I:" $filtered_pool | count)
-set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" | string split " ")[1]
+set count_w (rg "W:" $filtered_pool | count)
+set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)"| string split " ")[1]
 if string match Question $choice
     set selection Q
 else if string match Inspiration $choice
     set selection I
+else if string match Wiki $choice
+    set selection W
+end
+
+if set -q _flag_s
+    set filtered_pool (rg -l "^$selection:" $filtered_pool | fzf)
 end
 
 set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool | awk '
@@ -92,12 +124,19 @@ clear
 
 for i in $question_array
 
-    if string match -q Question $choice 2>&1
+    if string match -q Question $choice
         echo "$i" | glow
     end
+
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
+
+    if string match -q Wiki $choice
+        set wiki_choice (for w in $question_array; echo $w; end | fzf)
+        set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
+        set trimmed (string split '`' -- $wiki_choice)[1]
+    end
 
     if string match -q Question $choice
         gum input --placeholder "Press Enter to continue..."
