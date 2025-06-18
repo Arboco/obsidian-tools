@@ -4,9 +4,9 @@ function help_function
     echo "By default selection from all pool files."
     echo "Options:"
     echo "  -h       help"
-    echo "  -p       Include questions and reminders from the parent"
-    echo "  -t       All Q&R from a particular tag"
-    echo "  -d       All Q&R from two combined tags"
+    echo "  -p       Include Q&I from the parent"
+    echo "  -t       All Q&I from a particular tag"
+    echo "  -d       All Q&I from two combined tags"
 end
 
 function icat_half
@@ -65,11 +65,13 @@ if set -q _flag_d
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
-set choice (gum choose --limit 1 "Question" "Reminder")
+set count_q (rg "Q:" $filtered_pool | count)
+set count_i (rg "I:" $filtered_pool | count)
+set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" | string split " ")[1]
 if string match Question $choice
     set selection Q
-else if string match Reminder $choice
-    set selection R
+else if string match Inspiration $choice
+    set selection I
 end
 
 set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool | awk '
@@ -90,17 +92,18 @@ clear
 
 for i in $question_array
 
-    if string match Question $choice
+    if string match -q Question $choice 2>&1
         echo "$i" | glow
     end
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
-    if string match Question $choice
+    if string match -q Question $choice
         gum input --placeholder "Press Enter to continue..."
         clear
     end
+    echo "Source: $target_md"
     awk -v search="$trimmed" '
       index($0, search) {flag=1}
       flag {print}
@@ -116,7 +119,7 @@ for i in $question_array
     echo ""
     if not echo $i | rg -qP '`'
 
-        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise")
+        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise | o - Open File")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
         if string match 0 $user_input
@@ -132,9 +135,12 @@ for i in $question_array
             sed -i "s/$i/$i_trim `$new_date`/g" $target_md
         else if string match 2 $user_input
             clear
+        else if string match o $user_input
+            clear
+            obsidian "obsidian://$target_md" >/dev/null 2>&1 &
         end
     else
-        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise")
+        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise | o - Open File")
         set old_date (echo $i | grep -o "`.*`")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
         if string match 0 $user_input
@@ -152,6 +158,9 @@ for i in $question_array
             sed -i "s/$old_date/`$new_date`/g" $target_md
         else if string match 2 $user_input
             clear
+        else if string match o $user_input
+            clear
+            obsidian "obsidian://$target_md" >/dev/null 2>&1 &
         end
     end
 
