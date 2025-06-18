@@ -122,7 +122,7 @@ if set -q _flag_d
 end
 
 if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
-    set filtered_pool (rg -l "^(R|Q|W):" $obsidian_folder/$notes)
+    set filtered_pool (rg -l "^(I|Q|W):" $obsidian_folder/$notes)
 end
 
 if set -q _flag_f
@@ -153,19 +153,23 @@ else if string match Wiki $choice
 end
 
 if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
-    set filtered_pool (rg -l "^$selection:" $filtered_pool | fzf)
+    set filtered_pool (rg -l "^$selection:" $filtered_pool)
 end
 
 set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool)
 
 for i in $question_array
-    set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
-    set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
-    set unix_timestamp (date -d "$raw_date" +%s)
-    set day_seconds 86400
-    set day_value (ot_config_grab "DayValue")
-    set final_second_value (math $raw_value x $day_seconds x $day_value)
-    set unix_result (math $unix_timestamp + $final_second_value)
+    if echo $i | rg -q "....-..-.. ..:..:.."
+        set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
+        set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+        set unix_timestamp (date -d "$raw_date" +%s)
+        set day_seconds 86400
+        set day_value (ot_config_grab "DayValue")
+        set final_second_value (math $raw_value x $day_seconds x $day_value)
+        set unix_result (math $unix_timestamp + $final_second_value)
+    else
+        set unix_result 00000
+    end
     set unix_array $unix_array "$unix_result $i"
 end
 
@@ -174,7 +178,7 @@ set sorted_unix_array (for i in $unix_array
 end | sort -n)
 
 for i in $sorted_unix_array
-    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|R|W).*")
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W).*")
 end
 
 clear
@@ -189,7 +193,7 @@ for i in $final_sorted_array
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
     if string match -q Wiki $choice
-        set wiki_choice (for w in $question_array; echo $w; end | fzf)
+        set wiki_choice (for w in $question_array; echo $w; end | fzf )
         set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
         set trimmed (string split '`' -- $wiki_choice)[1]
     end
@@ -213,8 +217,14 @@ for i in $final_sorted_array
 
     echo ""
     if not echo $i | rg -qP '`'
-
-        set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+        if string match -q Wiki $choice
+            set user_input (gum input --placeholder "0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input
+                set user_input ""
+            end
+        else
+            set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+        end
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
         if string match 0 $user_input
