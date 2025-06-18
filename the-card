@@ -2,13 +2,16 @@
 
 function help_function
     echo "Options:"
-    echo "  default  Card pool comes from current the-pool target"
+    echo "  default  Card pool comes from current the-pool target or if not available generic selection"
     echo "  -p       Include card pool from the parent of the-pool target"
     echo "  -c       Include card pool from siblings (other children of your parent), combinable with -p"
     echo "  -e       Include card pool from every file you link to from the-pool target, combinable with -c and -p"
-    echo "  -t       Include card pool from a particular tag"
-    echo "  -d       The card pool from two combined tags"
+    echo "  -r       Searches links recursively (link inside link inside link...) and adds all it finds to card pool"
+    echo "           Default is a depth of 3 but depth can be customized with second argument"
+    echo "  -t       Include card pool from a particular tag from pool files"
+    echo "  -d       The card pool from two combined tags from pool files"
     echo "  -s       Select file directly from given card pool"
+    echo "  -f       Filter based on filename"
 end
 
 function icat_half
@@ -31,7 +34,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/selection c/child e/every p/parent h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive f/filter h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -74,6 +77,38 @@ if set -q _flag_e
     end
 end
 
+if set -q _flag_r
+    if test -z $argv[1]
+        echo true
+        set depth 3
+    else
+        echo false
+        set depth $argv[1]
+    end
+    set loop_count 1
+    if test $depth -gt 0
+        set network_names (rg "^\[\[" $obsidian_file | sed 's/[][]//g')
+    end
+    while test $loop_count -lt $depth
+        set array_count (count $network_names)
+        for i in $network_names
+            set network_file (find $obsidian_folder/$notes/* -type f -name "$i.md")
+            if rg "^\[\[" $network_file
+                set network_names $network_names (rg "^\[\[" $network_file | sed 's/[][]//g' | sort -u)
+            end
+            set network_names (for na in $network_names; echo $na; end | sort -u)
+        end
+        if test (count $network_names) -eq $array_count
+            break
+        end
+        set loop_count (math $loop_count + 1)
+    end
+    for i in $network_names
+        set network_file (find $obsidian_folder/$notes/* -type f -iname "$i.md")
+        set filtered_pool $filtered_pool $network_file
+    end
+end
+
 if set -q _flag_t
     set chosen_tag (awk '/^tags:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' $default_pool_array | sort -u | fzf)
     set filtered_pool (rg -l "^  - $chosen_tag\$" $obsidian_folder/$notes)
@@ -86,8 +121,23 @@ if set -q _flag_d
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
-if set -q _flag_s
+if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
     set filtered_pool (rg -l "^(R|Q|W):" $obsidian_folder/$notes)
+end
+
+if set -q _flag_f
+    set filter_word (gum input --placeholder "Filter based on file name, example: filter_word1|filter_word2")
+    for i in $filtered_pool
+        if not string match "" $filter_word
+            if echo $i | rg --ignore-case "$filter_word"
+            else
+                set new_filtered_pool $new_filtered_pool $i
+            end
+        else
+            break
+        end
+        set filtered_pool $new_filtered_pool
+    end
 end
 
 set count_q (rg "Q:" $filtered_pool | count)
@@ -102,27 +152,33 @@ else if string match Wiki $choice
     set selection W
 end
 
-if set -q _flag_s
+if set -q _flag_s; or not test -f /tmp/obsidian_last.txt
     set filtered_pool (rg -l "^$selection:" $filtered_pool | fzf)
 end
 
-set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool | awk '
-{
-  match($0, /`([^`]*)`/, arr)
-  if (arr[1] != "") {
-    cmd = "date -d \"" arr[1] "\" +%s"
-    cmd | getline ts
-    close(cmd)
-    print ts "\t" $0
-  } else {
-    print "0\t" $0
-  }
-}
-' | sort -n | cut -f2-)
-
-clear
+set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool)
 
 for i in $question_array
+    set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
+    set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+    set unix_timestamp (date -d "$raw_date" +%s)
+    set day_seconds 86400
+    set day_value (ot_config_grab "DayValue")
+    set final_second_value (math $raw_value x $day_seconds x $day_value)
+    set unix_result (math $unix_timestamp + $final_second_value)
+    set unix_array $unix_array "$unix_result $i"
+end
+
+set sorted_unix_array (for i in $unix_array
+    echo $i 
+end | sort -n)
+
+for i in $sorted_unix_array
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|R|W).*")
+end
+
+clear
+for i in $final_sorted_array
 
     if string match -q Question $choice
         echo "$i" | glow
@@ -158,45 +214,48 @@ for i in $question_array
     echo ""
     if not echo $i | rg -qP '`'
 
-        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise | o - Open File")
+        set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
         if string match 0 $user_input
             exit
-        else if string match s $user_input
-            clear
-            sed -i "s/$i/$i_trim `$new_date` ⭐/g" $target_md
         else if string match r $user_input
             clear
             sed -i "s/$i/ - [?] $i_trim/g" $target_md
         else if string match 1 $user_input
             clear
-            sed -i "s/$i/$i_trim `$new_date`/g" $target_md
+            sed -i "s/$i/$i_trim `$new_date S-Value: 1`/g" $target_md
         else if string match 2 $user_input
             clear
+            sed -i "s/$i/$i_trim `$new_date S-Value: -1`/g" $target_md
         else if string match o $user_input
             clear
             obsidian "obsidian://$target_md" >/dev/null 2>&1 &
         end
     else
-        set user_input (gum input --placeholder "1 - Pass | 2 - Ignore | 0 - Exit | s - Star | r - Revise | o - Open File")
-        set old_date (echo $i | grep -o "`.*`")
+        set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+        set old_date (echo $i | rg -o "`.*:[0-9]+" | sed 's/`//g')
         set new_date (date +"%Y-%m-%d %H:%M:%S")
+        set svalue (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+
         if string match 0 $user_input
             exit
-        else if string match s $user_input
-            clear
-            sed -i "s/$i/& ⭐/" $target_md
-            sed -i "s/$old_date/`$new_date`/g" $target_md
         else if string match r $user_input
             clear
             sed -i "s/$i/ - [?] $i/g" $target_md
-            sed -i "s/$old_date/`$new_date`/g" $target_md
+            sed -i "s/$old_date/$new_date/g" $target_md
         else if string match 1 $user_input
             clear
-            sed -i "s/$old_date/`$new_date`/g" $target_md
+            set svalue (math $svalue + 1)
+            set new_i (echo $i | string replace -r 'S-Value: -?\d+' "S-Value: $svalue" -- $line)
+            sed -i "s/$i/$new_i/g" $target_md
+            sed -i "s/$old_date/$new_date/g" $target_md
         else if string match 2 $user_input
             clear
+            set svalue (math $svalue - 1)
+            set new_i (echo $i | string replace -r 'S-Value: -?\d+' "S-Value: $svalue" -- $line)
+            sed -i "s/$i/$new_i/g" $target_md
+            sed -i "s/$old_date/$new_date/g" $target_md
         else if string match o $user_input
             clear
             obsidian "obsidian://$target_md" >/dev/null 2>&1 &

@@ -58,3 +58,7 @@ StartupCompensator: 30
 TimelineOption: 1
 # Option to add a limit on how many minutes the first recorded session must be to be inserted into note, to avoid cluttering the timeline with pointless sessions 
 SessionLimit: 15
+
+# the-card 
+# how many days is one point worth
+DayValue: 1 

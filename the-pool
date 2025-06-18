@@ -281,3 +281,4 @@ if grep -q 'parent:' $target_md
 end
 
 rm /tmp/the-pool.txt
+rm /tmp/obsidian_last.txt
