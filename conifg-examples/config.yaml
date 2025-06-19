@@ -60,5 +60,5 @@ TimelineOption: 1
 SessionLimit: 15
 
 # the-card 
-# how many days is one point worth
-DayValue: 1 
+# how many seconds is one point worth. 48 hours = 172800, 36 hours = 129600, 24 hours = 86400, 12 hours = 43200, 6 hours = 21600:
+ValueSeconds: 86400 

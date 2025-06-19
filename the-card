@@ -12,6 +12,8 @@ function help_function
     echo "  -t       Include card pool from a particular tag from pool files"
     echo "  -d       The card pool from two combined tags from pool files"
     echo "  -s       Select file directly from given card pool"
+    echo "  -g       Use group property to put all files from a group into card pool"
+    echo "  -k       Search trough files with keyword"
     echo "  -f       Filter based on filename"
 end
 
@@ -35,7 +37,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive o/override f/filter h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive o/override g/group k/keyword f/filter h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -47,8 +49,6 @@ set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 if test -f /tmp/obsidian_last.txt
     set obsidian_file (cat /tmp/obsidian_last.txt)
     set filtered_pool $obsidian_file
-else
-    set filtered_pool $default_pool_array
 end
 
 if set -q _flag_h
@@ -133,6 +133,29 @@ if set -q _flag_s
     set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 end
 
+if set -q _flag_g
+    set group_name (rg -oP --no-filename "(?<=group: ).*" $default_pool_array | sort -u | fzf)
+    set filtered_pool (rg -lF "group: $group_name")
+end
+
+if set -q _flag_k
+    while test -z $keyword
+        set keyword (gum input --placeholder "Input Keyword")
+    end
+    while test -z $keyword_choice[1]
+        set keyword_choice (gum choose --no-limit "File-Name" "File-Content")
+    end
+    set -e filtered_pool
+    for i in $keyword_choice
+        if string match File-Name $i
+            set filtered_pool $filtered_pool (find $default_pool_array -type f -iname "*$keyword*")
+        else if string match File-Content $i
+            set filtered_pool $filtered_pool (rg -lF "$keyword" $default_pool_array)
+        end
+    end
+    set filtered_pool (for i in $filtered_pool; echo $i; end | sort -u)
+end
+
 if set -q _flag_f
     set filter_word (gum input --placeholder "Filter based on file name, example: filter_word1|filter_word2")
     for i in $filtered_pool
@@ -146,6 +169,10 @@ if set -q _flag_f
         end
         set filtered_pool $new_filtered_pool
     end
+end
+
+if test -z $filtered_pool[1]
+    set filtered_pool $default_pool_array
 end
 
 set count_q (rg "Q:" $filtered_pool | count)
@@ -175,14 +202,17 @@ set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_p
 for i in $question_array
     if echo $i | rg -q "....-..-.. ..:..:.."
         set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
-        set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+        if echo $i | rg "(?<=S-Value: )[-0-9]*"
+            set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+        else
+            set raw_value 0
+        end
         set unix_timestamp (date -d "$raw_date" +%s)
-        set day_seconds 86400
-        set day_value (ot_config_grab "DayValue")
-        set final_second_value (math $raw_value x $day_seconds x $day_value)
+        set value_seconds (ot_config_grab "ValueSeconds")
+        set final_second_value (math $raw_value x $value_seconds)
         set unix_result (math $unix_timestamp + $final_second_value)
     else
-        set unix_result 00000
+        set unix_result 0
     end
     set unix_array $unix_array "$unix_result $i"
 end
@@ -253,6 +283,11 @@ for i in $final_sorted_array
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""
             end
+        else if string match -q Inspiration $choice
+            set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input
+                set user_input ""
+            end
         else
             set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
         end
@@ -272,9 +307,22 @@ for i in $final_sorted_array
         else if string match o $user_input
             clear
             obsidian "obsidian://$target_md" >/dev/null 2>&1 &
+        else if string match d $user_input
+            clear
+            sed -i "s/$i/$i_trim `$new_date`/g" $target_md
         end
     else
-        set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+        if string match -q Inspiration $choice
+            set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input
+                set user_input ""
+            end
+        else
+            set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+            if string match d $user_input
+                set user_input ""
+            end
+        end
         set old_date (echo $i | rg -o "`.*:[0-9]+" | sed 's/`//g')
         set new_date (date +"%Y-%m-%d %H:%M:%S")
         set svalue (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
@@ -300,6 +348,10 @@ for i in $final_sorted_array
         else if string match o $user_input
             clear
             obsidian "obsidian://$target_md" >/dev/null 2>&1 &
+        else if string match d $user_input
+            clear
+            sed -i "s/$old_date/$new_date/g" $target_md
+        else if string match 2 $user_input
         end
     end
 
