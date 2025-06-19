@@ -27,7 +27,7 @@ function icat_half
     set row_height_px 18
     set max_height (math "$rows * $row_height_px / 2")
 
-    set tmpimg (mktemp --suffix=.png)
+    set tmpimg (mktemp --suffix=.$argv[2])
     magick "$image" -resize x$max_height\> "$tmpimg"
 
     kitty +kitten icat "$tmpimg"
@@ -42,10 +42,14 @@ set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
-set obsidian_file (cat /tmp/obsidian_last.txt)
-set filtered_pool $obsidian_file
+set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 
-set default_pool_array (rg -l "^  - pool\$" $obsidian_folder/$notes)
+if test -f /tmp/obsidian_last.txt
+    set obsidian_file (cat /tmp/obsidian_last.txt)
+    set filtered_pool $obsidian_file
+else
+    set filtered_pool $default_pool_array
+end
 
 if set -q _flag_h
     help_function
@@ -208,10 +212,16 @@ for i in $final_sorted_array
         set trimmed (string split '`' -- $wiki_choice)[1]
     end
 
+    if string match -q Inspiration $choice
+        if test -z $second_counter
+            set second_counter (gum input --placeholder "Select a minimum amount of time in seconds to observe inspiration")
+        end
+    end
     if string match -q Question $choice; or string match -q Drill $choice
         gum input --placeholder "Press Enter to continue..."
         clear
     end
+    kill $pid
     echo "Source: $target_md"
     awk -v search="$trimmed" '
       index($0, search) {flag=1}
@@ -220,9 +230,20 @@ for i in $final_sorted_array
                               ' $target_md | tee /tmp/img_treasure | glow
     set img_array (cat /tmp/img_treasure | grep -oP "(?<=!\[\[)[^\]]*")
     for img in $img_array
-        echo $img
+        set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
         set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-        icat_half $img_path
+        if echo $img_path | rg mp3
+        else
+            icat_half $img_path "$suffix"
+        end
+    end
+    set mp3 (cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3" | perl -pe 's/([\[\]])/\\\\$1/g')
+    set mp3path (find $obsidian_folder/$obsidian_resource -type f -name "$mp3")
+    mpv --no-video "$mp3path" >/dev/null &
+    set pid $last_pid
+
+    if string match -q Inspiration $choice
+        gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
     end
 
     echo ""
