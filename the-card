@@ -247,11 +247,38 @@ for i in $final_sorted_array
             set second_counter (gum input --placeholder "Select a minimum amount of time in seconds to observe inspiration")
         end
     end
-    if string match -q Question $choice; or string match -q Drill $choice
-        gum input --placeholder "Press Enter to continue..."
+
+    if string match -q Drill $choice
+        while not string match y $user_decision
+            mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
+            gum input --placeholder "Press Enter when you are ready to provide Image Evidence of your drill"
+            set image_evidence (gum file $HOME)
+            set suffix_evidence (echo $image_evidence | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
+            icat_half $image_evidence "$suffix_evidence"
+            set user_decision (gum input --placeholder "Are you sure about this evidence? y/n")
+            if string match y $user_decision
+                cp $target_md /tmp/clone.md
+                set uuid (uuidgen)
+                cp $image_evidence $obsidian_folder/$obsidian_resource/drill_evidence/$uuid.$suffix_evidence
+                set image_final_insert "![[$uuid.$suffix_evidence]]"
+                awk -v search="$trimmed" -v newline="$image_final_insert" '
+              !in_para && index($0, search) { found = 1 }
+              NF > 0 { in_para = 1 }  # paragraph is active (non-empty line)
+              NF == 0 && found && !inserted {
+                print newline
+                inserted = 1
+              }
+              { print }
+              NF == 0 { in_para = 0 }  # reset at blank line
+              ' /tmp/clone.md >$target_md
+            end
+        end
         clear
+        rm /tmp/clone.md
     end
-    kill $pid
+    if not test -z $pid
+        kill $pid
+    end
     echo "Source: $target_md"
     awk -v search="$trimmed" '
       index($0, search) {flag=1}
