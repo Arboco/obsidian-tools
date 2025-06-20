@@ -11,9 +11,11 @@ function help_function
     echo "           Default is a depth of 3 but depth can be customized with second argument"
     echo "  -t       Include card pool from a particular tag from pool files"
     echo "  -d       The card pool from two combined tags from pool files"
-    echo "  -s       Select file directly from given card pool"
     echo "  -g       Use group property to put all files from a group into card pool"
     echo "  -k       Search trough files with keyword"
+    echo ""
+    echo "Filters: Apply these in combination with the above to get the exact card-pool you want"
+    echo "  -s       Filter your pool based on subtags inside your card headers"
     echo "  -f       Filter based on filename"
 end
 
@@ -37,7 +39,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/selection c/child e/every p/parent r/recursive o/override g/group k/keyword f/filter h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/subtag c/child e/every p/parent r/recursive o/override g/group k/keyword m/mini f/filter h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -129,10 +131,6 @@ if set -q _flag_d
     set filtered_pool (rg -l "^  - $chosen_tag\$" $default_pool_array)
 end
 
-if set -q _flag_s
-    set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
-end
-
 if set -q _flag_g
     set group_name (rg -oP --no-filename "(?<=group: ).*" $default_pool_array | sort -u | fzf)
     set filtered_pool (rg -lF "group: $group_name")
@@ -156,6 +154,18 @@ if set -q _flag_k
     set filtered_pool (for i in $filtered_pool; echo $i; end | sort -u)
 end
 
+### Filters start here 
+if set -q _flag_m
+    set subtag_pool (rg -P "^(Q|I|D|W):.*#.*" $default_pool_array | rg -oP "#[^ ]*" | sed s/#//g | sort -u | gum choose --no-limit)
+    if test -z $subtag_pool[2]
+        set regex_ready_subtags "$subtag_pool"
+    else
+        set regex_ready_subtags (echo $subtag_pool | sed 's/ /|/g')
+        set regex_ready_subtags "($regex_ready_subtags)"
+    end
+    set question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*#$regex_ready_subtags" $default_pool_array)
+end
+
 if set -q _flag_f
     set filter_word (gum input --placeholder "Filter based on file name, example: filter_word1|filter_word2")
     for i in $filtered_pool
@@ -175,11 +185,21 @@ if test -z $filtered_pool[1]
     set filtered_pool $default_pool_array
 end
 
-set count_q (rg "Q:" $filtered_pool | count)
-set count_i (rg "I:" $filtered_pool | count)
-set count_w (rg "W:" $filtered_pool | count)
-set count_d (rg "D:" $filtered_pool | count)
-set count_c (rg "(Q|I|W|D):" $filtered_pool | count)
+if test -z $question_array[1]
+    echo "some random shit"
+    set count_q (rg "Q:" $filtered_pool | count)
+    set count_i (rg "I:" $filtered_pool | count)
+    set count_w (rg "W:" $filtered_pool | count)
+    set count_d (rg "D:" $filtered_pool | count)
+    set count_c (rg "(Q|I|W|D):" $filtered_pool | count)
+else
+    set count_q (echo $question_array | rg -o "Q:" | wc -l)
+    set count_i (echo $question_array | rg -o "I:" | wc -l)
+    set count_w (echo $question_array | rg -o "W:" | wc -l)
+    set count_d (echo $question_array | rg -o "D:" | wc -l)
+    set count_c (echo $question_array | rg -o "(Q|I|W|D):" | wc -l)
+end
+
 set choice (gum choose --limit 1 "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Drill ($count_d)" "Combined ($count_c)"| string split " ")[1]
 if string match Question $choice
     set selection Q
@@ -193,11 +213,9 @@ else if string match Combined $choice
     set selection "(Q|I|W|D)"
 end
 
-if set -q _flag_s
-    set filtered_pool (rg -l "^$selection:" $filtered_pool)
+if test -z $question_array[1]
+    set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool)
 end
-
-set question_array (rg --no-filename --no-line-number "^$selection:" $filtered_pool)
 
 for i in $question_array
     if echo $i | rg -q "....-..-.. ..:..:.."
@@ -227,31 +245,39 @@ end
 
 clear
 for i in $final_sorted_array
+    set card_type (echo "$i" | grep -o "^.")
 
-    if string match -q Question $choice; or string match -q Drill $choice
+    if string match -q Q $card_type
         echo "$i" | glow
+        gum input --placeholder "Press enter to continue..."
     end
 
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
-    if string match -q Wiki $choice
-        set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "rg --no-filename -A 10 {} $obsidian_folder/$notes | glow")
-        set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
-        set trimmed (string split '`' -- $wiki_choice)[1]
+    if string match -q Combined $choice
+    else
+        if string match -q W $card_type
+            set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "rg --no-filename -A 10 {} $obsidian_folder/$notes | glow")
+            set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
+            set trimmed (string split '`' -- $wiki_choice)[1]
+        end
     end
 
-    if string match -q Inspiration $choice
+    if string match -q I $card_type
         if test -z $second_counter
             set second_counter (gum input --placeholder "Select a minimum amount of time in seconds to observe inspiration")
         end
     end
 
-    if string match -q Drill $choice
+    if string match -q D $card_type
         while not string match y $user_decision
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
-            gum input --placeholder "Press Enter when you are ready to provide Image Evidence of your drill"
+            set input_user (gum input --placeholder "Press Enter when you are ready to provide Image Evidence of your drill, insert x if you don't want to provide evidence")
+            if string match -q x $input_user
+                break
+            end
             set image_evidence (gum file $HOME)
             set suffix_evidence (echo $image_evidence | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
             icat_half $image_evidence "$suffix_evidence"
@@ -278,6 +304,7 @@ for i in $final_sorted_array
     end
     if not test -z $pid
         kill $pid
+        set -e pid
     end
     echo "Source: $target_md"
     awk -v search="$trimmed" '
@@ -294,29 +321,31 @@ for i in $final_sorted_array
             icat_half $img_path "$suffix"
         end
     end
-    set mp3 (cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3" | perl -pe 's/([\[\]])/\\\\$1/g')
-    set mp3path (find $obsidian_folder/$obsidian_resource -type f -name "$mp3")
-    mpv --no-video "$mp3path" >/dev/null &
-    set pid $last_pid
+    if cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3"
+        set mp3 (cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3" | perl -pe 's/([\[\]])/\\\\$1/g')
+        set mp3path (find $obsidian_folder/$obsidian_resource -type f -name "$mp3")
+        mpv --no-video "$mp3path" >/dev/null &
+        set pid $last_pid
+    end
 
-    if string match -q Inspiration $choice
+    if string match -q I $card_type
         gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
     end
 
     echo ""
     if not echo $i | rg -qP '`'
-        if string match -q Wiki $choice
+        if string match -q W $card_type
             set user_input (gum input --placeholder "0 - Exit | r - Revise | o - Open File")
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""
             end
-        else if string match -q Inspiration $choice
+        else if string match -q I $card_type
             set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""
             end
         else
-            set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+            set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
         end
         set new_date (date +"%Y-%m-%d %H:%M:%S")
 
@@ -339,13 +368,13 @@ for i in $final_sorted_array
             sed -i "s/$i/$i_trim `$new_date`/g" $target_md
         end
     else
-        if string match -q Inspiration $choice
+        if string match -q I $card_type
             set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""
             end
         else
-            set user_input (gum input --placeholder "1 - Up | 2 - Down | 0 - Exit | r - Revise | o - Open File")
+            set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
             if string match d $user_input
                 set user_input ""
             end
@@ -385,4 +414,8 @@ for i in $final_sorted_array
     set -e target_md
 end
 
+if not test -z $pid
+    kill $pid
+    set -e pid
+end
 rm /tmp/img_treasure
