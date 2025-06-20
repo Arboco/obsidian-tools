@@ -7,7 +7,7 @@ function help_function
     echo -e "Usage: gn \"message\""
     echo "Options:"
     echo "  -m       Generic message"
-    echo "  -t       Create genereic #task"
+    echo "  -t       the-card insert"
     echo "  -r       Create something to #research"
     echo "  -l       Create link"
     echo "  -q       Create quote"
@@ -24,7 +24,9 @@ if set -q _flag_h
 end
 
 if set -q _flag_t
-    echo -e "- [ ] #task $argv[1]\n" >>$obsidian_file
+    echo "$argv[1]" >>$obsidian_file
+    echo "$argv[2]" >>$obsidian_file
+    echo "" >>$obsidian_file
     exit
 end
 
