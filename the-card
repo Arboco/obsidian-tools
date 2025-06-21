@@ -19,7 +19,7 @@ function help_function
     echo ""
     echo "Filters: Apply these in combination with the above to get the exact card-pool you want"
     echo "  -s       Filter your pool based on subtags inside your card headers"
-    echo "  -f       Filter based on filename"
+    echo "  -a       Filter based on filename"
     echo "  -l       Filter based on tags"
 end
 
@@ -43,7 +43,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/subtag b/brother c/child f/family e/every p/parent r/recursive o/override g/group k/keyword f/filter l/losetag h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/subtag b/brother c/child f/family e/every p/parent r/recursive o/override g/group k/keyword a/an l/losetag h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -62,7 +62,6 @@ if set -q _flag_h
     exit
 end
 
-# not tested
 if set -q _flag_f
     set _flag_p 1
     set _flag_b 1
@@ -70,7 +69,8 @@ if set -q _flag_f
 end
 
 if set -q _flag_o
-    set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --preview 'glow {}')
+    set obsidian_file (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --preview 'glow {}')
+    set filtered_pool $obsidian_file
 end
 
 if set -q _flag_p
@@ -90,7 +90,6 @@ if set -q _flag_b
     set filtered_pool (for i in $filtered_pool; echo $i; end | sort -u)
 end
 
-# not tested
 if set -q _flag_c
     set child_names (awk '/^child:/ {flag=1; next} flag && /^  - / {print $0} flag && !/^  - / {flag=0}' $obsidian_file | sed 's/[][]//g; s/"//g; s/-//g; s/^[[:space:]]*//; s/[[:space:]]*$//')
     for i in $child_names
@@ -187,7 +186,7 @@ if set -q _flag_s
     set question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*#$regex_ready_subtags" $filtered_pool)
 end
 
-if set -q _flag_f
+if set -q _flag_a
     set filter_word (gum input --placeholder "Filter based on file name, example: filter_word1|filter_word2")
     for i in $filtered_pool
         if not string match "" $filter_word
