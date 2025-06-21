@@ -1,12 +1,14 @@
 #! /usr/bin/env fish
 
 function help_function
-    echo "Options:"
+    echo "Options: flags can be mostly combined where it makes logical sense"
     echo "  default  Card pool comes from current the-pool target or if not available generic selection"
     echo "  -o       override file used for default option so you can skip using the-pool directly"
     echo "  -p       Include card pool from the parent of the-pool target"
-    echo "  -c       Include card pool from siblings (other children of your parent), combinable with -p"
-    echo "  -e       Include card pool from every file you link to from the-pool target, combinable with -c and -p"
+    echo "  -b       Include card pool from brothers (other children of your parent)"
+    echo "  -c       Includes children of target in card-pool"
+    echo "  -f       Include entire direct family, shorthand for using -pbc"
+    echo "  -e       Include card pool from every file you link to from the-pool target"
     echo "  -r       Searches links recursively (link inside link inside link...) and adds all it finds to card pool"
     echo "           Default is a depth of 3 but depth can be customized with second argument"
     echo "  -t       Include card pool from a particular tag from pool files"
@@ -41,7 +43,7 @@ function icat_half
     rm $tmpimg
 end
 
-argparse --name=pool t/tag d/double s/subtag c/child e/every p/parent r/recursive o/override g/group k/keyword f/filter l/losetag h/help 'n/name=' -- $argv
+argparse --name=pool t/tag d/double s/subtag b/brother c/child f/family e/every p/parent r/recursive o/override g/group k/keyword f/filter l/losetag h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -60,6 +62,13 @@ if set -q _flag_h
     exit
 end
 
+# not tested
+if set -q _flag_f
+    set _flag_p 1
+    set _flag_b 1
+    set _flag_c 1
+end
+
 if set -q _flag_o
     set filtered_pool (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --preview 'glow {}')
 end
@@ -70,10 +79,20 @@ if set -q _flag_p
     set filtered_pool $filtered_pool $parent_file
 end
 
-if set -q _flag_c
+if set -q _flag_b
     set parent_name (rg -oP "(?<=parent: \"\[\[)[^\]]*" $obsidian_file)
     set parent_file (find $obsidian_folder/$notes/* -type f -iname "$parent_name.md")
     set child_names (awk '/^child:/ {flag=1; next} flag && /^  - / {print $0} flag && !/^  - / {flag=0}' $parent_file | sed 's/[][]//g; s/"//g; s/-//g; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    for i in $child_names
+        set child_file (find $obsidian_folder/$notes/* -type f -iname "$i.md")
+        set filtered_pool $filtered_pool $child_file
+    end
+    set filtered_pool (for i in $filtered_pool; echo $i; end | sort -u)
+end
+
+# not tested
+if set -q _flag_c
+    set child_names (awk '/^child:/ {flag=1; next} flag && /^  - / {print $0} flag && !/^  - / {flag=0}' $obsidian_file | sed 's/[][]//g; s/"//g; s/-//g; s/^[[:space:]]*//; s/[[:space:]]*$//')
     for i in $child_names
         set child_file (find $obsidian_folder/$notes/* -type f -iname "$i.md")
         set filtered_pool $filtered_pool $child_file
