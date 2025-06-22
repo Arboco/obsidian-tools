@@ -319,6 +319,7 @@ for i in $final_sorted_array
     if string match -q D $card_type
         while not string match y $user_decision
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
+            echo "$i"
             set input_user (gum input --placeholder "Press Enter when you are ready to provide Image Evidence of your drill, insert x if you don't want to provide evidence")
             if string match -q x $input_user
                 break
