@@ -278,6 +278,12 @@ if grep -q 'parent:' $target_md
 
         mv /tmp/temp_combined.txt $input_file
     end
+
+    if grep -q 'date:' $parent_md
+        sed -i '/date:/d' "$parent_md"
+    end
+
+    sed -i "/^tags:/i\\date: $date_last" "$parent_md"
 end
 
 rm /tmp/the-pool.txt
