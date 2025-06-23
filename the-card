@@ -69,7 +69,7 @@ if set -q _flag_f
 end
 
 if set -q _flag_o
-    set obsidian_file (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --preview 'glow {}')
+    set obsidian_file (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --delimiter='/' --with-nth=-1 --preview 'glow {}')
     set filtered_pool $obsidian_file
 end
 

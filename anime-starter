@@ -21,7 +21,7 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/anime-history | gum choose)
+    set history_selection (tac ~/.config/ortscripts/anime-history | fzf --delimiter='/' --with-nth=-1)
     set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
@@ -30,7 +30,7 @@ set notes (ot_config_grab "NotesFolder")
 set anime_folder (ot_config_grab "AnimeFolder")
 set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if not set -q _flag_i
-    set obsidian_md (rg -l "animepath:" $obsidian | fzf)
+    set obsidian_md (rg -l "animepath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1)
 end
 set raw_file_name (basename -s ".md" $obsidian_md)
 
@@ -202,6 +202,8 @@ if test $anime_episode_completed -eq 1
                 --foreground 77 --border-foreground 77 --border double \
                 --align center --width 70 --margin "1 2" --padding "2 4" \
                 "Completed Anime with this Episode!"
+            sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
+            exit
         end
     end
 end

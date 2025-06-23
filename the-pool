@@ -48,7 +48,7 @@ end
 
 if set -q _flag_p
     set chosen_tag (rg -oP --no-filename "(?<=parent: \"\[\[)[^\]]*" $default_pool_array | sort -u | fzf)
-    set target_md (rg -l "parent: \"\[\[$chosen_tag" $default_pool_array | fzf)
+    set target_md (rg -l "parent: \"\[\[$chosen_tag" $default_pool_array | fzf --delimiter='/' --with-nth=-1)
 end
 
 if set -q _flag_i
@@ -90,7 +90,7 @@ if test $multi_flag_check -eq 0
 end
 
 if test -z "$target_md"
-    set target_md (rg -l "\- pool" $obsidian_folder/$notes | fzf)
+    set target_md (rg -l "\- pool" $obsidian_folder/$notes | fzf --delimiter='/' --with-nth=-1)
 end
 
 set base_name (basename $target_md)
