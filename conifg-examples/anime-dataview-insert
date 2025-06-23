@@ -3,7 +3,7 @@
 table without id
 	choice(contains(title, ""), "[[" + file.name + " | " + title + "]]", "[[" + file.name + " | "  + "Episode " + episode + "]]"), 
 	embed(link(meta(cover-img).path, "100")) as "Cover",
-	watched-date,
+	finished-date,
 	"Size: " + file.size
 Where contains(origin, this.file.link) 
 Sort episode ASC

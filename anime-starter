@@ -24,10 +24,6 @@ if set -q _flag_i
     set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
-if not test -z $argv[1]
-    set rewatch 1
-end
-
 set obsidian (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set anime_folder (ot_config_grab "AnimeFolder")
@@ -59,24 +55,26 @@ mkdir -p $screenshot_folder
 mkdir -p $obsidian/$notes/anime_db/obsidian-tools/$folder_title/
 set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/$folder_title/$episode_md"
 
+set rewatch 0
+if rg finished-date $episode_md_final
+    set rewatch 1
+end
+
 # Preparing video file and video data 
 set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
 set thumbnail_picture "$folder_title-thumb-$current_episode.jpg"
 set episode_to_play "$episode_array[$current_episode]"
-#set seconds_anime (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
+set seconds_anime (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
 ffmpeg -y -ss 00:03:00 -i "$episode_to_play" -frames:v 1 -update 1 -q:v 2 "$screenshot_folder/$thumbnail_picture"
 
 $script_dir/scripts/inotify-anime-clip.fish "$obsidian_md" "$episode_md_final" "$raw_file_name" &
 $script_dir/scripts/inotify-anime-screenshot.fish "$episode_md_final" "$raw_file_name" &
-
-set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 
 if rg -q "^origin:" $episode_md_final
 else
     # insert into current episode md 
     echo --- >>$episode_md_final
     echo "origin: \"[[$raw_file_name]]\"" \
-        \n"watched-date: $cur_date" \
         \n"episode: $current_episode" \
         \n"cover-img: \"![[$thumbnail_picture]]\"" \
         \n"tags:" \
@@ -84,18 +82,6 @@ else
         \n"  - db" \
         \n"  - episode" \
         \n"---" >>$episode_md_final
-end
-
-if not test -z $argv[1]
-else
-    cp $obsidian_md /tmp/clone.md
-    echo $current_episode
-    awk '/watched/ { 
-    for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
-    } 
-} { print }' /tmp/clone.md >$obsidian_md
-    rm /tmp/clone.md
 end
 
 set parent_md $obsidian_md
@@ -116,6 +102,50 @@ if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/an
     mv /tmp/temp_combined.txt $input_file
 end
 
+if rg "seconds-watched:" $episode_md_final
+    set start_point (rg "seconds-watched:" $episode_md_final | rg -o "[0-9]+")
+else
+    set start_point 0
+end
+
+mpv --start=$start_point --screenshot-directory="$screenshot_folder" --input-ipc-server=/tmp/mpvsocket $episode_to_play &
+set video_pid $last_pid
+while kill -0 $last_pid
+    if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
+        echo true
+        set watched_seconds (echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+")
+    end
+    sleep 1
+end
+rm /tmp/mpvsocket
+#memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
+# inotify is very persistent so it needs to be explicitly killed
+# this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
+$script_dir/scripts/inotify-killer.fish $last_pid &
+
+set calculated_percentage (math $watched_seconds / $seconds_anime x 100)
+set percentage_int (echo "$calculated_percentage" | string split "." )[1]
+
+gum style \
+    --foreground 212 --border-foreground 212 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Watched $watched_seconds out of $seconds_anime seconds" \
+    "Watched $percentage_int% from the video"
+
+set save_time (echo "$watched_seconds" | string split ".")[1]
+
+set min_percentage 85
+if test $percentage_int -ge $min_percentage
+    set anime_episode_completed 1
+    set result_test "Watched at least $min_percentage% of the Video so it will be counted."
+    sed -i "/seconds-watched:/d" $episode_md_final
+else
+    set anime_episode_completed 0
+    set result_test "Watched less than $min_percentage% so the Video will not be counted."
+    sed -i "/seconds-watched:/d" $episode_md_final
+    sed -i "/^tags:/i\\seconds-watched: $save_time" "$episode_md_final"
+end
+
 if test $rewatch -eq 1
     if rg -q "rewatched:" $episode_md_final
         set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
@@ -123,19 +153,41 @@ if test $rewatch -eq 1
         sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
     else
         sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
+        set new_rewatch 1
+    end
+    set rewatch_text "Rewatch detected, rewatched counter = $new_rewatch"
+end
+
+gum style \
+    --foreground 79 --border-foreground 79 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "$result_test" "$rewatch_text"
+
+if test $anime_episode_completed -eq 1
+    set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+
+    if not test -z $argv[1]
+    else
+        cp $obsidian_md /tmp/clone.md
+        echo $current_episode
+        awk '/watched/ { 
+    for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
+    } 
+} { print }' /tmp/clone.md >$obsidian_md
+        rm /tmp/clone.md
+    end
+    if test $rewatch -eq 1
+        sed -i "/rewatch-date:/d" $episode_md_final
+        sed -i "/^origin:/a\\rewatch-date: $cur_date" "$episode_md_final"
+    else
+        sed -i "/^origin:/a\\finished-date: $cur_date" "$episode_md_final"
     end
 end
 
-set precise_date (date +"%Y-%m-%d %H:%M:%S")
 if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
     sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-    echo "$obsidian_md | Episode $current_episode $precise_date" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode $cur_date Watched: $percentage_int%" >>~/.config/ortscripts/anime-history
 else
-    echo "$obsidian_md | Episode $current_episode $precise_date" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode $cur_date Watched: $percentage_int%" >>~/.config/ortscripts/anime-history
 end
-
-mpv --screenshot-directory="$screenshot_folder" $episode_to_play &
-#memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
-# inotify is very persistent so it needs to be explicitly killed
-# this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
-$script_dir/scripts/inotify-killer.fish $last_pid &
