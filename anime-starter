@@ -49,6 +49,15 @@ if not test -z $argv[1]
     set current_episode $argv[1]
 end
 
+set episodes_total (cat $obsidian_md | grep -oP '(?<=episodes: )[0-9][0-9]?[0-9]?')
+if test $current_episode -gt $episodes_total
+    gum style \
+        --foreground 212 --border-foreground 212 --border double \
+        --align center --width 70 --margin "1 2" --padding "2 4" \
+        "You already completed the Anime"
+    exit
+end
+
 set episode_md "$raw_file_name Episode - $current_episode.md"
 set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title
 
@@ -126,23 +135,24 @@ $script_dir/scripts/inotify-killer.fish $last_pid &
 
 set calculated_percentage (math $watched_seconds / $seconds_anime x 100)
 set percentage_int (echo "$calculated_percentage" | string split "." )[1]
+set save_time (echo "$watched_seconds" | string split ".")[1]
+set anime_seconds_rounded (echo "$seconds_anime" | string split ".")[1]
+set min_percentage 85
 
 gum style \
     --foreground 212 --border-foreground 212 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
-    "Watched $watched_seconds out of $seconds_anime seconds" \
-    "Watched $percentage_int% from the video"
+    "Watched $save_time / $anime_seconds_rounded seconds" \
+    "That's $percentage_int% from the Video" \
+    "Target is $min_percentage%"
 
-set save_time (echo "$watched_seconds" | string split ".")[1]
-
-set min_percentage 85
 if test $percentage_int -ge $min_percentage
     set anime_episode_completed 1
-    set result_test "Watched at least $min_percentage% of the Video so it will be counted."
+    set result_test "Reached Target - Video Completed"
     sed -i "/seconds-watched:/d" $episode_md_final
 else
     set anime_episode_completed 0
-    set result_test "Watched less than $min_percentage% so the Video will not be counted."
+    set result_test "Only $percentage_int% - Saving for Next Time"
     sed -i "/seconds-watched:/d" $episode_md_final
     sed -i "/^tags:/i\\seconds-watched: $save_time" "$episode_md_final"
 end
@@ -156,7 +166,7 @@ if test $rewatch -eq 1
         sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
         set new_rewatch 1
     end
-    set rewatch_text "Rewatch detected, rewatched counter = $new_rewatch"
+    set rewatch_text "Rewatch detected - Rewatched counter = $new_rewatch"
 end
 
 gum style \
@@ -170,7 +180,6 @@ if test $anime_episode_completed -eq 1
     if not test -z $argv[1]
     else
         cp $obsidian_md /tmp/clone.md
-        echo $current_episode
         awk '/watched/ { 
                             for (i = 1; i <= NF; i++) { 
                                 if ($i ~ /^[0-9]+$/) $i = $i + 1; 
@@ -183,6 +192,17 @@ if test $anime_episode_completed -eq 1
         sed -i "/^origin:/a\\rewatch-date: $cur_date" "$episode_md_final"
     else
         sed -i "/^origin:/a\\finished-date: $cur_date" "$episode_md_final"
+    end
+    if rg -q "status: Completed" $episode_md_final
+    else
+        if test $current_episode -eq $episodes_total
+            sed -i "/status:/d" $parent_md
+            sed -i "/^score:/a\\status: Completed" "$parent_md"
+            gum style \
+                --foreground 77 --border-foreground 77 --border double \
+                --align center --width 70 --margin "1 2" --padding "2 4" \
+                "Completed Anime with this Episode!"
+        end
     end
 end
 
