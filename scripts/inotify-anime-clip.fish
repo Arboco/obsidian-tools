@@ -16,7 +16,7 @@ inotifywait -m -e create --format '%w%f' "$a_path" | while read FILE
     sleep 3
     set codec (ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 $FILE)
     set file_end (echo "$(basename $FILE)" | grep -o '...$')
-    set timestamp (date +%s)
+    set timestamp (date +%F_%H%M%S)
 
     # x265 hevc codec doesn't work on my obsidian so I convert it into a friendlier codec 
     #if test $codec = 'hevc' 

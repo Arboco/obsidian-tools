@@ -11,7 +11,7 @@ set screenshot_folder "$obsidian/$resources_folder/$anime_folder/media/screensho
 mkdir -p $screenshot_folder
 
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
-    set timestamp (date +%s)
+    set timestamp (date +%F_%H%M%S)
     mv $FILE $screenshot_folder/$folder_title$timestamp.jpg
     if rg "cover-img.*thumb" $obsidian_md
         sed -i /cover-img:/d $obsidian_md
