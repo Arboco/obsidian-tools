@@ -143,8 +143,7 @@ gum style \
     --foreground 212 --border-foreground 212 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "Watched $save_time / $anime_seconds_rounded seconds" \
-    "That's $percentage_int% from the Video" \
-    "Target is $min_percentage%"
+    "That's $percentage_int% - Required are $min_percentage%"
 
 if test $percentage_int -ge $min_percentage
     set anime_episode_completed 1
@@ -156,23 +155,6 @@ else
     sed -i "/seconds-watched:/d" $episode_md_final
     sed -i "/^tags:/i\\seconds-watched: $save_time" "$episode_md_final"
 end
-
-if test $rewatch -eq 1
-    if rg -q "rewatched:" $episode_md_final
-        set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
-        set new_rewatch (math $old_rewatch + 1)
-        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
-    else
-        sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
-        set new_rewatch 1
-    end
-    set rewatch_text "Rewatch detected - Rewatched counter = $new_rewatch"
-end
-
-gum style \
-    --foreground 79 --border-foreground 79 --border double \
-    --align center --width 70 --margin "1 2" --padding "2 4" \
-    "$result_test" "$rewatch_text"
 
 if test $anime_episode_completed -eq 1
     set cur_date (date +"%Y-%m-%dT%H:%M:%S")
@@ -206,7 +188,30 @@ if test $anime_episode_completed -eq 1
             exit
         end
     end
+    if rg -q "rewatched:" $episode_md_final
+        set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
+        set new_rewatch (math $old_rewatch + 1)
+        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
+    else
+        sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
+        set new_rewatch 1
+    end
 end
+
+if test $rewatch -eq 1
+    if test $anime_episode_completed -eq 1
+        set rewatch_text "Rewatched this already $new_rewatch times"
+    else
+        set rewatch_text "Partial Rewatch Detected"
+    end
+else
+    set rewatch_text "Original Run Detected"
+end
+
+gum style \
+    --foreground 79 --border-foreground 79 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "$result_test" "$rewatch_text"
 
 set short_date (date +"%Y-%m-%d")
 
