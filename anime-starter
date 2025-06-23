@@ -64,6 +64,7 @@ set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshot
 mkdir -p $screenshot_folder
 mkdir -p $obsidian/$notes/anime_db/obsidian-tools/$folder_title/
 set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/$folder_title/$episode_md"
+echo "$episode_md_final" >>/tmp/obsidian_last.txt
 
 set rewatch 0
 if rg finished-date $episode_md_final
@@ -221,3 +222,5 @@ if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
 else
     echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
 end
+
+rm /tmp/obsidian_last.txt
