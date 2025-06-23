@@ -1,5 +1,11 @@
 #! /usr/bin/env fish
 
+set script_dir (realpath (status dirname))
+if test -e ~/.config/ortscripts/anime-dataview-insert
+else
+    cp "$script_dir/conifg-examples/anime-dataview-insert" ~/.config/ortscripts/
+end
+
 function help_function
     echo "Options:"
     echo "  -i       History"
@@ -18,7 +24,10 @@ if set -q _flag_i
     set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
-set script_dir (realpath (status dirname))
+if not test -z $argv[1]
+    set rewatch 1
+end
+
 set obsidian (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set anime_folder (ot_config_grab "AnimeFolder")
@@ -39,6 +48,9 @@ else
     sed -i "s/watched:/watched: 0/g" $obsidian_md
 end
 set current_episode (math $grepd_episode + 1)
+if not test -z $argv[1]
+    set current_episode $argv[1]
+end
 
 set episode_md "$raw_file_name Episode - $current_episode.md"
 set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title
@@ -51,34 +63,40 @@ set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/$folder_title/$ep
 set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
 set thumbnail_picture "$folder_title-thumb-$current_episode.jpg"
 set episode_to_play "$episode_array[$current_episode]"
-set seconds_anime (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
-ffmpeg -y -ss 00:03:00 -i "$episode_to_play" -frames:v 1 -q:v 2 $screenshot_folder/$thumbnail_picture
+#set seconds_anime (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
+ffmpeg -y -ss 00:03:00 -i "$episode_to_play" -frames:v 1 -update 1 -q:v 2 "$screenshot_folder/$thumbnail_picture"
 
 $script_dir/scripts/inotify-anime-clip.fish "$obsidian_md" "$episode_md_final" "$raw_file_name" &
 $script_dir/scripts/inotify-anime-screenshot.fish "$episode_md_final" "$raw_file_name" &
 
-set cur_date (date +%Y-%m-%d)
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 
-# insert into current episode md 
-echo --- >>$episode_md_final
-echo "origin: \"[[$raw_file_name]]\"" \
-    \n"date: $cur_date" \
-    \n"episode: $current_episode" \
-    \n"cover-img: \"![[$thumbnail_picture]]\"" \
-    \n"tags:" \
-    \n"  - anime" \
-    \n"  - db" \
-    \n"  - episode" \
-    \n"---" >>$episode_md_final
+if rg -q "^origin:" $episode_md_final
+else
+    # insert into current episode md 
+    echo --- >>$episode_md_final
+    echo "origin: \"[[$raw_file_name]]\"" \
+        \n"watched-date: $cur_date" \
+        \n"episode: $current_episode" \
+        \n"cover-img: \"![[$thumbnail_picture]]\"" \
+        \n"tags:" \
+        \n"  - anime" \
+        \n"  - db" \
+        \n"  - episode" \
+        \n"---" >>$episode_md_final
+end
 
-cp $obsidian_md /tmp/clone.md
-echo $current_episode
-awk '/watched/ { 
+if not test -z $argv[1]
+else
+    cp $obsidian_md /tmp/clone.md
+    echo $current_episode
+    awk '/watched/ { 
     for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + 1; 
     } 
 } { print }' /tmp/clone.md >$obsidian_md
-rm /tmp/clone.md
+    rm /tmp/clone.md
+end
 
 set parent_md $obsidian_md
 if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/anime-dataview-insert
@@ -96,6 +114,16 @@ if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/an
     cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
 
     mv /tmp/temp_combined.txt $input_file
+end
+
+if test $rewatch -eq 1
+    if rg -q "rewatched:" $episode_md_final
+        set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
+        set new_rewatch (math $old_rewatch + 1)
+        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
+    else
+        sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
+    end
 end
 
 set precise_date (date +"%Y-%m-%d %H:%M:%S")

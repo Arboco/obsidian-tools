@@ -13,5 +13,9 @@ mkdir -p $screenshot_folder
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
     set timestamp (date +%s)
     mv $FILE $screenshot_folder/$folder_title$timestamp.jpg
+    if rg "cover-img.*thumb" $obsidian_md
+        sed -i /cover-img:/d $obsidian_md
+        sed -i "/^episode:/a\\cover-img: \"!\[\[$folder_title$timestamp.jpg\]\]\"" $obsidian_md
+    end
     echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
 end

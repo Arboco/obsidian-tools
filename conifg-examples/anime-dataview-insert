@@ -1,11 +1,10 @@
 
 ```dataview
 table without id
+	choice(contains(title, ""), "[[" + file.name + " | " + title + "]]", "[[" + file.name + " | "  + "Episode " + episode + "]]"), 
 	embed(link(meta(cover-img).path, "100")) as "Cover",
-	"[[" + file.name + " | " + substring(file.name, 0, 25) + choice(length(file.name) > 25, "...]]", "]]"), 
-	"Episode: " + episode, 
-	date,
-	file.size
-Where contains(origin, this.file.link)
+	watched-date,
+	"Size: " + file.size
+Where contains(origin, this.file.link) 
 Sort episode ASC
 ```
