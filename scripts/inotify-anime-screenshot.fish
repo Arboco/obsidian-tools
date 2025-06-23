@@ -10,6 +10,11 @@ set screenshot_folder "$obsidian/$resources_folder/$anime_folder/media/screensho
 
 mkdir -p $screenshot_folder
 
+set debug_file /tmp/anime-starter-debug
+echo "screenshot file" >>$debug_file
+echo "obsidian file: $obsidian_md" >>$debug_file
+echo "screenshot_folder: $screenshot_folder" >>$debug_file
+
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
     set timestamp (date +%s)
     mv $FILE $screenshot_folder/$folder_title$timestamp.jpg

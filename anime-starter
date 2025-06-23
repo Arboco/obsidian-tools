@@ -216,3 +216,13 @@ if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
 else
     echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
 end
+
+#debug info
+
+set debug_file /tmp/anime-starter-debug
+echo "Main File" >>$debug_file
+echo "parent file: $obsidian_md" >>$debug_file
+echo "episode subfile: $episode_md_final" >>$debug_file
+echo "anime path: $a_path" >>$debug_file
+echo "raw file name: $raw_file_name" >>$debug_file
+echo "thumbnail: $screenshot_folder/$thumbnail_picture" >>$debug_file
