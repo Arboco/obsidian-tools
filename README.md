@@ -5,17 +5,35 @@ Obsidian md file requires YAML property "launch" where the command line launch c
 Games are launched with:
 `gameinit "<title of obsidian md file>"`
 
-# capture anime
-Scripts to capture anime and manga material and seamlessly integrate it into obsidian note
+# anime-starter 
+Dependencies: 
+  - socat 
+  - mpv-cut plugin
+  - inotify-tools 
 
+## Usage 
+Put "animepath" property inside your yaml with the absolute path of the anime inside it. That's it. 
+
+## Features 
+- fzf search for all animepath anime 
+- -i flag for history feature 
+- give number as argument to launch the episode directly 
+- automatically tracks your completion status 
+- only increases episode count if episode is actually completed (85% completion)
+- tracks when an episode was not completed and opens it again at the exact time it was closed
+- automatically tracks rewatches 
+- automatic dataview creation with individual files for each episode 
+- automatic thumbnail generation 
+- replace thumbnail any time with your own screenshot 
+- delete cover-img property to insert a new thumbnail for your next screenshot 
+- screenshot support and auto insertion with s key 
+- video clip support and insertion with c c (mpv-cut plugin)
 
 Dependencies:
 - mpv
-- mpv-cut plugin
 - graphicsmagick
 - scrot
 - xprintidle
-- inotify-tools
 
 # Special yaml properties:
 ## cut: x y 

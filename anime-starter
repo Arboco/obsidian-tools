@@ -7,6 +7,7 @@ else
 end
 
 function help_function
+    echo "You can give a number as argument which opens that episode directly"
     echo "Options:"
     echo "  -i       History"
 end
@@ -171,10 +172,10 @@ if test $anime_episode_completed -eq 1
         cp $obsidian_md /tmp/clone.md
         echo $current_episode
         awk '/watched/ { 
-    for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
-    } 
-} { print }' /tmp/clone.md >$obsidian_md
+                            for (i = 1; i <= NF; i++) { 
+                                if ($i ~ /^[0-9]+$/) $i = $i + 1; 
+                            } 
+                        } { print }' /tmp/clone.md >$obsidian_md
         rm /tmp/clone.md
     end
     if test $rewatch -eq 1

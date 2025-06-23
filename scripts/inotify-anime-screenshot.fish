@@ -17,5 +17,12 @@ inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
         sed -i /cover-img:/d $obsidian_md
         sed -i "/^episode:/a\\cover-img: \"!\[\[$folder_title$timestamp.jpg\]\]\"" $obsidian_md
     end
+
+    if rg "cover-img:" $obsidian_md
+    else
+        sed -i "/^episode:/a\\cover-img: \"!\[\[$folder_title$timestamp.jpg\]\]\"" $obsidian_md
+    end
+
     echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
+    echo "" >>$obsidian_md
 end
