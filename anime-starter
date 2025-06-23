@@ -1,0 +1,113 @@
+#! /usr/bin/env fish
+
+function help_function
+    echo "Options:"
+    echo "  -i       History"
+end
+
+argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+or return
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_i
+    set history_selection (tac ~/.config/ortscripts/anime-history | gum choose)
+    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
+end
+
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set anime_folder (ot_config_grab "AnimeFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
+if not set -q _flag_i
+    set obsidian_md (rg -l "animepath:" $obsidian | fzf)
+end
+set raw_file_name (basename -s ".md" $obsidian_md)
+
+# Obtaining md and setting up folders and sub md 
+set a_path (cat $obsidian_md | grep 'animepath:')
+set a_path (echo $a_path | grep -oP '(?<=animepath: ).*$')
+set folder_title (echo $raw_file_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+if rg -q 'watched: [0-9]' $obsidian_md
+    set grepd_episode (cat $obsidian_md | grep -oP '(?<=watched: )[0-9][0-9]?[0-9]?')
+else
+    set grepd_episode 0
+    sed -i "s/watched:/watched: 0/g" $obsidian_md
+end
+set current_episode (math $grepd_episode + 1)
+
+set episode_md "$raw_file_name Episode - $current_episode.md"
+set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title
+
+mkdir -p $screenshot_folder
+mkdir -p $obsidian/$notes/anime_db/obsidian-tools/$folder_title/
+set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/$folder_title/$episode_md"
+
+# Preparing video file and video data 
+set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
+set thumbnail_picture "$folder_title-thumb-$current_episode.jpg"
+set episode_to_play "$episode_array[$current_episode]"
+set seconds_anime (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
+ffmpeg -y -ss 00:03:00 -i "$episode_to_play" -frames:v 1 -q:v 2 $screenshot_folder/$thumbnail_picture
+
+$script_dir/scripts/inotify-anime-clip.fish "$obsidian_md" "$episode_md_final" "$raw_file_name" &
+$script_dir/scripts/inotify-anime-screenshot.fish "$episode_md_final" "$raw_file_name" &
+
+set cur_date (date +%Y-%m-%d)
+
+# insert into current episode md 
+echo --- >>$episode_md_final
+echo "origin: \"[[$raw_file_name]]\"" \
+    \n"date: $cur_date" \
+    \n"episode: $current_episode" \
+    \n"cover-img: \"![[$thumbnail_picture]]\"" \
+    \n"tags:" \
+    \n"  - anime" \
+    \n"  - db" \
+    \n"  - episode" \
+    \n"---" >>$episode_md_final
+
+cp $obsidian_md /tmp/clone.md
+echo $current_episode
+awk '/watched/ { 
+    for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
+    } 
+} { print }' /tmp/clone.md >$obsidian_md
+rm /tmp/clone.md
+
+set parent_md $obsidian_md
+if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/anime-dataview-insert
+    sed -i "/^tags:/i\\cssclasses:" "$parent_md"
+    sed -i "/^cssclasses:/a\\  - cards" "$parent_md"
+    sed -i "/^cssclasses:/a\\  - table-max" "$parent_md"
+    set input_file $parent_md
+    set insert_file $HOME/.config/ortscripts/anime-dataview-insert
+
+    set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+    set after_line (math $last_delim_line + 1)
+
+    head -n $last_delim_line $input_file >/tmp/temp_before.txt
+    tail -n +$after_line $input_file >/tmp/temp_after.txt
+    cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+    mv /tmp/temp_combined.txt $input_file
+end
+
+set precise_date (date +"%Y-%m-%d %H:%M:%S")
+if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
+    sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode $precise_date" >>~/.config/ortscripts/anime-history
+else
+    echo "$obsidian_md | Episode $current_episode $precise_date" >>~/.config/ortscripts/anime-history
+end
+
+mpv --screenshot-directory="$screenshot_folder" $episode_to_play &
+#memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
+# inotify is very persistent so it needs to be explicitly killed
+# this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
+$script_dir/scripts/inotify-killer.fish $last_pid &

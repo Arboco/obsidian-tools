@@ -2,10 +2,11 @@
 
 set obsidian_md "$argv[1]"
 set title "$argv[2]"
-set a_path (cat $obsidian_md | grep 'path:')
-set a_path (echo $a_path | grep -oP '(?<=path: ).*$')
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
-set screenshot_folder (ot_config_grab "AnimeFolder")/media/screenshots/$folder_title
+set anime_folder (ot_config_grab "AnimeFolder")
+set screenshot_folder "$obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title"
 
 mkdir -p $screenshot_folder
 
