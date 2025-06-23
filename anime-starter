@@ -118,7 +118,7 @@ else
     set start_point 0
 end
 
-mpv --start=$start_point --screenshot-directory="$screenshot_folder" --input-ipc-server=/tmp/mpvsocket $episode_to_play &
+mpv --start=$start_point --screenshot-directory="$screenshot_folder" --screenshot-jpeg-quality=75 --input-ipc-server=/tmp/mpvsocket $episode_to_play &
 set video_pid $last_pid
 while kill -0 $last_pid
     if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
@@ -208,9 +208,11 @@ if test $anime_episode_completed -eq 1
     end
 end
 
+set short_date (date +"%Y-%m-%d")
+
 if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
     sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-    echo "$obsidian_md | Episode $current_episode $cur_date Watched: $percentage_int%" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
 else
-    echo "$obsidian_md | Episode $current_episode $cur_date Watched: $percentage_int%" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
 end

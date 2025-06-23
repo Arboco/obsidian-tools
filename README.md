@@ -22,6 +22,8 @@ Dependencies:
 ## Usage 
 Put "animepath" property inside your yaml with the absolute path of the anime inside it. That's it. 
 
+Dataview insert can be edited in ~/.config/ortscripts/anime-dataview-insert
+
 ## Features 
 - fzf search for all animepath anime 
 - -i flag for history feature 
