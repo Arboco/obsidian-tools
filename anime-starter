@@ -54,7 +54,8 @@ if test $current_episode -gt $episodes_total
     gum style \
         --foreground 212 --border-foreground 212 --border double \
         --align center --width 70 --margin "1 2" --padding "2 4" \
-        "You already completed the Anime"
+        "You already completed this anime..."
+    ffplay -nodisp -autoexit $script_dir/helper/cold-chill-emote-animal-crossing.mp3 >/dev/null 2>&1
     exit
 end
 
@@ -185,7 +186,9 @@ if test $anime_episode_completed -eq 1
                 --foreground 77 --border-foreground 77 --border double \
                 --align center --width 70 --margin "1 2" --padding "2 4" \
                 "Completed Anime with this Episode!"
+            ffplay -nodisp -autoexit $script_dir/helper/delight-emote-animal-crossing.mp3 >/dev/null 2>&1
             sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
+
             exit
         end
     end
