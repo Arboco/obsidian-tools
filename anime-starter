@@ -10,9 +10,10 @@ function help_function
     echo "You can give a number as argument which opens that episode directly"
     echo "Options:"
     echo "  -i       History"
+    echo "  -m       Memento player"
 end
 
-argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+argparse --name=gameinit i/history h/help m/memento 'n/name=' -- $argv
 or return
 
 if set -q _flag_h
@@ -22,7 +23,15 @@ end
 
 if set -q _flag_i
     set history_selection (tac ~/.config/ortscripts/anime-history | fzf --delimiter='/' --with-nth=-1)
+    if echo $history_selection | rg "#Memento"
+        set _flag_m 1
+    end
     set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
+end
+
+set player mpv
+if set -q _flag_m
+    set player memento
 end
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
@@ -120,7 +129,7 @@ else
     set start_point 0
 end
 
-mpv --start=$start_point --screenshot-directory="$screenshot_folder" --screenshot-jpeg-quality=75 --input-ipc-server=/tmp/mpvsocket $episode_to_play &
+$player --start=$start_point --screenshot-directory="$screenshot_folder" --screenshot-jpeg-quality=75 --input-ipc-server=/tmp/mpvsocket $episode_to_play &
 set video_pid $last_pid
 while kill -0 $last_pid
     if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
@@ -130,7 +139,6 @@ while kill -0 $last_pid
     sleep 1
 end
 rm /tmp/mpvsocket
-#memento --screenshot-directory="$screenshot_folder" $my_array[$current_episode] &
 # inotify is very persistent so it needs to be explicitly killed
 # this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
 $script_dir/scripts/inotify-killer.fish $last_pid &
@@ -221,6 +229,10 @@ set short_date (date +"%Y-%m-%d")
 
 if test $anime_episode_completed -eq 1
     set completed_text ">>> Advance to next Episode >>>"
+end
+
+if set -q _flag_m
+    set completed_text "$completed_text #Memento"
 end
 
 if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
