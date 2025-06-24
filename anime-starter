@@ -219,11 +219,15 @@ gum style \
 
 set short_date (date +"%Y-%m-%d")
 
+if test $anime_episode_completed -eq 1
+    set completed_text ">>> Advance to next Episode >>>"
+end
+
 if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
     sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/anime-history
 else
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int%" >>~/.config/ortscripts/anime-history
+    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/anime-history
 end
 
 rm /tmp/obsidian_last.txt
