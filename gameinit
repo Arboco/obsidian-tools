@@ -10,10 +10,16 @@ function help_function
     echo "  -w       Profile 3"
     echo "  -d       Debug Mode"
     echo "  -m       Don't save gameinit into history"
+    echo "  -j       Activates jap-trans local server"
 end
 
-argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug m/minua h/help 'n/name=' -- $argv
+argparse --name=gameinit v/visualnovel x/xbox w/wambo d/debug m/minua j/japan h/help 'n/name=' -- $argv
 or return
+
+if set -q _flag_h
+    help_function
+    exit
+end
 
 set obsidian (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource $obsidian/(ot_config_grab "ObsidianResourceFolder")
@@ -44,11 +50,6 @@ mkdir -p $obsidian_resource/(ot_config_grab "MindPalaceFolder")
 xset s off
 xset -dpms
 
-if set -q _flag_h
-    help_function
-    exit
-end
-
 if set -q _flag_v
     set profile_name (ot_config_grab "Profile1DeviceName")
     $script_dir/scripts/record_input.fish $argv[1] 1 &
@@ -71,6 +72,11 @@ if set -q _flag_w
     $script_dir/scripts/input_idle_watcher.fish 3 (ot_config_grab "Profile3ControllerCheck") $hook_values[1] &
     echo "Starting Profile 3 $profile_name"
     set his_flag w
+end
+
+if set -q _flag_j
+    source ~/python/jap-trans/bin/activate.fish
+    python3 $script_dir/python/jap-trans-server.py &
 end
 
 set history_option 1
@@ -229,3 +235,7 @@ gum style \
     --foreground 79 --border-foreground 79 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "Playtime updated from $info_start_playtime to $info_final_playtime seconds."
+
+if set -q _flag_j
+    kill (pgrep -f jap-trans-server.py)
+end

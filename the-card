@@ -281,7 +281,7 @@ end | sort -n)
 for i in $sorted_unix_array
     set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
 end
-
+clear
 for i in $final_sorted_array
     set card_type (echo "$i" | grep -o "^.")
 
@@ -352,6 +352,7 @@ for i in $final_sorted_array
         kill $pid
         set -e pid
     end
+    clear
     echo "Source: $target_md"
     awk -v search="$trimmed" '
       index($0, search) {flag=1}

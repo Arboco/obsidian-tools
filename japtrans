@@ -1,0 +1,67 @@
+#! /usr/bin/env fish
+set obsidian (ot_config_grab "ObsidianMainFolder")
+if test -e /tmp/obsidian_last.txt
+    set note_file (cat /tmp/obsidian_last.txt)
+else
+    set note_file (echo "$obsidian/notes/misc/japtrans-output.md")
+end
+set resource_folder (ot_config_grab "ObsidianResourceFolder")
+set drop_folder $obsidian/$resource_folder/japtrans
+mkdir -p $drop_folder
+set device_name (ot_config_grab "Profile1DeviceName")
+set script_dir (realpath (status dirname))
+
+set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
+
+set audio_button (ot_config_grab "Profile1AudioButton")
+set select_screenshot (ot_config_grab "Profile1SelectScreenshotButton")
+
+source ~/python/jap-trans/bin/activate.fish
+python3 $script_dir/python/jap-trans-server.py &
+
+yes | evtest >/dev/null 2>/tmp/evtest-info.txt
+set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+
+evtest $devinput | while read line
+
+    if string match -q "*KEY_DELETE), value 1" "$line"
+        echo \a
+        sleep 0.5
+        set uuid_name (uuidgen)
+        set timestamp (date +%F_%H%M%S)
+        set fv_name "$uuid_name-vid-$timestamp.mp3"
+        echo -e "![[$fv_name]]\n" >>"$note_file"
+
+        $script_dir/scripts/input-ffmpeg-escaper.fish 1 &
+
+        ffmpeg \
+            -thread_queue_size 1024 -f pulse -i $audio_array[1].monitor \
+            -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
+            -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
+            -ac 2 -ar 44100 -b:a 192k $drop_folder/$fv_name
+
+        python3 $script_dir/python/transcribe.py $drop_folder/$fv_name | sed 's/\[[^][]*\]//g' | grep -v '^$' | tee -a "$note_file"
+        ffplay -nodisp -autoexit $script_dir/helper/pleased-emote-animal-crossing.mp3 >/dev/null 2>&1
+
+    end
+
+    if string match -q "*KEY_SYSRQ), value 1" "$line"
+        set timestamp (date +%F_%H%M%S)
+        set uuid_name (uuidgen)
+        set fs_name "$uuid_name-$timestamp.jpg"
+        scrot -s $drop_folder/$fs_name
+        echo -e "![[$fs_name]]\n" >>"$note_file"
+
+        set url "http://127.0.0.1:8081"
+        curl --silent --head --fail $url >/dev/null
+        if test $status -eq 0
+            echo "Server is ready"
+            set response (curl -s "$url/?q=$drop_folder/$fs_name")
+            echo "$response" >>"$note_file"
+            echo "$response"
+        else
+            echo "Server not reachable"
+        end
+
+    end
+end

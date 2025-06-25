@@ -1,5 +1,7 @@
 #! /usr/bin/env fish
 
+set script_dir (dirname (status --current-filename))
+set parent_dir (dirname $script_dir)
 set obsidian (ot_config_grab "ObsidianMainFolder")
 set filename "$argv[1]"
 set note_file (find $obsidian -type f -name "$argv[1].md" -not -path '*/[@.]*')
@@ -20,6 +22,7 @@ set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
 set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
+set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
 
 mkdir -p $screenshot_folder
 
@@ -102,5 +105,35 @@ evtest $devinput | while read line
             -thread_queue_size 1024 -f pulse -i $audio_array[2].monitor \
             -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=3" \
             -ac 2 -ar 44100 -b:a 192k $screenshot_folder/$fv_name
+
+        set url "http://127.0.0.1:8081"
+        # Use curl with --silent --head to send a HEAD request and check HTTP status
+        curl --silent --head --fail $url >/dev/null
+        if test $status -eq 0
+            source ~/python/jap-trans/bin/activate.fish
+            python3 $parent_dir/python/transcribe.py $screenshot_folder/$fv_name | sed 's/\[[^][]*\]//g' >>"$note_file"
+            ffplay -nodisp -autoexit $parent_dir/helper/pleased-emote-animal-crossing.mp3 >/dev/null 2>&1
+        end
+
+    end
+
+    if string match -q "*$select_screenshot), value 1" "$line"
+        echo \a
+        set timestamp (date +%F_%H%M%S)
+        set fs_name "$folder_title-$timestamp.jpg"
+        scrot -s $screenshot_folder/$fs_name
+        echo -e "![[$fs_name]]\n" >>"$note_file"
+
+        set url "http://127.0.0.1:8081"
+        # Use curl with --silent --head to send a HEAD request and check HTTP status
+        curl --silent --head --fail $url >/dev/null
+        if test $status -eq 0
+            echo "Server is ready"
+            set response (curl -s "$url/?q=$screenshot_folder/$fs_name")
+            echo "$response" >>"$note_file"
+        else
+            echo "Server not reachable"
+        end
+
     end
 end
