@@ -24,6 +24,16 @@ set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
 
+if test -z (ot_config_grab "Profile"$id"ScreenshotButton")
+    set screenshot_button screenshot_button
+else if test -z (ot_config_grab "Profile"$id"RecordButton")
+    set record_button record_button
+else if test -z (ot_config_grab "Profile"$id"AudioButton")
+    set audio_button audio_button
+else if test -z (ot_config_grab "Profile"$id"SelectScreenshotButton")
+    set select_screenshot select_screenshot
+end
+
 mkdir -p $screenshot_folder
 
 # required since event number can change
@@ -117,23 +127,25 @@ evtest $devinput | while read line
 
     end
 
-    if string match -q "*$select_screenshot), value 1" "$line"
-        echo \a
-        set timestamp (date +%F_%H%M%S)
-        set fs_name "$folder_title-$timestamp.jpg"
-        scrot -s $screenshot_folder/$fs_name
-        echo -e "![[$fs_name]]\n" >>"$note_file"
+    if test $controller_check -eq 0
+        if string match -q "*$select_screenshot), value 1" "$line"
+            echo \a
+            set timestamp (date +%F_%H%M%S)
+            set fs_name "$folder_title-$timestamp.jpg"
+            scrot -s $screenshot_folder/$fs_name
+            echo -e "![[$fs_name]]\n" >>"$note_file"
 
-        set url "http://127.0.0.1:8081"
-        # Use curl with --silent --head to send a HEAD request and check HTTP status
-        curl --silent --head --fail $url >/dev/null
-        if test $status -eq 0
-            echo "Server is ready"
-            set response (curl -s "$url/?q=$screenshot_folder/$fs_name")
-            echo "$response" >>"$note_file"
-        else
-            echo "Server not reachable"
+            set url "http://127.0.0.1:8081"
+            # Use curl with --silent --head to send a HEAD request and check HTTP status
+            curl --silent --head --fail $url >/dev/null
+            if test $status -eq 0
+                echo "Server is ready"
+                set response (curl -s "$url/?q=$screenshot_folder/$fs_name")
+                echo "$response" >>"$note_file"
+            else
+                echo "Server not reachable"
+            end
+
         end
-
     end
 end
