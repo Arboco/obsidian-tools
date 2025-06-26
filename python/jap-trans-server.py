@@ -4,6 +4,7 @@ from manga_ocr import MangaOcr
 
 mocr = MangaOcr()
 
+
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.send_response(200)
@@ -22,11 +23,13 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(result_text.encode())
 
+
 def run(server_class=HTTPServer, handler_class=SimpleHandler):
     server_address = ('127.0.0.1', 8081)
     httpd = server_class(server_address, handler_class)
     print("Starting server on port 8081...")
     httpd.serve_forever()
+
 
 if __name__ == "__main__":
     run()

@@ -22,7 +22,7 @@ inotifywait -m -e create --format '%w%f' "$a_path" | while read FILE
     #if test $codec = 'hevc' 
     #echo "hevc codec detected, conversion started."
     set jap_lang (ffprobe -v error -select_streams a -show_entries stream=index:stream_tags=language -of csv=p=0 $FILE | grep jpn | cut -d',' -f1)
-    ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -map 0:v -map 0:$jap_lang $screenshot_folder/$folder_title$timestamp.mp4
+    ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -map 0:v -map 0:$jap_lang[1] $screenshot_folder/$folder_title$timestamp.mp4
     echo -e "![[$folder_title$timestamp.mp4]]\n" >>$episode_md
     echo "" >>$episode_md
     rm $FILE
