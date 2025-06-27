@@ -166,8 +166,10 @@ else
     sed -i "/^tags:/i\\seconds-watched: $save_time" "$episode_md_final"
 end
 
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+set short_date (date +"%Y-%m-%d")
+
 if test $anime_episode_completed -eq 1
-    set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 
     if not test -z $argv[1]
     else
@@ -196,7 +198,12 @@ if test $anime_episode_completed -eq 1
                 "Completed Anime with this Episode!"
             ffplay -nodisp -autoexit $script_dir/helper/delight-emote-animal-crossing.mp3 >/dev/null 2>&1
             sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-
+            sed -i "/^score:/a\\finished: $short_date" "$parent_md"
+            for i in $obsidian/$notes/anime_db/obsidian-tools/$folder_title/*
+                set eps_obs_name (basename -s ".md" $i)
+                echo "[[$eps_obs_name]]" >>$parent_md
+                sed -e '1,/^---$/d' -e '/^---$/q' $i >>$parent_md
+            end
             exit
         end
     end
@@ -224,8 +231,6 @@ gum style \
     --foreground 79 --border-foreground 79 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "$result_test" "$rewatch_text"
-
-set short_date (date +"%Y-%m-%d")
 
 if test $anime_episode_completed -eq 1
     set completed_text ">>> Advance to next Episode >>>"
