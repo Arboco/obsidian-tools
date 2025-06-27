@@ -1,0 +1,151 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+
+function help_function
+    echo "You can give a number as argument which opens that episode directly"
+    echo "Options:"
+    echo "  -i       History"
+    echo "  -m       Memento player"
+end
+
+argparse --name=gameinit i/history h/help m/memento 'n/name=' -- $argv
+or return
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_i
+    set history_selection (tac ~/.config/ortscripts/film-history | fzf --delimiter='/' --with-nth=-1)
+    if echo $history_selection | rg "#Memento"
+        set _flag_m 1
+    end
+    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
+end
+
+set player mpv
+if set -q _flag_m
+    set player memento
+end
+
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
+set film_folder film
+if not set -q _flag_i
+    set obsidian_md (rg -l "filmpath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1)
+end
+set raw_file_name (basename -s ".md" $obsidian_md)
+
+set a_path (cat $obsidian_md | grep 'filmpath:')
+set a_path (echo $a_path | grep -oP '(?<=filmpath: ).*$')
+set folder_title (echo $raw_file_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+set screenshot_folder $obsidian/$resources_folder/$film_folder/media/screenshots/$folder_title
+echo $obsidian_md >/tmp/obsidian_last.txt
+
+mkdir -p $screenshot_folder
+
+set rewatch 0
+if rg "finished:" $obsidian_md
+    set rewatch 1
+end
+
+set film_file $a_path
+set seconds_film (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $film_file)
+
+$script_dir/scripts/inotify-anime-clip.fish film "$obsidian_md" "$raw_file_name" &
+$script_dir/scripts/inotify-anime-screenshot.fish "$obsidian_md" "$raw_file_name" film &
+
+if rg "seconds-watched:" $obsidian_md
+    set start_point (rg "seconds-watched:" $obsidian_md | rg -o "[0-9]+")
+else
+    set start_point 0
+end
+
+$player --start=$start_point --screenshot-directory="$screenshot_folder" --screenshot-jpeg-quality=75 --input-ipc-server=/tmp/mpvsocket $film_file &
+set video_pid $last_pid
+while kill -0 $last_pid
+    if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
+        echo true
+        set watched_seconds (echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+")
+    end
+    sleep 1
+end
+rm /tmp/mpvsocket
+$script_dir/scripts/inotify-killer.fish $last_pid &
+
+set calculated_percentage (math $watched_seconds / $seconds_film x 100)
+set percentage_int (echo "$calculated_percentage" | string split "." )[1]
+set save_time (echo "$watched_seconds" | string split ".")[1]
+set film_seconds_rounded (echo "$seconds_film" | string split ".")[1]
+set min_percentage 92
+
+gum style \
+    --foreground 212 --border-foreground 212 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Watched $save_time / $film_seconds_rounded seconds" \
+    "That's $percentage_int% - Required are $min_percentage%"
+
+if test $percentage_int -ge $min_percentage
+    set film_completed 1
+    set result_test "Reached Target - Video Completed"
+    sed -i "/seconds-watched:/d" $obsidian_md
+else
+    set film_completed 0
+    set result_test "Only $percentage_int% - Saving for Next Time"
+    sed -i "/seconds-watched:/d" $obsidian_md
+    sed -i "/^tags:/i\\seconds-watched: $save_time" "$obsidian_md"
+end
+
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+set short_date (date +"%Y-%m-%d")
+
+if test $film_completed -eq 1
+
+    if test $rewatch -eq 1
+        sed -i "/rewatch-date:/d" $obsidian_md
+        sed -i "/^filmpath:/a\\rewatch-date: $cur_date" "$obsidian_md"
+    else
+        sed -i "/^filmpath:/a\\finished: $cur_date" "$obsidian_md"
+    end
+
+    if rg -q "rewatched:" $obsidian_md
+        set old_rewatch (rg "rewatched:" $obsidian_md | rg -o "[0-9]+")
+        set new_rewatch (math $old_rewatch + 1)
+        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $obsidian_md
+    else
+        sed -i "/^finished:/i\\rewatched: 1" "$obsidian_md"
+        set new_rewatch 1
+    end
+end
+
+if test $rewatch -eq 1
+    if test $film_completed -eq 1
+        set rewatch_text "Rewatched this already $new_rewatch times"
+    else
+        set rewatch_text "Partial Rewatch Detected"
+    end
+else
+    set rewatch_text "Original Run Detected"
+end
+
+gum style \
+    --foreground 79 --border-foreground 79 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "$result_test" "$rewatch_text"
+
+if set -q _flag_m
+    set completed_text "$completed_text #Memento"
+end
+
+if rg -q "$obsidian_md" ~/.config/ortscripts/film-history
+    sed -i "/$raw_file_name/d" ~/.config/ortscripts/film-history
+    echo "$obsidian_md | ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/film-history
+else
+    echo "$obsidian_md | ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/film-history
+end
+
+rm /tmp/obsidian_last.txt
