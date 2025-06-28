@@ -33,14 +33,8 @@ inotifywait -m -e create --format '%w%f' "$a_path" | while read FILE
     # x265 hevc codec doesn't work on my obsidian so I convert it into a friendlier codec 
     #if test $codec = 'hevc' 
     #echo "hevc codec detected, conversion started."
-
-    if string match film $argv[1]
-        set lang (ffprobe -v error -select_streams a -show_entries stream=index:stream_tags=language -of csv=p=0 $FILE | cut -d',' -f1)
-        ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -map 0:v -map 0:$lang[1] $screenshot_folder/$folder_title$timestamp.mp4
-    else
-        set jap_lang (ffprobe -v error -select_streams a -show_entries stream=index:stream_tags=language -of csv=p=0 $FILE | grep jpn | cut -d',' -f1)
-        ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -map 0:v -map 0:$jap_lang[1] $screenshot_folder/$folder_title$timestamp.mp4
-    end
+    set lang (echo '{ "command": ["get_property", "track-list"] }' | socat - /tmp/mpvsocket | jq '.data[] | select(.type == "audio" and .selected == true)' | jq '.["id"]')
+    ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -map 0:v -map 0:$lang[1] $screenshot_folder/$folder_title$timestamp.mp4
     echo -e "![[$folder_title$timestamp.mp4]]\n" >>$episode_md
     echo "" >>$episode_md
     rm $FILE
