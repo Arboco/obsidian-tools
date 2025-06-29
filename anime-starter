@@ -133,8 +133,9 @@ $player --start=$start_point --screenshot-directory="$screenshot_folder" --scree
 set video_pid $last_pid
 while kill -0 $last_pid
     if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
-        echo true
         set watched_seconds (echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+")
+        set calculated_percentage (math $watched_seconds / $seconds_anime x 100)
+        echo (echo "$calculated_percentage" | string split "." )[1]%
     end
     sleep 1
 end
