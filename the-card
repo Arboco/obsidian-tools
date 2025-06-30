@@ -416,7 +416,7 @@ for i in $final_sorted_array
             exit
         else if string match r $user_input
             clear
-            sed -i "s/$i/ - [?] $i_trim/g" $target_md
+            kitty nvim +/"$i" $target_md
         else if string match 1 $user_input
             clear
             sed -i "s/$i/$i_trim `$new_date S-Value: 1`/g" $target_md
@@ -450,8 +450,7 @@ for i in $final_sorted_array
             exit
         else if string match r $user_input
             clear
-            sed -i "s/$i/ - [?] $i/g" $target_md
-            sed -i "s/$old_date/$new_date/g" $target_md
+            kitty nvim +/"$i" $target_md
         else if string match 1 $user_input
             clear
             set svalue (math $svalue + 1)
