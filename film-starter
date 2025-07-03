@@ -69,8 +69,9 @@ $player --start=$start_point --screenshot-directory="$screenshot_folder" --scree
 set video_pid $last_pid
 while kill -0 $last_pid
     if echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+"
-        echo true
         set watched_seconds (echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | rg -o "[0-9]+.[0-9]+")
+        set calculated_percentage (math $watched_seconds / $seconds_film x 100)
+        echo (echo "$calculated_percentage" | string split "." )[1]%
     end
     sleep 1
 end
@@ -105,20 +106,26 @@ set short_date (date +"%Y-%m-%d")
 
 if test $film_completed -eq 1
 
-    if test $rewatch -eq 1
-        sed -i "/rewatch-date:/d" $obsidian_md
-        sed -i "/^filmpath:/a\\rewatch-date: $cur_date" "$obsidian_md"
+    if rg -q "status: Completed" $obsidian_md
     else
-        sed -i "/^filmpath:/a\\finished: $cur_date" "$obsidian_md"
+        sed -i "/status:/d" $obsidian_md
+        sed -i "/^score:/i\\status: Completed" "$obsidian_md"
     end
 
-    if rg -q "rewatched:" $obsidian_md
-        set old_rewatch (rg "rewatched:" $obsidian_md | rg -o "[0-9]+")
-        set new_rewatch (math $old_rewatch + 1)
-        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $obsidian_md
+    if test $rewatch -eq 1
+        sed -i "/rewatch-date:/d" $obsidian_md
+        sed -i "/^finished:/a\\rewatch-date: $cur_date" "$obsidian_md"
+
+        if rg -q "rewatched:" $obsidian_md
+            set old_rewatch (rg "rewatched:" $obsidian_md | rg -o "[0-9]+")
+            set new_rewatch (math $old_rewatch + 1)
+            sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $obsidian_md
+        else
+            sed -i "/^finished:/i\\rewatched: 1" "$obsidian_md"
+            set new_rewatch 1
+        end
     else
-        sed -i "/^finished:/i\\rewatched: 1" "$obsidian_md"
-        set new_rewatch 1
+        sed -i "/^filmpath:/a\\finished: $cur_date" "$obsidian_md"
     end
 end
 
@@ -139,6 +146,12 @@ gum style \
 
 if set -q _flag_m
     set completed_text "$completed_text #Memento"
+end
+
+if test $film_completed -eq 1
+    sed -i "/$raw_file_name/d" ~/.config/ortscripts/film-history
+    rm /tmp/obsidian_last.txt
+    exit
 end
 
 if rg -q "$obsidian_md" ~/.config/ortscripts/film-history

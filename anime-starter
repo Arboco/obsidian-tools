@@ -199,7 +199,7 @@ if test $anime_episode_completed -eq 1
                 "Completed Anime with this Episode!"
             ffplay -nodisp -autoexit $script_dir/helper/delight-emote-animal-crossing.mp3 >/dev/null 2>&1
             sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-            sed -i "/^score:/a\\finished: $short_date" "$parent_md"
+            sed -i "/^score:/a\\finished: $cur_date" "$parent_md"
             for i in $obsidian/$notes/anime_db/obsidian-tools/$folder_title/*
                 set eps_obs_name (basename -s ".md" $i)
                 echo "[[$eps_obs_name]]" >>$parent_md
