@@ -30,6 +30,7 @@ PoolEscapeButton: KEY_BACKSPACE
 Profile1DeviceName: NuPhy
 Profile1ControllerCheck: 0
 Profile1ScreenshotButton: KEY_SYSRQ
+Profile1SelectScreenshotButton: KEY_DELETE
 Profile1RecordButton: KEY_INSERT
 Profile1AudioButton: KEY_HOME
 Profile1EscapeButton: KEY_END
@@ -39,9 +40,11 @@ Profile1IdleCounter: 180
 # Profile 2 flag -x 
 Profile2DeviceName: Xbox
 Profile2ControllerCheck: 1
-Profile2ScreenshotButton: KEY_RECORD
-Profile2RecordButton: BTN_MODE
-Profile2AudioButton: nobuttonconfigured
+#HoldButton only works if ControllerCheck is 1 
+Profile2HoldButton: BTN_SELECT
+Profile2ScreenshotButton: BTN_SOUTH
+Profile2RecordButton: BTN_WEST
+Profile2AudioButton: BTN_EAST
 Profile2EscapeButton: ABS_HAT0Y
 Profile2HookCounter: 20
 Profile2IdleCounter: 180

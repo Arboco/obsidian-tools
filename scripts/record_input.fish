@@ -23,6 +23,7 @@ set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
+set hold_button (ot_config_grab "Profile"$id"HoldButton")
 
 if test -z (ot_config_grab "Profile"$id"ScreenshotButton")
     set screenshot_button screenshot_button
@@ -49,8 +50,19 @@ evtest $devinput | while read line
             echo $line | grep -oP "(?<=Event: time )[^.]*" >>/tmp/xbox_time.txt
         end
     end
+
+    if test $controller_check -eq 1
+        if string match -q "*$hold_button), value 1" "$line"
+            set hold_trigger 1
+        else if string match -q "*$hold_button), value 0" "$line"
+            set hold_trigger 0
+        end
+    else
+        set hold_trigger 1
+    end
+
     # for screenshots
-    if string match -q "*$screenshot_button), value 1" "$line"
+    if string match -q "*$screenshot_button), value 1" "$line"; and test $hold_trigger -eq 1
         echo \a
         set timestamp (date +%F_%H%M%S)
         set fs_name "$folder_title-$timestamp.jpg"
@@ -68,7 +80,7 @@ evtest $devinput | while read line
     end
 
     # for screen capture
-    if string match -q "*$record_button), value 1" "$line"
+    if string match -q "*$record_button), value 1" "$line"; and test $hold_trigger -eq 1
         echo \a
         sleep 0.5
         set timestamp (date +%F_%H%M%S)
@@ -100,7 +112,7 @@ evtest $devinput | while read line
             -c:v libx264 -preset ultrafast -vsync 1 -c:a aac $screenshot_folder/$fv_name
     end
 
-    if string match -q "*$audio_button), value 1" "$line"
+    if string match -q "*$audio_button), value 1" "$line"; and test $hold_trigger -eq 1
         echo \a
         sleep 0.5
         set timestamp (date +%F_%H%M%S)
