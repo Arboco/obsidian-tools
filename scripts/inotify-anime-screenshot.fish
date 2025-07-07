@@ -8,6 +8,8 @@ set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set anime_folder (ot_config_grab "AnimeFolder")
 if string match film $argv[3]
     set screenshot_folder "$obsidian/$resources_folder/film/media/screenshots/$folder_title"
+else if string match tv $argv[3]
+    set screenshot_folder "$obsidian/$resources_folder/tvseries/media/screenshots/$folder_title"
 else
     set screenshot_folder "$obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title"
 end

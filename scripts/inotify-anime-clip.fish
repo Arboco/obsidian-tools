@@ -17,6 +17,9 @@ set anime_folder (ot_config_grab "AnimeFolder")
 if string match film $argv[1]
     set screenshot_folder "$obsidian/$resources_folder/film/media/clips/$folder_title"
     set a_path (rg -oP '(?<=filmpath: ).*$' $obsidian_md | rg -o '/.*\/')
+else if string match tv $argv[4]
+    set screenshot_folder "$obsidian/$resources_folder/tvseries/media/clips/$folder_title"
+    set a_path (rg -oP '(?<=seriespath: ).*$' $obsidian_md)
 else
     set screenshot_folder "$obsidian/$resources_folder/$anime_folder/media/clips/$folder_title"
     set a_path (rg -oP '(?<=animepath: ).*$' $obsidian_md)
