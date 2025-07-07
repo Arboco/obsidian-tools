@@ -39,7 +39,7 @@ mkdir -p $screenshot_folder
 
 # required since event number can change
 yes | evtest >/dev/null 2>/tmp/evtest-info.txt
-set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+set devinput (cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
 echo (date +%s) >/tmp/xbox_time.txt
 
 evtest $devinput | while read line

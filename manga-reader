@@ -1,0 +1,77 @@
+#! /usr/bin/env fish 
+
+function help_function
+    echo "Options:"
+    echo "  -i       History"
+end
+
+argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+or return
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_i
+    set history_selection (tac ~/.config/ortscripts/manga-history | fzf --delimiter='/' --with-nth=-1)
+    if echo $history_selection | rg "#Memento"
+        set _flag_m 1
+    end
+    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
+end
+
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
+set script_dir (realpath (status dirname))
+set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1)
+set folder_title (basename -s ".md" $manga_md)
+set mangapath (cat $manga_md | grep 'mangapath:' | grep -oP '(?<=mangapath: ).*$')
+set volume_info (basename -s ".html" "$mangapath")
+set volume_number (echo $volume_info | grep -oP "[0-9]+")
+set volume_name (echo "$folder_title Volume $volume_number")
+set volume_md (echo $obsidian_folder/$notes/anime_db/manga/obsidian-tools/$folder_title/$volume_name.md)
+
+mkdir -p $obsidian_folder/$notes/anime_db/manga/obsidian-tools/$folder_title
+echo "$volume_md" >/tmp/obsidian_last.txt
+
+if rg -q "^origin:" $volume_md
+else
+    echo --- >>$volume_md
+    echo "origin: \"[[$folder_title]]\"" \
+        \n"volume: $volume_number" \
+        \n"tags:" \
+        \n"  - manga-reader" \
+        \n"  - db" \
+        \n"---" >>$volume_md
+end
+
+$script_dir/scripts/manga_input.fish "$manga_md" "$volume_md" &
+firefox "$mangapath"
+
+read selection
+
+kill $(jobs -p)
+
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+set short_date (date +"%Y-%m-%d")
+
+if grep -q "pages:" $volume_md
+    sed -i '/pages:/d' "$volume_md"
+end
+sed -i "/^volume:/a\\pages: $selection" "$volume_md"
+
+if string match f $selection
+    sed -i '/pages:/d' "$volume_md"
+    sed -i "/^tags:/a\\finished-date: $cur_date" "$volume_md"
+end
+
+if rg -q "$manga_md" ~/.config/ortscripts/manga-history
+    sed -i "/$folder_title/d" ~/.config/ortscripts/anime-history
+    echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history
+else
+    echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history
+end
+
+rm /tmp/obsidian_last.txt
