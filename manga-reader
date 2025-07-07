@@ -15,25 +15,32 @@ end
 
 if set -q _flag_i
     set history_selection (tac ~/.config/ortscripts/manga-history | fzf --delimiter='/' --with-nth=-1)
-    if echo $history_selection | rg "#Memento"
-        set _flag_m 1
-    end
-    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
+    set manga_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set resources (ot_config_grab "ObsidianResourceFolder")
 set script_dir (realpath (status dirname))
-set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1)
+if test -z $manga_md
+    set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1)
+end
 set folder_title (basename -s ".md" $manga_md)
+set folder_title_sanitized (echo $folder_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set mangapath (cat $manga_md | grep 'mangapath:' | grep -oP '(?<=mangapath: ).*$')
-set volume_info (basename -s ".html" "$mangapath")
-set volume_number (echo $volume_info | grep -oP "[0-9]+")
+if rg -q "^volumepath:" $manga_md
+    set volume_path (cat $manga_md | grep 'volumepath:' | grep -oP '(?<=volumepath: ).*$')
+else
+    set volume_path (find "$mangapath" -type f -iname "*.html" | fzf --delimiter='/' --with-nth=-1)
+    sed -i "/^mangapath:/a\\volumepath: $volume_path" "$manga_md"
+end
+set volume_info (basename -s ".html" "$volume_path")
+set volume_number (echo $volume_info | grep -oP "[0-9]+" | sed 's/^0*//')
 set volume_name (echo "$folder_title Volume $volume_number")
-set volume_md (echo $obsidian_folder/$notes/anime_db/manga/obsidian-tools/$folder_title/$volume_name.md)
+set total_volume (rg "^volumes:" $manga_md | grep -oP "[0-9]+")
+set volume_md (echo $obsidian_folder/$notes/anime_db/obsidian-tools/manga/$folder_title_sanitized/$volume_name.md)
 
-mkdir -p $obsidian_folder/$notes/anime_db/manga/obsidian-tools/$folder_title
+mkdir -p "$obsidian_folder/$notes/anime_db/obsidian-tools/manga/$folder_title_sanitized"
 echo "$volume_md" >/tmp/obsidian_last.txt
 
 if rg -q "^origin:" $volume_md
@@ -48,7 +55,7 @@ else
 end
 
 $script_dir/scripts/manga_input.fish "$manga_md" "$volume_md" &
-firefox "$mangapath"
+firefox "$volume_path"
 
 read selection
 
@@ -64,11 +71,36 @@ sed -i "/^volume:/a\\pages: $selection" "$volume_md"
 
 if string match f $selection
     sed -i '/pages:/d' "$volume_md"
-    sed -i "/^tags:/a\\finished-date: $cur_date" "$volume_md"
+    sed -i '/volumepath:/d' "$manga_md"
+    sed -i "/^tags:/i\\finished-date: $cur_date" "$volume_md"
+    sed -i "/read-volumes:/d" "$manga_md"
+    sed -i "/^volumes:/a\\read-volumes: $volume_number" "$manga_md"
+    if test $volume_number -eq $total_volume
+        sed -i "/^tags:/i\\finished: $cur_date" "$manga_md"
+        sed -i "/status:/d" "$manga_md"
+        sed -i "/^score:/a\\status: Completed" "$manga_md"
+    end
 end
 
-if rg -q "$manga_md" ~/.config/ortscripts/manga-history
-    sed -i "/$folder_title/d" ~/.config/ortscripts/anime-history
+if not grep -q "```dataview" $manga_md; and test -f $HOME/.config/ortscripts/manga-dataview-insert
+    sed -i "/^tags:/i\\cssclasses:" "$manga_md"
+    sed -i "/^cssclasses:/a\\  - cards" "$manga_md"
+    sed -i "/^cssclasses:/a\\  - table-max" "$manga_md"
+    set input_file $manga_md
+    set insert_file $HOME/.config/ortscripts/manga-dataview-insert
+
+    set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+    set after_line (math $last_delim_line + 1)
+
+    head -n $last_delim_line $input_file >/tmp/temp_before.txt
+    tail -n +$after_line $input_file >/tmp/temp_after.txt
+    cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+    mv /tmp/temp_combined.txt $input_file
+end
+
+if rg -q "$folder_title" ~/.config/ortscripts/manga-history
+    sed -i "/$folder_title/d" ~/.config/ortscripts/manga-history
     echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history
 else
     echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history

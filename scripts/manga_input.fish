@@ -6,12 +6,11 @@ set obsidian (ot_config_grab "ObsidianMainFolder")
 set folder_title (basename -s ".md" $manga_md | sed 's/ /-/g')
 set resource_folder (ot_config_grab "ObsidianResourceFolder")
 
-set mangapath (cat $manga_md | grep 'mangapath:' | grep -oP '(?<=mangapath: ).*$')
+set mangapath (cat $manga_md | grep 'volumepath:' | grep -oP '(?<=volumepath: ).*$')
 set volume_info (basename -s ".html" "$mangapath")
-set volume_number (echo $volume_info | grep -oP "[0-9]+")
+set volume_number (echo $volume_info | grep -oP "[0-9]+" | sed 's/^0*//')
 
-set screenshot_folder $obsidian/$resource_folder/manga/mangareader/$folder_title/$volume_number
-
+set screenshot_folder "$obsidian/$resource_folder/manga/mangareader/$folder_title/$volume_number"
 set device_name (ot_config_grab "MangaDeviceName")
 set screenshot_button (ot_config_grab "MangaScreenshot")
 

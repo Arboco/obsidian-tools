@@ -72,8 +72,8 @@ set episode_md "$raw_file_name Episode - $current_episode.md"
 set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshots/$folder_title
 
 mkdir -p $screenshot_folder
-mkdir -p $obsidian/$notes/anime_db/obsidian-tools/$folder_title/
-set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/$folder_title/$episode_md"
+mkdir -p $obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/
+set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/$episode_md"
 echo "$episode_md_final" >/tmp/obsidian_last.txt
 
 set rewatch 0
@@ -200,7 +200,7 @@ if test $anime_episode_completed -eq 1
             ffplay -nodisp -autoexit $script_dir/helper/delight-emote-animal-crossing.mp3 >/dev/null 2>&1
             sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
             sed -i "/^score:/a\\finished: $cur_date" "$parent_md"
-            for i in $obsidian/$notes/anime_db/obsidian-tools/$folder_title/*
+            for i in $obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/*
                 set eps_obs_name (basename -s ".md" $i)
                 echo "[[$eps_obs_name]]" >>$parent_md
                 sed -e '1,/^---$/d' -e '/^---$/q' $i >>$parent_md
