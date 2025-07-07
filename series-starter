@@ -22,7 +22,7 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/series-history | fzf --delimiter='/' --with-nth=-1)
+    set history_selection (tac ~/.config/ortscripts/series-history | fzf --delimiter='series/' --with-nth=-1)
     if echo $history_selection | rg "#Memento"
         set _flag_m 1
     end
@@ -81,10 +81,34 @@ if rg finished-date $episode_md_final
     set rewatch 1
 end
 
+if rg "anachronic: true" $obsidian_md
+    if set -q _flag_i
+        set episode_to_play (echo "$history_selection" | rg -oP "(?<=FilePath:).*")
+        set current_episode (echo "$history_selection" | rg -oP "(?<=Episode )[0-9][0-9]?[0-9]?")
+        set episode_md "$raw_file_name Episode - $current_episode.md"
+        set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
+    else
+        set episode_to_play (find $a_path/* -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | fzf --delimiter='/' --with-nth=-1)
+        echo "Episode number?"
+        read current_episode
+        set episode_md "$raw_file_name Episode - $current_episode.md"
+        set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
+    end
+else
+    set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
+    set episode_to_play "$episode_array[$current_episode]"
+end
+
+if not set -q _flag_i
+    set current_season (cat $obsidian_md | grep -oP '(?<=c_seasons: )[0-9][0-9]?[0-9]?')
+    if test -z $current_season
+        echo "Which season is this episode from?"
+        read current_season
+    end
+end
+
 # Preparing video file and video data 
-set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
 set thumbnail_picture "$folder_title-thumb-$current_episode.jpg"
-set episode_to_play "$episode_array[$current_episode]"
 set seconds_series (ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $episode_to_play)
 ffmpeg -y -ss 00:03:00 -i "$episode_to_play" -frames:v 1 -update 1 -q:v 2 "$screenshot_folder/$thumbnail_picture"
 
@@ -96,6 +120,7 @@ else
     # insert into current episode md 
     echo --- >>$episode_md_final
     echo "origin: \"[[$raw_file_name]]\"" \
+        \n"season: $current_season" \
         \n"episode: $current_episode" \
         \n"cover-img: \"![[$thumbnail_picture]]\"" \
         \n"tags:" \
@@ -239,6 +264,10 @@ end
 
 if set -q _flag_m
     set completed_text "$completed_text #Memento"
+end
+
+if rg "anachronic: true" $parent_md
+    set completed_text "$completed_text #Anachronic FilePath:$episode_to_play"
 end
 
 if rg -q "$obsidian_md" ~/.config/ortscripts/series-history
