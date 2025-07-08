@@ -207,14 +207,14 @@ if test $anime_episode_completed -eq 1
             end
             exit
         end
-    end
-    if rg -q "rewatched:" $episode_md_final
-        set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
-        set new_rewatch (math $old_rewatch + 1)
-        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
-    else
-        sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
-        set new_rewatch 1
+        if rg -q "rewatched:" $episode_md_final
+            set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
+            set new_rewatch (math $old_rewatch + 1)
+            sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
+        else
+            sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
+            set new_rewatch 1
+        end
     end
 end
 

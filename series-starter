@@ -68,11 +68,20 @@ if test $current_episode -gt $episodes_total
     exit
 end
 
-set episode_md "$raw_file_name Episode - $current_episode.md"
 set screenshot_folder $obsidian/$resources_folder/$series_folder/media/screenshots/$folder_title
 
 mkdir -p $screenshot_folder
 mkdir -p $obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/
+
+if not set -q _flag_i
+    set current_season (cat $obsidian_md | grep -oP '(?<=c_seasons: )[0-9][0-9]?[0-9]?')
+    if test -z $current_season; and not rg "linear: true" $obsidian_md; and not rg "^seasons: 1" $obsidian_md
+        echo "Which season is this episode from?"
+        read current_season
+    end
+end
+
+set episode_md "$raw_file_name Season - $current_season Episode - $current_episode.md"
 set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
 echo "$episode_md_final" >/tmp/obsidian_last.txt
 
@@ -99,12 +108,9 @@ else
     set episode_to_play "$episode_array[$current_episode]"
 end
 
-if not set -q _flag_i
-    set current_season (cat $obsidian_md | grep -oP '(?<=c_seasons: )[0-9][0-9]?[0-9]?')
-    if test -z $current_season
-        echo "Which season is this episode from?"
-        read current_season
-    end
+if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
+    set episode_md "$raw_file_name Episode - $current_episode.md"
+    set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
 end
 
 # Preparing video file and video data 
@@ -128,6 +134,10 @@ else
         \n"  - db" \
         \n"  - episode" \
         \n"---" >>$episode_md_final
+end
+
+if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
+    sed -i "/season:/d" "$episode_md_final"
 end
 
 set parent_md $obsidian_md
@@ -233,13 +243,15 @@ if test $episode_completed -eq 1
             exit
         end
     end
-    if rg -q "rewatched:" $episode_md_final
-        set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
-        set new_rewatch (math $old_rewatch + 1)
-        sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
-    else
-        sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
-        set new_rewatch 1
+    if test $rewatch -eq 1
+        if rg -q "rewatched:" $episode_md_final
+            set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
+            set new_rewatch (math $old_rewatch + 1)
+            sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
+        else
+            sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
+            set new_rewatch 1
+        end
     end
 end
 

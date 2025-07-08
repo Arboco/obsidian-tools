@@ -23,7 +23,7 @@ evtest $devinput | while read line
 
     if string match -q "*$screenshot_button), value 1" "$line"
         set timestamp (date +%F_%H%M%S)
-        if rg "cover-img:" $volume_md
+        if rg -q "cover-img:" $volume_md
         else
             sed -i "/^origin:/a\\cover-img: \"!\[\[$folder_title-$timestamp.jpg\]\]\"" $volume_md
         end

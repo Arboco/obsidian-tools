@@ -37,7 +37,7 @@ end
 set volume_info (basename -s ".html" "$volume_path")
 set volume_number (echo $volume_info | grep -oP "[0-9]+" | sed 's/^0*//')
 set volume_name (echo "$folder_title Volume $volume_number")
-set total_volume (rg "^volumes:" $manga_md | grep -oP "[0-9]+")
+set total_volume (rg -q "^volumes:" $manga_md | grep -oP "[0-9]+")
 set volume_md (echo $obsidian_folder/$notes/anime_db/obsidian-tools/manga/$folder_title_sanitized/$volume_name.md)
 
 mkdir -p "$obsidian_folder/$notes/anime_db/obsidian-tools/manga/$folder_title_sanitized"
