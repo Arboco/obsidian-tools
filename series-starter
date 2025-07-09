@@ -73,8 +73,8 @@ set screenshot_folder $obsidian/$resources_folder/$series_folder/media/screensho
 mkdir -p $screenshot_folder
 mkdir -p $obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/
 
+set current_season (cat $obsidian_md | grep -oP '(?<=c_seasons: )[0-9][0-9]?[0-9]?')
 if not set -q _flag_i
-    set current_season (cat $obsidian_md | grep -oP '(?<=c_seasons: )[0-9][0-9]?[0-9]?')
     if test -z $current_season; and not rg "linear: true" $obsidian_md; and not rg "^seasons: 1" $obsidian_md
         echo "Which season is this episode from?"
         read current_season
@@ -282,11 +282,16 @@ if rg "anachronic: true" $parent_md
     set completed_text "$completed_text #Anachronic FilePath:$episode_to_play"
 end
 
+set season_info "Season $current_season"
+if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
+    set -e season_info
+end
+
 if rg -q "$obsidian_md" ~/.config/ortscripts/series-history
     sed -i "/$raw_file_name/d" ~/.config/ortscripts/series-history
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
+    echo "$obsidian_md | $season_info Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
 else
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
+    echo "$obsidian_md | $season_info Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
 end
 
 rm /tmp/obsidian_last.txt
