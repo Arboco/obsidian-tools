@@ -1,0 +1,170 @@
+#! /usr/bin/env fish
+
+function help_function
+    echo "  -o       override file used for default option so you can skip using the-pool directly"
+end
+
+argparse --name=pool i/history h/help 'n/name=' -- $argv
+or return
+
+set script_dir (realpath (status dirname))
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
+set notes (ot_config_grab "NotesFolder")
+set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
+set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+if set -q _flag_i
+end
+
+set select_key (for i in $key_array; echo $i; end | fzf --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+set select_key (echo $select_key | string trim -r)
+set key_md (rg -l $select_key $obsidian_folder/$notes)
+set tmp_key_contents /tmp/the-key-content
+
+awk -v search="$select_key" '
+      index($0, search) {flag=1}
+      flag {print}
+      /^$/ && flag {flag=0}
+                              ' $key_md >$tmp_key_contents
+
+if rg "^links:" $tmp_key_contents
+    set md_links (rg "^links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
+    set filtered_pool $filtered_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
+end
+
+if rg "^tags:" $tmp_key_contents
+    set tag_list (rg "^tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
+    for i in $tag_list
+        set filtered_pool $filtered_pool (rg -l "^  - $i\$" $default_pool_array)
+    end
+end
+
+if rg "^groups:" $tmp_key_contents
+    set group_list (rg "^groups:" $tmp_key_contents | rg -o '".*"' | sed 's/"//g' | string split ',' | string trim -lr)
+    for i in $group_list
+        set filtered_pool $filtered_pool (rg -lF "group: $i")
+    end
+end
+
+if test -z $filtered_pool
+else
+    set question_array (rg --no-filename --no-line-number "^(I|Q|W|D):" $filtered_pool)
+end
+
+if rg "^subtags:" $tmp_key_contents
+    set subtag_list (rg -q "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
+    for i in $subtag_list
+        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*$i" $default_pool_array)
+    end
+end
+
+if rg "^f-links:" $tmp_key_contents
+    set md_links (rg "^f-links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
+    set link_evil_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
+    for i in $filtered_pool
+        if string match $i (for e in $link_evil_pool; echo $e; end)
+        else
+            set link_survivor_pool $link_survivor_pool $i
+        end
+    end
+    set filtered_pool $link_survivor_pool
+end
+
+if rg "^f-tags:" $tmp_key_contents
+    set ftag_list (rg "^f-tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
+    for i in $ftag_list
+        set tag_evil_pool $tag_evil_pool (rg -l "^  - $i\$" $default_pool_array)
+    end
+
+    for i in $filtered_pool
+        if string match $i (for e in $tag_evil_pool; echo $e; end)
+        else
+            set tag_survivor_pool $tag_survivor_pool $i
+        end
+    end
+    set filtered_pool $tag_survivor_pool
+end
+
+if rg "^f-subtags:" $tmp_key_contents
+    set evil_subtag_list (rg "^f-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
+
+    set subtag_evil_regex_ready (echo $evil_subtag_list | sed 's/ /|/g')
+    for i in $question_array
+        if echo $i | rg -q "$subtag_evil_regex_ready"
+        else
+            set survivor_subtag_pool $survivor_subtag_pool $i
+        end
+    end
+    set question_array $survivor_subtag_pool
+end
+
+set sorted_question_array (for i in $question_array; echo $i; end | sort -u)
+set question_array $sorted_question_array
+
+set count_q (echo $question_array | rg -o "Q:" | wc -l)
+set count_i (echo $question_array | rg -o "I:" | wc -l)
+set count_w (echo $question_array | rg -o "W:" | wc -l)
+set count_d (echo $question_array | rg -o "D:" | wc -l)
+set count_c (echo $question_array | rg -o "(Q|I|W|D):" | wc -l)
+
+set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Drill ($count_d)"| string split " ")[1]
+if string match -q Question $choice
+    set selection Q
+else if string match -q Inspiration $choice
+    set selection I
+else if string match -q Wiki $choice
+    set selection W
+else if string match -q Drill $choice
+    set selection D
+else if string match -q Combined $choice
+    set selection "(Q|I|W|D)"
+end
+
+for i in $question_array
+    if echo $i | rg -q "^$selection"
+        set question_array_sort $question_array_sort $i
+    end
+end
+
+set question_array $question_array_sort
+
+# Sorting Algorithm
+for i in $question_array
+    if echo $i | rg -q "....-..-.. ..:..:.."
+        set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
+        if echo $i | rg -P "(?<=S-Value: )[-0-9]*"
+            set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+        else
+            set raw_value 0
+        end
+        set unix_timestamp (date -d "$raw_date" +%s)
+        set value_seconds (ot_config_grab "ValueSeconds")
+        set final_second_value (math $raw_value x $value_seconds)
+        set unix_result (math $unix_timestamp + $final_second_value)
+    else
+        set unix_result 0
+    end
+    set unix_array $unix_array "$unix_result $i"
+end
+
+set sorted_unix_array (for i in $unix_array
+    echo $i 
+end | sort -n)
+
+for i in $sorted_unix_array
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
+end
+
+rm /tmp/the-card_final_sorted_array
+for i in $final_sorted_array
+    echo $i >>/tmp/the-card_final_sorted_array
+end
+
+clear
+source $script_dir/scripts/the-card-output.fish
