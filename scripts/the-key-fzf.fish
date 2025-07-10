@@ -43,6 +43,7 @@ cat /tmp/img_treasure | sed -E '/!|>\[\[/d' \
     | sed '/^f-subtags:/ s/.*/\x1b[38;2;255;0;0m&\x1b[0m/' \
     | sed '/^a-subtags:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^origin:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
+    | sed '/^family:/ s/.*/\x1b[38;2;200;255;200m&\x1b[0m/' \
     | sed '/^links:/ s/.*/\x1b[38;2;50;205;50m&\x1b[0m/' | glow
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
