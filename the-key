@@ -2,9 +2,10 @@
 
 function help_function
     echo "  -o       override file used for default option so you can skip using the-pool directly"
+    echo "  -s       Respects Sequence"
 end
 
-argparse --name=pool i/history h/help 'n/name=' -- $argv
+argparse --name=pool i/history s/sequence h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -22,12 +23,30 @@ end
 if set -q _flag_i
 end
 
-set select_key (for i in $key_array; echo $i; end | fzf --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
-set select_key (echo $select_key | string trim -r)
+set sorted_key_array (
+for line in $key_array
+    # extract timestamp using regex
+    set ts (string match -r '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}' -- $line)
+    if test -z "$ts"
+        set ts "0000-00-00 00:00:00" # fallback if no timestamp
+    end
+    printf "%s\t%s\n" "$ts" "$line"
+end | sort | cut -f2-)
+
+set select_key (for i in $sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+set select_key_trim (echo $select_key | string trim -r)
 set key_md (rg -l $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
 
-awk -v search="$select_key" '
+set key_date (date +"%Y-%m-%d %H:%M:%S")
+if echo $select_key | rg "....-..-.. ..:..:.."
+    set old_date (echo $select_key | rg -o "....-..-.. ..:..:..")
+    sed -i "s/$old_date/$key_date/g" $key_md
+else
+    sed -i "s/$select_key/$select_key_trim `$key_date`/g" $key_md
+end
+
+awk -v search="$select_key_trim" '
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
@@ -168,6 +187,21 @@ end | sort -n)
 
 for i in $sorted_unix_array
     set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
+end
+
+if set -q _flag_s
+    set x (printf "%s\n" $final_sorted_array | awk '
+        {
+            match($0, /#[0-9]+/)
+            if (RSTART > 0) {
+                num = substr($0, RSTART + 1, RLENGTH - 1)
+            } else {
+                num = 999999  # fallback if no #number
+            }
+            print num "\t" $0
+        }
+    ' | sort -n | cut -f2-)
+    set final_sorted_array $x
 end
 
 rm /tmp/the-card_final_sorted_array
