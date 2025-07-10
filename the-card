@@ -24,26 +24,6 @@ function help_function
     echo "  -l       Filter based on tags"
 end
 
-function icat_half
-    set image $argv[1]
-
-    if not test -f "$image"
-        echo "Error: File not found: $image"
-        return 1
-    end
-
-    set rows (tput lines)
-    set row_height_px 18
-    set max_height (math "$rows * $row_height_px / 2")
-
-    set tmpimg (mktemp --suffix=.$argv[2])
-    magick "$image" -resize x$max_height\> "$tmpimg"
-
-    kitty +kitten icat "$tmpimg"
-    sleep 0.3
-    rm $tmpimg
-end
-
 argparse --name=pool t/tag d/double s/subtag b/brother c/child f/family e/every p/parent r/recursive o/override g/group k/keyword a/an l/losetag m/multi h/help 'n/name=' -- $argv
 or return
 

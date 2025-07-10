@@ -52,18 +52,6 @@ if rg "^groups:" $tmp_key_contents
     end
 end
 
-if test -z $filtered_pool
-else
-    set question_array (rg --no-filename --no-line-number "^(I|Q|W|D):" $filtered_pool)
-end
-
-if rg "^subtags:" $tmp_key_contents
-    set subtag_list (rg -q "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
-    for i in $subtag_list
-        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*$i" $default_pool_array)
-    end
-end
-
 if rg "^f-links:" $tmp_key_contents
     set md_links (rg "^f-links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
     set link_evil_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
@@ -78,17 +66,38 @@ end
 
 if rg "^f-tags:" $tmp_key_contents
     set ftag_list (rg "^f-tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
-    for i in $ftag_list
-        set tag_evil_pool $tag_evil_pool (rg -l "^  - $i\$" $default_pool_array)
-    end
 
+    set tag_evil_regex_ready (echo $ftag_list | sed 's/ /|/g')
     for i in $filtered_pool
-        if string match $i (for e in $tag_evil_pool; echo $e; end)
+        if rg -P "^  - ($tag_evil_regex_ready)" "$i"
         else
             set tag_survivor_pool $tag_survivor_pool $i
         end
     end
     set filtered_pool $tag_survivor_pool
+end
+
+if test -z $filtered_pool[1]
+else
+    set question_array (rg --no-filename --no-line-number "^(I|Q|W|D):" $filtered_pool)
+end
+
+if rg "^subtags:" $tmp_key_contents
+    set subtag_list (rg "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
+    for i in $subtag_list
+        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*$i" $default_pool_array)
+    end
+end
+
+if rg "^a-subtags:" $tmp_key_contents
+    set a_subtag_list (rg "^a-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
+    set a_regex_ready (echo $a_subtag_list | sed 's/ /|/g')
+    for i in $question_array
+        if echo $i | rg -q "^(Q|I|D|W):.*$a_regex_ready"
+            set a_array_sort $a_array_sort $i
+        end
+    end
+    set question_array $a_array_sort
 end
 
 if rg "^f-subtags:" $tmp_key_contents

@@ -1,5 +1,7 @@
 #! /usr/bin/env fish
 
+set script_dir (realpath (status dirname))
+
 function icat_half
     set image $argv[1]
 
@@ -35,7 +37,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
     if string match -q Combined $choice
     else
         if string match -q W $card_type
-            set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "rg --no-filename -A 10 {} $obsidian_folder/$notes | glow")
+            set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "$script_dir/the-card-wiki-fzf.fish {}")
             set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
             set trimmed (string split '`' -- $wiki_choice)[1]
         end
