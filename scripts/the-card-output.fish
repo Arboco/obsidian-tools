@@ -98,22 +98,22 @@ for i in (cat /tmp/the-card_final_sorted_array)
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
-                              ' $target_md | tee /tmp/img_treasure | glow
-    set img_array (cat /tmp/img_treasure | grep -oP "(?<=!\[\[)[^\]]*")
+                              ' $target_md >/tmp/img_treasure
+    set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
+
+    cat /tmp/img_treasure | sed -E '/!|>\[\[/d' | glow
     for img in $img_array
         set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
         set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-        if echo $img_path | rg mp3
+        if echo $img_path | rg -q mp3
+            mpv --no-video $img_path >/dev/null &
+        else if echo $img_path | rg -q "mp4|mkv"
+            mpv --player-operation-mode=pseudo-gui $img_path
         else
             icat_half $img_path "$suffix"
         end
     end
-    if cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3"
-        set mp3 (cat /tmp/img_treasure | grep -oP "(?<=!\[\[).*.mp3" | perl -pe 's/([\[\]])/\\\\$1/g')
-        set mp3path (find $obsidian_folder/$obsidian_resource -type f -name "$mp3")
-        mpv --no-video "$mp3path" >/dev/null &
-        set pid $last_pid
-    end
+    set pid $last_pid
 
     if string match -q I $card_type
         gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter

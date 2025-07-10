@@ -1,8 +1,8 @@
 #! /usr/bin/env fish
 
 function help_function
-    echo "  -o       override file used for default option so you can skip using the-pool directly"
     echo "  -s       Respects Sequence"
+    echo "  -i       Reverses selection, making the last used keys the first to appear, which turns the list into a pseudo history"
 end
 
 argparse --name=pool i/history s/sequence h/help 'n/name=' -- $argv
@@ -20,9 +20,6 @@ if set -q _flag_h
     exit
 end
 
-if set -q _flag_i
-end
-
 set sorted_key_array (
 for line in $key_array
     # extract timestamp using regex
@@ -32,6 +29,10 @@ for line in $key_array
     end
     printf "%s\t%s\n" "$ts" "$line"
 end | sort | cut -f2-)
+
+if set -q _flag_i
+    set sorted_key_array (printf "%s\n" $sorted_key_array | tac)
+end
 
 set select_key (for i in $sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
 set select_key_trim (echo $select_key | string trim -r)
@@ -45,7 +46,7 @@ if echo $select_key | rg "....-..-.. ..:..:.."
 else
     sed -i "s/$select_key/$select_key_trim `$key_date`/g" $key_md
 end
-
+set select_key_trim (echo $select_key_trim | string split "`")[1]
 awk -v search="$select_key_trim" '
       index($0, search) {flag=1}
       flag {print}
@@ -68,6 +69,13 @@ if rg "^groups:" $tmp_key_contents
     set group_list (rg "^groups:" $tmp_key_contents | rg -o '".*"' | sed 's/"//g' | string split ',' | string trim -lr)
     for i in $group_list
         set filtered_pool $filtered_pool (rg -lF "group: $i")
+    end
+end
+
+if rg "^origin:" $tmp_key_contents
+    set origin_links (rg "^origin:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
+    for i in $origin_links
+        set filtered_pool $filtered_pool (rg -l "origin: \"\[\[$i\]\]\"" $default_pool_array)
     end
 end
 
