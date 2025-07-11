@@ -4,7 +4,12 @@ set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 
-set select_key (echo $argv[1] | string trim -r)
+if echo $argv[1] | rg "^\[.\]"
+    set select_key (echo $argv[1] | string split "|")[2]
+    set select_key (echo $select_key | string trim -lr)
+else
+    set select_key (echo $argv[1] | string trim -r)
+end
 set key_md (rg -l $select_key $obsidian_folder/$notes)
 
 awk -v search="$select_key" '

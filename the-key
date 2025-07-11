@@ -1,12 +1,32 @@
 #! /usr/bin/env fish
 
+function get_priority
+    switch $argv[1]
+        case S
+            echo 1
+        case A
+            echo 2
+        case B
+            echo 3
+        case C
+            echo 4
+        case D
+            echo 5
+        case E
+            echo 6
+        case F
+            echo 7
+    end
+end
+
 function help_function
     echo "  -s       Respects Sequence"
     echo "  -i       Reverses selection, making the last used keys the first to appear, which turns the list into a pseudo history"
     echo "  -k       Activates keyring feature"
+    echo "  -a       Activates agenda"
 end
 
-argparse --name=pool i/history s/sequence k/keyring h/help 'n/name=' -- $argv
+argparse --name=pool i/history s/sequence k/keyring a/agenda h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -47,11 +67,46 @@ if set -q _flag_i
     set sorted_key_array (printf "%s\n" $sorted_key_array | tac)
 end
 
+if set -q _flag_a
+    set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
+    set agenda_keys (rg -oP "(?<=^agenda: ).*" $key_array_filelist | sort -u | string trim -lr)
+    for i in $agenda_keys
+        set key_file (echo $i | string split ":")[1]
+        set key_of_agenda (echo $i | string split ":")[2]
+        set agenda_temp (mktemp)
+        awk -v term="$key_of_agenda" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $key_file >$agenda_temp
+        set priority (echo $key_of_agenda | rg -o "^.")
+        set agenda_date (echo $key_of_agenda | rg -o "....-..-..")
+        set key_header (cat $agenda_temp | rg "^K:" | string split "`")[1]
+        set agenda_plus_key_header "[$priority] - [$agenda_date] | $key_header"
+        set agenda_plus_key_header_array $agenda_plus_key_header_array $agenda_plus_key_header
+    end
+
+    set today (date +%s)
+    set tmpfile (mktemp)
+
+    for item in $agenda_plus_key_header_array
+        set letter (string match -r '\[(.)\]' -- $item | string sub -s 2 -l 1 | string trim -lr)
+        set date_str (string match -r '\[(\d{4}-\d{2}-\d{2})\]' -- $item | string trim -c '[]' | sort -u)
+        set date_epoch (date -d $date_str +%s 2>/dev/null)
+        set delta (math "abs($date_epoch - $today)")
+        printf "%02d\t%09d\t%s\n" (get_priority $letter) $delta "$item" >>$tmpfile
+    end
+
+    set final_sorted_agenda (sort -n $tmpfile | cut -f3-)
+    rm $tmpfile
+end
+
 for i in $sorted_key_array
     set trim_sorted_key_array $trim_sorted_key_array (echo $i | string split "`")[1]
 end
 
-set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+if set -q _flag_a
+    set select_key (for i in $final_sorted_agenda; echo $i; end | fzf --no-sort --preview "$script_dir/scripts/the-key-fzf.fish {}")
+
+else
+    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+end
 set select_key_trim (echo $select_key | string trim -r)
 set key_md (rg -l $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
