@@ -10,6 +10,9 @@ function mpv-small
         --geometry=640x360-0-0 \
         --keepaspect >/dev/null &
 
+    set -g mpv_pid $last_pid
+    set mpvid $mpv_pid
+
     set mpv_is_running 1
     sleep 1
     i3-msg '[class="mpv"] floating enable'
@@ -98,9 +101,9 @@ for i in (cat /tmp/the-card_final_sorted_array)
         clear
         rm /tmp/clone.md
     end
-    if not test -z $pid
-        kill $pid
-        set -e pid
+    if not test -z $mpid
+        kill $mpid
+        set -e mpid
     end
     clear
     echo "Source: $target_md"
@@ -114,9 +117,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
     for tre in $treasure_array
         set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
         set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
-        if echo $file_path | rg -q "mp3|aac|flac|wav|alac|ogg|aiff|dsd"
+        if echo $file_path | rg -q '(mp3|aac|flac|wav|alac|ogg|aiff|dsd)$'
             mpv --no-video $file_path >/dev/null &
-        else if echo $file_path | rg -q "mp4|mkv|mov|avi|webm|flv|wmv"
+            set mpid $last_pid
+        else if echo $file_path | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
             echo $file_path
             if test $mpv_is_running -eq 0
                 mpv-small &
@@ -126,7 +130,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
             icat_half $file_path
         end
     end
-    set pid $last_pid
 
     if string match -q I $card_type
         gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
@@ -213,7 +216,11 @@ for i in (cat /tmp/the-card_final_sorted_array)
     set -e target_md
 end
 
-if not test -z $pid
-    kill $pid
+if not test -z $mpid
+    kill $mpid
+end
+
+if not test -z $mpv_pid
+    kill $mpv_pid
 end
 rm /tmp/file_contents_ready

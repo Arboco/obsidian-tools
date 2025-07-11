@@ -3,21 +3,34 @@
 function help_function
     echo "  -s       Respects Sequence"
     echo "  -i       Reverses selection, making the last used keys the first to appear, which turns the list into a pseudo history"
+    echo "  -k       Activates keyring feature"
 end
 
-argparse --name=pool i/history s/sequence h/help 'n/name=' -- $argv
+argparse --name=pool i/history s/sequence k/keyring h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
-set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
 set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 
 if set -q _flag_h
     help_function
     exit
+end
+
+if set -q _flag_k
+    rm /tmp/keyring_awk_result
+    set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
+    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf --delimiter='#' --with-nth=-1)
+    set keyring_file_list (rg -l "keyring: $keyring_select" $key_array_filelist)
+    for i in $keyring_file_list
+        awk -v term="$keyring_select" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $i >>/tmp/keyring_awk_result
+    end
+    set key_array (rg --no-filename --no-line-number "^K:" /tmp/keyring_awk_result)
+else
+    set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
 end
 
 set sorted_key_array (
@@ -34,19 +47,18 @@ if set -q _flag_i
     set sorted_key_array (printf "%s\n" $sorted_key_array | tac)
 end
 
-set select_key (for i in $sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+for i in $sorted_key_array
+    set trim_sorted_key_array $trim_sorted_key_array (echo $i | string split "`")[1]
+end
+
+set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
 set select_key_trim (echo $select_key | string trim -r)
 set key_md (rg -l $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
 
 set key_date (date +"%Y-%m-%d %H:%M:%S")
-if echo $select_key | rg "....-..-.. ..:..:.."
-    set old_date (echo $select_key | rg -o "....-..-.. ..:..:..")
-    sed -i "s/$old_date/$key_date/g" $key_md
-else
-    sed -i "s/$select_key/$select_key_trim `$key_date`/g" $key_md
-end
-set select_key_trim (echo $select_key_trim | string split "`")[1]
+sed -i "s/.*$select_key_trim.*/$select_key_trim `$key_date`/g" $key_md
+
 awk -v search="$select_key_trim" '
       index($0, search) {flag=1}
       flag {print}
@@ -133,7 +145,7 @@ if rg "^f-tags:" $tmp_key_contents
 
     set tag_evil_regex_ready (echo $ftag_list | sed 's/ /|/g')
     for i in $filtered_pool
-        if rg -P "^  - ($tag_evil_regex_ready)" "$i"
+        if rg -qP "^  - ($tag_evil_regex_ready)" "$i"
         else
             set tag_survivor_pool $tag_survivor_pool $i
         end
