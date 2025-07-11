@@ -53,6 +53,17 @@ awk -v search="$select_key_trim" '
       /^$/ && flag {flag=0}
                               ' $key_md >$tmp_key_contents
 
+set num 1
+while true
+    if rg "^string$num:" $tmp_key_contents
+        set string (rg "^string$num:" $tmp_key_contents | rg -oP "(?<=string$num: ).*" | string trim -lr)
+        set filtered_pool $filtered_pool (rg -lF "$string" $default_pool_array)
+        set num (math $num + 1)
+    else
+        break
+    end
+end
+
 if rg "^links:" $tmp_key_contents
     set md_links (rg "^links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
     set filtered_pool $filtered_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
@@ -65,17 +76,15 @@ if rg "^tags:" $tmp_key_contents
     end
 end
 
-if rg "^groups:" $tmp_key_contents
-    set group_list (rg "^groups:" $tmp_key_contents | rg -o '".*"' | sed 's/"//g' | string split ',' | string trim -lr)
-    for i in $group_list
-        set filtered_pool $filtered_pool (rg -lF "group: $i")
-    end
-end
-
-if rg "^origin:" $tmp_key_contents
-    set origin_links (rg "^origin:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
-    for i in $origin_links
-        set filtered_pool $filtered_pool (rg -l "origin: \"\[\[$i\]\]\"" $default_pool_array)
+if rg "^c-tags:" $tmp_key_contents
+    set ctag_list (rg "^c-tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
+    set cpool_one (rg -l "^  - $ctag_list[1]\$" $default_pool_array)
+    set cpool_two (rg -l "^  - $ctag_list[2]\$" $cpool_one)
+    if test -z ctag_list[3]
+        set cpool_three (rg -l "^  - $ctag_list[2]\$" $cpool_two)
+        set filtered_pool $filtered_pool $cpool_three
+    else
+        set filtered_pool $filtered_pool $cpool_two
     end
 end
 
@@ -130,6 +139,17 @@ if rg "^f-tags:" $tmp_key_contents
         end
     end
     set filtered_pool $tag_survivor_pool
+end
+
+set fnum 1
+while true
+    if rg "^f-string$fnum:" $tmp_key_contents
+        set string (rg "^f-string$fnum:" $tmp_key_contents | rg -oP "(?<=f-string$fnum: ).*" | string trim -lr)
+        set filtered_pool (rg -lF --files-without-match "$string" $filtered_pool)
+        set fnum (math $fnum + 1)
+    else
+        break
+    end
 end
 
 if test -z $filtered_pool[1]

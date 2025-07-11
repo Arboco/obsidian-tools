@@ -2,25 +2,35 @@
 
 set script_dir (realpath (status dirname))
 
+function mpv-small
+    set file $argv[1]
+    mpv --input-ipc-server=/tmp/mpv-socket \
+        --idle=yes \
+        --force-window=yes \
+        --geometry=640x360-0-0 \
+        --keepaspect >/dev/null &
+
+    set mpv_is_running 1
+    sleep 1
+    i3-msg '[class="mpv"] floating enable'
+end
+
 function icat_half
     set image $argv[1]
 
-    if not test -f "$image"
-        echo "Error: File not found: $image"
-        return 1
-    end
+    set cols (tput cols)
+    set lines (tput lines)
 
-    set rows (tput lines)
-    set row_height_px 18
-    set max_height (math "$rows * $row_height_px / 2")
+    set cell_width 9
+    set cell_height 18
 
-    set tmpimg (mktemp --suffix=.$argv[2])
-    magick "$image" -resize x$max_height\> "$tmpimg"
+    set width_px (math round $cols x $cell_width / 2)
+    set height_px (math round $lines x $cell_height / 2)
 
-    kitty +kitten icat "$tmpimg"
-    sleep 0.3
-    rm $tmpimg
+    kitty +kitten icat --use-window-size=$cell_width,$cell_height,$width_px,$height_px $argv[1]
 end
+
+set mpv_is_running 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
     set card_type (echo "$i" | grep -o "^.")
@@ -98,19 +108,22 @@ for i in (cat /tmp/the-card_final_sorted_array)
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
-                              ' $target_md >/tmp/img_treasure
-    set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
-
-    cat /tmp/img_treasure | sed -E '/!|>\[\[/d' | glow
-    for img in $img_array
-        set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
-        set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-        if echo $img_path | rg -q mp3
-            mpv --no-video $img_path >/dev/null &
-        else if echo $img_path | rg -q "mp4|mkv"
-            mpv --player-operation-mode=pseudo-gui $img_path
+                              ' $target_md >/tmp/file_contents_ready
+    set treasure_array (cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
+    cat /tmp/file_contents_ready | sed -E '/!|>\[\[/d' | glow
+    for tre in $treasure_array
+        set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
+        set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
+        if echo $file_path | rg -q "mp3|aac|flac|wav|alac|ogg|aiff|dsd"
+            mpv --no-video $file_path >/dev/null &
+        else if echo $file_path | rg -q "mp4|mkv|mov|avi|webm|flv|wmv"
+            echo $file_path
+            if test $mpv_is_running -eq 0
+                mpv-small &
+            end
+            echo '{ "command": ["loadfile", "'"$file_path"'"] }' | socat - /tmp/mpv-socket
         else
-            icat_half $img_path "$suffix"
+            icat_half $file_path
         end
     end
     set pid $last_pid
@@ -203,4 +216,4 @@ end
 if not test -z $pid
     kill $pid
 end
-rm /tmp/img_treasure
+rm /tmp/file_contents_ready

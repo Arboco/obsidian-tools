@@ -3,22 +3,16 @@
 function icat_half
     set image $argv[1]
 
-    if not test -f "$image"
-        echo "Error: File not found: $image"
-        return 1
-    end
+    set cols (tput cols)
+    set lines (tput lines)
 
-    set rows (tput lines)
-    set row_height_px 18
-    set max_height (math "$rows * $row_height_px / 2")
+    set cell_width 9
+    set cell_height 18
 
-    set tmpimg (mktemp --suffix=.$argv[2])
-    magick "$image" -resize x$max_height\> "$tmpimg"
+    set width_px (math round $cols x $cell_width / 2)
+    set height_px (math round $lines x $cell_height / 2)
 
-    kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align=left "$tmpimg"
-
-    sleep 0.3
-    rm $tmpimg
+    kitty +kitten icat --use-window-size=$cell_width,$cell_height,$width_px,$height_px $argv[1]
 end
 
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
