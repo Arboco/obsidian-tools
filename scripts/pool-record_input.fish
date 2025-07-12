@@ -10,6 +10,7 @@ set screenshot_folder $obsidian/$resource_folder/$pool_folder/$folder_title
 set script_dir (realpath (status dirname))
 set id "$argv[2]"
 set device_name (ot_config_grab "PoolDeviceName")
+set last_recorded_file /tmp/ot_last_recorded_file
 
 set audio_array (pactl list short sinks | grep -oP '^\d+\s+\K\S+')
 
@@ -42,6 +43,8 @@ evtest $devinput | while read line
 
         gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
         echo -e "![[$fs_name]]\n" >>"$note_file"
+        echoe "![[$fs_name]]" >$last_recorded_file
+
     end
 
     # for screenshots where you can select area
@@ -53,6 +56,7 @@ evtest $devinput | while read line
 
         if grep -q "cover-img:" $note_file
             echo -e "![[$fs_name]]\n" >>"$note_file"
+            echo "![[$fs_name]]" >$last_recorded_file
         else
             sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$note_file"
         end
@@ -66,6 +70,7 @@ evtest $devinput | while read line
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp4"
         echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
         $script_dir/pool-escaper.fish 1 &
@@ -92,6 +97,7 @@ evtest $devinput | while read line
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp3"
         echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
         $script_dir/pool-escaper.fish 1 &

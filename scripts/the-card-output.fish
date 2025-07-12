@@ -223,4 +223,10 @@ end
 if not test -z $mpv_pid
     kill $mpv_pid
 end
+
+if not test -z the_key_activated
+    if test $the_key_activated -eq 1
+        echo "The key was found and activated"
+    end
+end
 rm /tmp/file_contents_ready

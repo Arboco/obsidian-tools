@@ -14,6 +14,8 @@ set screenshot_folder "$obsidian/$resource_folder/manga/mangareader/$folder_titl
 set device_name (ot_config_grab "MangaDeviceName")
 set screenshot_button (ot_config_grab "MangaScreenshot")
 
+set last_recorded_file /tmp/ot_last_recorded_file
+
 mkdir -p $screenshot_folder
 
 yes | evtest >/dev/null 2>/tmp/evtest-info.txt
@@ -29,5 +31,6 @@ evtest $devinput | while read line
         end
         scrot -s $screenshot_folder/$folder_title-$timestamp.jpg
         echo -e "![[$folder_title-$timestamp.jpg]]\n" >>$volume_md
+        echo "![[$folder_title-$timestamp.jpg]]" >$last_recorded_file
     end
 end

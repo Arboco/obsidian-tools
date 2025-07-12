@@ -13,6 +13,7 @@ set obsidian (ot_config_grab "ObsidianMainFolder")
 set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set anime_folder (ot_config_grab "AnimeFolder")
+set last_recorded_file /tmp/ot_last_recorded_file
 
 if string match film $argv[1]
     set screenshot_folder "$obsidian/$resources_folder/film/media/clips/$folder_title"
@@ -40,6 +41,8 @@ inotifywait -m -e create --format '%w%f' "$a_path" | while read FILE
     ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -map 0:v -map 0:$lang[1] $screenshot_folder/$folder_title$timestamp.mp4
     echo -e "![[$folder_title$timestamp.mp4]]\n" >>$episode_md
     echo "" >>$episode_md
+    echo "![[$folder_title$timestamp.mp4]]" >$last_recorded_file
+
     rm $FILE
 
     #echo "File is compatible, going to move it as is."

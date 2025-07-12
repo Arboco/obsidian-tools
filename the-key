@@ -333,4 +333,6 @@ for i in $final_sorted_array
 end
 
 clear
+
+set the_key_activated 1
 source $script_dir/scripts/the-card-output.fish

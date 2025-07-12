@@ -18,6 +18,7 @@ if set -q _flag_i
     set manga_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
+set browser (ot_config_grab "BrowserManga")
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set resources (ot_config_grab "ObsidianResourceFolder")

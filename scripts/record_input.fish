@@ -12,6 +12,7 @@ set screenshot_folder $obsidian/$resource_folder/$game_folder/media/$folder_titl
 set script_dir (realpath (status dirname))
 set id "$argv[2]"
 set device_name (ot_config_grab "Profile"$id"DeviceName")
+set last_recorded_file /tmp/ot_last_recorded_file
 
 set controller_check (ot_config_grab "Profile"$id"ControllerCheck")
 if test $controller_check -eq 1
@@ -77,6 +78,7 @@ evtest $devinput | while read line
 
         gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
         echo -e "![[$fs_name]]\n" >>"$note_file"
+        echo "![[$fs_name]]" >$last_recorded_file
     end
 
     # for screen capture
@@ -86,6 +88,7 @@ evtest $devinput | while read line
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp4"
         echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
         $script_dir/input-ffmpeg-escaper.fish "$id" &
@@ -118,6 +121,7 @@ evtest $devinput | while read line
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp3"
         echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
         $script_dir/input-ffmpeg-escaper.fish "$id" &
@@ -146,6 +150,7 @@ evtest $devinput | while read line
             set fs_name "$folder_title-$timestamp.jpg"
             scrot -s $screenshot_folder/$fs_name
             echo -e "![[$fs_name]]\n" >>"$note_file"
+            echo "![[$fs_name]]" >$last_recorded_file
 
             set url "http://127.0.0.1:8081"
             # Use curl with --silent --head to send a HEAD request and check HTTP status

@@ -27,13 +27,13 @@ PoolEscapeButton: KEY_BACKSPACE
 # Profile 1 flag -v 
 # select your device with evtest
 # hook counter can be customized per game with hook-values property 
-Profile1DeviceName: NuPhy
+Profile1DeviceName: 8bitdo-numpad-kanata|8BitDo Retro 18 Numpad Keyboard
 Profile1ControllerCheck: 0
-Profile1ScreenshotButton: KEY_SYSRQ
-Profile1SelectScreenshotButton: KEY_DELETE
-Profile1RecordButton: KEY_INSERT
-Profile1AudioButton: KEY_HOME
-Profile1EscapeButton: KEY_END
+Profile1ScreenshotButton: KEY_KP1
+Profile1SelectScreenshotButton: KEY_KP4
+Profile1RecordButton: KEY_KP2
+Profile1AudioButton: KEY_KP3
+Profile1EscapeButton: KEY_KP0 
 Profile1HookCounter: 15
 Profile1IdleCounter: 180
 
@@ -50,6 +50,10 @@ Profile2HookCounter: 20
 Profile2IdleCounter: 180
 Profile2InputBlock: ABS_R?[XY].*value -?[0-9]{1,4}([^0-9]|$) 
 
+# Manga Reader 
+MangaDeviceName: 8BitDo Retro R8 Mouse Adapter 8BitDo Retro R8 Mouse Adapter Keyboard
+MangaScreenshot: KEY_A
+
 # Profile 3 flag -w  
 
 # This value shaves off seconds of the total playtime recorded in a session to compensate for startup time of the game. 
@@ -65,3 +69,6 @@ SessionLimit: 15
 # the-card 
 # how many seconds is one point worth. 48 hours = 172800, 36 hours = 129600, 24 hours = 86400, 12 hours = 43200, 6 hours = 21600:
 ValueSeconds: 86400 
+
+# manga-reader
+BrowserManga: firefox

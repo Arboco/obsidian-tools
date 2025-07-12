@@ -2,6 +2,7 @@
 
 # gameinit creates this file on launch 
 set obsidian_file (cat /tmp/obsidian_last.txt)
+set last_recorded_file /tmp/ot_last_recorded_file
 
 function help_function
     echo -e "Usage: gn \"message\""
@@ -10,12 +11,14 @@ function help_function
     echo "  -t       the-card insert"
     echo "  -r       Create something to #research"
     echo "  -l       Create link"
-    echo "  -q       Create quote"
     echo "  -s       Add newline after quote"
     echo "  -d       Create message to delete"
+    echo "  -c       Continously cite copied text"
+    echo "  -i       Transforms last recorded file into I card"
+    echo "  -q       Transforms last recorded file into Q card"
 end
 
-argparse --name=gn h/help t/task d/delete r/research q/question s/space l/link 'n/name=' -- $argv
+argparse --name=gn h/help t/task d/delete r/research q/question s/space i/inspiration l/link 'n/name=' -- $argv
 or return
 
 if set -q _flag_h
@@ -35,6 +38,30 @@ if set -q _flag_d
     exit
 end
 
+if set -q _flag_i
+    set file (cat $last_recorded_file)
+    awk -v val="$file" '$0 != val' $obsidian_file >tmp && mv tmp $obsidian_file
+    echo "```ad-info" >>$obsidian_file
+    echo "I: $argv[1]" >>$obsidian_file
+    echo "$argv[2]" >>$obsidian_file
+    echo "$file" >>$obsidian_file
+    echo "```" >>$obsidian_file
+    echo "" >>$obsidian_file
+    exit
+end
+
+if set -q _flag_q
+    set file (cat $last_recorded_file)
+    awk -v val="$file" '$0 != val' $obsidian_file >tmp && mv tmp $obsidian_file
+    echo "```ad-question" >>$obsidian_file
+    echo "Q: $argv[1]" >>$obsidian_file
+    echo "$argv[2]" >>$obsidian_file
+    echo "$file" >>$obsidian_file
+    echo "```" >>$obsidian_file
+    echo "" >>$obsidian_file
+    exit
+end
+
 if set -q _flag_r
     echo -e "- [ ] #research $argv[1]\n" >>$obsidian_file
     exit
@@ -45,7 +72,7 @@ if set -q _flag_l
     exit
 end
 
-if set -q _flag_q
+if set -q _flag_c
     set raw_quote
     set highlight
     echo -n | xclip -selection clipboard

@@ -6,6 +6,7 @@ set obsidian (ot_config_grab "ObsidianMainFolder")
 set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set folder_title (echo $title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set anime_folder (ot_config_grab "AnimeFolder")
+set last_recorded_file /tmp/ot_last_recorded_file
 if string match film $argv[3]
     set screenshot_folder "$obsidian/$resources_folder/film/media/screenshots/$folder_title"
 else if string match tv $argv[3]
@@ -33,4 +34,5 @@ inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
 
     echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
     echo "" >>$obsidian_md
+    echo "![[$folder_title$timestamp.jpg]]" >$last_recorded_file
 end
