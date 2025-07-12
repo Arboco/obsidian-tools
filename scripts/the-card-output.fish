@@ -36,16 +36,15 @@ end
 set mpv_is_running 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
-    set card_type (echo "$i" | grep -o "^.")
+    set i_trim (string trim -r -- $i)
+    set trimmed (string split '`' -- $i_trim)[1]
+    set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
+    set card_type (echo "$i" | grep -o "^.")
     if string match -q Q $card_type
         echo "$i" | glow
         gum input --placeholder "Press enter to continue..."
     end
-
-    set i_trim (string trim -r -- $i)
-    set trimmed (string split '`' -- $i_trim)[1]
-    set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
     if string match -q Combined $choice
     else
@@ -87,15 +86,15 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 cp $image_evidence $obsidian_folder/$obsidian_resource/drill_evidence/$uuid.$suffix_evidence
                 set image_final_insert "![[$uuid.$suffix_evidence]]"
                 awk -v search="$trimmed" -v newline="$image_final_insert" '
-              !in_para && index($0, search) { found = 1 }
-              NF > 0 { in_para = 1 }  # paragraph is active (non-empty line)
-              NF == 0 && found && !inserted {
-                print newline
-                inserted = 1
-              }
-              { print }
-              NF == 0 { in_para = 0 }  # reset at blank line
-              ' /tmp/clone.md >$target_md
+                  !in_para && index($0, search) { found = 1 }
+                  NF > 0 { in_para = 1 }  # paragraph is active (non-empty line)
+                  NF == 0 && found && !inserted {
+                    print newline
+                    inserted = 1
+                  }
+                  { print }
+                  NF == 0 { in_para = 0 }  # reset at blank line
+                  ' /tmp/clone.md >$target_md
             end
         end
         clear

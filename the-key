@@ -21,12 +21,13 @@ end
 
 function help_function
     echo "  -s       Respects Sequence"
+    echo "  -e       Edit Sequence"
     echo "  -i       Reverses selection, making the last used keys the first to appear, which turns the list into a pseudo history"
     echo "  -k       Activates keyring feature"
     echo "  -a       Activates agenda"
 end
 
-argparse --name=pool i/history s/sequence k/keyring a/agenda h/help 'n/name=' -- $argv
+argparse --name=pool i/history s/sequence e/edit k/keyring a/agenda h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -333,6 +334,53 @@ for i in $final_sorted_array
 end
 
 clear
+
+if set -q _flag_e
+    set sequence 1
+    set numline 1
+    while true
+        set cur_line (awk -v n=$numline 'NR == n' /tmp/the-card_final_sorted_array)
+        set target_md (rg -lF "$cur_line" $obsidian_folder/$notes)
+        set split_key (echo $cur_line | string split "`")
+        echo $cur_line
+        echo ""
+        echo "Sequence currently at $sequence"
+        set user_input (gum input --placeholder "s - Sequence | 0 - Stop")
+        if string match -q s $user_input
+            if echo $cur_line | rg "....-..-.."
+                if echo $cur_line | rg "#[0-9]+"
+                    set new_key (echo $cur_line | string replace -r '#[0-9]+' "#$sequence")
+                else
+                    set new_key (echo $cur_line | string trim -lr)
+                    set new_key "$new_key #$sequence"
+                    set new_key "$new_key `$split_key[2]`"
+                end
+            else
+                if echo $cur_line | rg "#[0-9]+"
+                    set new_key (echo $cur_line | string replace -r '#[0-9]+' "#$sequence")
+                else
+                    set new_key (echo $cur_line | string trim -lr)
+                    set new_key "$cur_line #$sequence"
+                end
+            end
+            set sequence (math $sequence + 1)
+            awk -v s1="$cur_line" -v s2="$new_key" '{gsub(s1, s2)}1' $target_md >tmp && mv tmp $target_md
+            awk -v val="$cur_line" '$0 != val' /tmp/the-card_final_sorted_array >tmp && mv tmp /tmp/the-card_final_sorted_array
+        end
+        if string match -q 0 $user_input
+            exit
+        end
+        set line_count (cat /tmp/the-card_final_sorted_array | count)
+        set numline (math $numline + 1)
+        if test $numline -gt $line_count
+            set numline 1
+        end
+        if not grep -q '[^[:space:]]' /tmp/the-card_final_sorted_array
+            exit
+        end
+        clear
+    end
+end
 
 set the_key_activated 1
 source $script_dir/scripts/the-card-output.fish
