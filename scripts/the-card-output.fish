@@ -177,6 +177,14 @@ for i in (cat /tmp/the-card_final_sorted_array)
             end
         end
 
+        if cat /tmp/file_contents_ready | rg "^skipped: 9"
+            clear
+            cat $parent_dir/helper/humiliation
+            ffplay -nodisp -autoexit $parent_dir/helper/scary_sound.mp3 >/dev/null 2>&1 &
+            echo ""
+            gum spin --spinner dot --title "Skipped 10 times? Try to think about why you are avoiding this task..." -- sleep 60
+        end
+
         if string match -q c $input_user
             set input_user (gum input --placeholder "t - Transform | r - Repeat | d - Delete | a - Archive")
             if string match -q t $input_user
