@@ -5,8 +5,9 @@ function show_image
 
     set cols (tput cols)
     set lines (tput lines)
+    set lines (math round $lines / 2)
 
-    kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --place {$cols}x{$lines}@0x0 "$image"
+    kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --scale-up --place {$cols}x{$lines}@0x0 "$image"
 
 end
 

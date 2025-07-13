@@ -1,6 +1,8 @@
 #! /usr/bin/env fish
 
 set script_dir (realpath (status dirname))
+set parent_dir (dirname (status --current-filename))
+set parent_dir (dirname $parent_dir)
 
 function mpv-small
     set file $argv[1]
@@ -20,17 +22,28 @@ end
 
 function icat_half
     set image $argv[1]
+    set suffix (echo "$image" | rg -oP '\.[^.\\/]+$')
+    set temp_image (mktemp --suffix $suffix)
 
-    set cols (tput cols)
-    set lines (tput lines)
+    set term_size (kitty icat --print-window-size | string split "x")
+    set img_size (identify -format "%w %h" $image | string split " ")
+    set max_wanted_height (math round $term_size[2] / 2)
+    if test $img_size[2] -gt $max_wanted_height
+        magick "$image" -resize x$max_wanted_height $temp_image
+        kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$temp_image"
+    else
+        kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$image"
+    end
 
-    set cell_width 9
-    set cell_height 18
+    rm "$temp_image"
+end
 
-    set width_px (math round $cols x $cell_width / 2)
-    set height_px (math round $lines x $cell_height / 2)
-
-    kitty +kitten icat --use-window-size=$cell_width,$cell_height,$width_px,$height_px $argv[1]
+function just_thumbnail
+    set file $argv[1]
+    set temp_thumb (mktemp)
+    ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
+    icat_half $temp_thumb.jpg
+    rm $temp_thumb
 end
 
 set mpv_is_running 0
@@ -120,11 +133,15 @@ for i in (cat /tmp/the-card_final_sorted_array)
             mpv --no-video $file_path >/dev/null &
             set mpid $last_pid
         else if echo $file_path | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
-            echo $file_path
-            if test $mpv_is_running -eq 0
-                mpv-small &
+            if test $generate_thumbnail -eq 1
+                just_thumbnail $file_path
+            else
+                if test $mpv_is_running -eq 0
+                    mpv-small &
+                end
+                echo '{ "command": ["loadfile", "'"$file_path"'"] }' | socat - /tmp/mpv-socket
             end
-            echo '{ "command": ["loadfile", "'"$file_path"'"] }' | socat - /tmp/mpv-socket
+
         else
             icat_half $file_path
         end

@@ -27,9 +27,10 @@ function help_function
     echo "  -a       Activates agenda"
     echo "  -c       Selects cleared and sorts in order of biggest number"
     echo "  -f       Selects favorites and sorts in order of biggest number"
+    echo "  -t       Suppress Video output and only generate thumbnail"
 end
 
-argparse --name=pool i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite h/help 'n/name=' -- $argv
+argparse --name=pool i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite t/thumbnail h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -41,6 +42,11 @@ set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
 if set -q _flag_h
     help_function
     exit
+end
+
+set generate_thumbnail 0
+if set _q_flag_t
+    set generate_thumbnail 1
 end
 
 if set -q _flag_k
