@@ -31,7 +31,7 @@ set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
+set default_pool_array (rg -l "^(I|Q|W|T):" $obsidian_folder/$notes)
 
 if test -f /tmp/obsidian_last.txt
     set obsidian_file (cat /tmp/obsidian_last.txt)
@@ -50,7 +50,7 @@ if set -q _flag_f
 end
 
 if set -q _flag_o
-    set obsidian_file (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes | fzf -0 --delimiter='/' --with-nth=-1 --preview 'glow {}')
+    set obsidian_file (rg -l "^(I|Q|W|T):" $obsidian_folder/$notes | fzf -0 --delimiter='/' --with-nth=-1 --preview 'glow {}')
     set filtered_pool $obsidian_file
 end
 
@@ -159,27 +159,27 @@ if set -q _flag_m
     if test -z $filtered_pool[1]
         set filtered_pool empty
     end
-    set subtag_pool (rg -P "^(Q|I|D|W):.*#.*" $obsidian_folder/$notes | rg -oP "#[^ ]*" | sed s/#//g | sort -u | fzf -m)
+    set subtag_pool (rg -P "^(Q|I|T|W):.*#.*" $obsidian_folder/$notes | rg -oP "#[^ ]*" | sed s/#//g | sort -u | fzf -m)
     if test -z $subtag_pool[2]
         set regex_ready_subtags "$subtag_pool"
     else
         set regex_ready_subtags (echo $subtag_pool | sed 's/ /|/g')
         set regex_ready_subtags "($regex_ready_subtags)"
     end
-    set question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*#$regex_ready_subtags" $obsidian_folder/$notes)
-    set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|W|D):" $filtered_pool)
+    set question_array (rg --no-filename --no-line-number "^(Q|I|T|W):.*#$regex_ready_subtags" $obsidian_folder/$notes)
+    set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|W|T):" $filtered_pool)
 end
 
 ### Filters start here 
 if set -q _flag_s
-    set subtag_pool (rg -P "^(Q|I|D|W):.*#.*" $filtered_pool | rg -oP "#[^ ]*" | sed s/#//g | sort -u | fzf -m)
+    set subtag_pool (rg -P "^(Q|I|T|W):.*#.*" $filtered_pool | rg -oP "#[^ ]*" | sed s/#//g | sort -u | fzf -m)
     if test -z $subtag_pool[2]
         set regex_ready_subtags "$subtag_pool"
     else
         set regex_ready_subtags (echo $subtag_pool | sed 's/ /|/g')
         set regex_ready_subtags "($regex_ready_subtags)"
     end
-    set question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*#$regex_ready_subtags" $filtered_pool)
+    set question_array (rg --no-filename --no-line-number "^(Q|I|T|W):.*#$regex_ready_subtags" $filtered_pool)
 end
 
 if set -q _flag_a
@@ -224,27 +224,27 @@ if test -z $question_array[1]
     set count_q (rg "Q:" $filtered_pool | count)
     set count_i (rg "I:" $filtered_pool | count)
     set count_w (rg "W:" $filtered_pool | count)
-    set count_d (rg "D:" $filtered_pool | count)
-    set count_c (rg "(Q|I|W|D):" $filtered_pool | count)
+    set count_t (rg "T:" $filtered_pool | count)
+    set count_c (rg "(Q|I|W|T):" $filtered_pool | count)
 else
     set count_q (echo $question_array | rg -o "Q:" | wc -l)
     set count_i (echo $question_array | rg -o "I:" | wc -l)
     set count_w (echo $question_array | rg -o "W:" | wc -l)
-    set count_d (echo $question_array | rg -o "D:" | wc -l)
-    set count_c (echo $question_array | rg -o "(Q|I|W|D):" | wc -l)
+    set count_t (echo $question_array | rg -o "T:" | wc -l)
+    set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
 end
 
-set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Drill ($count_d)"| string split " ")[1]
+set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
 if string match -q Question $choice
     set selection Q
 else if string match -q Inspiration $choice
     set selection I
 else if string match -q Wiki $choice
     set selection W
-else if string match -q Drill $choice
-    set selection D
+else if string match -q Task $choice
+    set selection T
 else if string match -q Combined $choice
-    set selection "(Q|I|W|D)"
+    set selection "(Q|I|W|T)"
 end
 
 if test -z $question_array[1]
@@ -275,7 +275,7 @@ set sorted_unix_array (for i in $unix_array
 end | sort -n)
 
 for i in $sorted_unix_array
-    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|T).*")
 end
 
 rm /tmp/the-card_final_sorted_array

@@ -21,7 +21,7 @@ foreach my $file (@files) {
             # Search backward for lines starting with string 
             for (my $j = $i - 1; $j >= 0; $j--) {
                 last if $lines[$j] =~ /^\s*$/;  # Stop if empty line
-                if ($lines[$j] =~ /^(Q|W|I|D):/) {
+                if ($lines[$j] =~ /^(Q|W|I|T):/) {
                     my $k_line = $lines[$j];
                     $k_line =~ s/^\s+|\s+$//g;
 

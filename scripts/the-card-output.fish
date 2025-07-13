@@ -46,6 +46,44 @@ function just_thumbnail
     rm $temp_thumb
 end
 
+function property_increase_exists
+    set search_key $argv[1]
+    set end_md $argv[2]
+    set property $argv[3]
+    awk -v key="$search_key" -v property="$property" '
+        BEGIN {
+            RS = ""
+            ORS = "\n\n"
+        }
+        {
+            if ($0 ~ key && !updated) {
+                # Build dynamic regex to match "property: [0-9]+"
+                regex = property ": [0-9]+"
+                if (match($0, regex)) {
+                    split(substr($0, RSTART, RLENGTH), a, " ")
+                    new_val = a[2] + 1
+                    sub(regex, property ": " new_val)
+                }
+                updated = 1
+            }
+            print
+        }
+        ' "$end_md" >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
+end
+
+function property_increase_new
+    set search_key $argv[1]
+    set end_md $argv[2]
+    set property $argv[3]
+    awk -v key="$search_key" -v property="$property" '
+        {
+            print
+            if ($0 ~ key) {
+                print property": 1"
+            }
+        } ' $end_md >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
+end
+
 set mpv_is_running 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
@@ -53,6 +91,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
 
+    clear
     set card_type (echo "$i" | grep -o "^.")
     if string match -q Q $card_type
         echo "$i" | glow
@@ -81,38 +120,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
         clear
     end
 
-    if string match -q D $card_type
-        while not string match y $user_decision
-            mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
-            echo "$i"
-            set input_user (gum input --placeholder "Press Enter when you are ready to provide Image Evidence of your drill, insert x if you don't want to provide evidence")
-            if string match -q x $input_user
-                break
-            end
-            set image_evidence (gum file $HOME)
-            set suffix_evidence (echo $image_evidence | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
-            icat_half $image_evidence "$suffix_evidence"
-            set user_decision (gum input --placeholder "Are you sure about this evidence? y/n")
-            if string match y $user_decision
-                cp $target_md /tmp/clone.md
-                set uuid (uuidgen)
-                cp $image_evidence $obsidian_folder/$obsidian_resource/drill_evidence/$uuid.$suffix_evidence
-                set image_final_insert "![[$uuid.$suffix_evidence]]"
-                awk -v search="$trimmed" -v newline="$image_final_insert" '
-                  !in_para && index($0, search) { found = 1 }
-                  NF > 0 { in_para = 1 }  # paragraph is active (non-empty line)
-                  NF == 0 && found && !inserted {
-                    print newline
-                    inserted = 1
-                  }
-                  { print }
-                  NF == 0 { in_para = 0 }  # reset at blank line
-                  ' /tmp/clone.md >$target_md
-            end
-        end
-        clear
-        rm /tmp/clone.md
-    end
     if not test -z $mpid
         kill $mpid
         set -e mpid
@@ -147,6 +154,81 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
     end
 
+    if string match -q T $card_type
+        mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
+        set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task")
+        if string match -q s $input_user
+            if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                property_increase_exists $i $target_md skipped
+            else
+                property_increase_new $i $target_md skipped
+            end
+        else if string match o $input_user
+            clear
+            obsidian "obsidian://$target_md" >/dev/null 2>&1 &
+        else if string match r $input_user
+            clear
+            kitty nvim +/"$i" $target_md
+        else
+            if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                property_increase_exists $i $target_md skipped
+            else
+                property_increase_new $i $target_md skipped
+            end
+        end
+
+        if string match -q c $input_user
+            set input_user (gum input --placeholder "t - Transform | r - Repeat | d - Delete | a - Archive")
+            if string match -q t $input_user
+                read replacement
+                awk -v search="$i" -v replace="$replacement" '{ gsub(search, replace); print }' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+            else if string match -q r $input_user
+                break
+            else if string match -q d $input_user
+                awk -v start="$i" '
+                  BEGIN { skip = 0 }
+                  /^$/ { skip = 0; print; next }
+                  skip || $0 ~ start { skip = 1; next }
+                  { print }
+                  ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+            else if string match -q a $input_user
+                mkdir -p $obsidian_folder/$notes/archive
+                set archive_file "$obsidian_folder/$notes/archive/Task Archive.md"
+                touch $archive_file
+                set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+                set cur_date (echo "archived: $cur_date")
+                awk -v start="$i" -v out="$archive_file" -v date="$cur_date" '
+                    BEGIN {
+                        copying = 0
+                        skipped = 0
+                    }
+                    {
+                        if (!skipped && $0 ~ start) {
+                            copying = 1
+                            sub(/^T: /, "", $0)    # Remove "T: " from matched line
+                            print $0 >> out
+                            next
+                        }
+
+                        if (copying) {
+                            if ($0 == "") {
+                                print date >> out   # Add date instead of the empty line
+                                copying = 0
+                                skipped = 1
+                                next
+                            }
+                            print $0 >> out
+                            next
+                        }
+
+                        print
+                    } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+                echo "" >>$archive_file
+            end
+        end
+
+    end
+
     if string match -q I $card_type
         gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
     end
@@ -163,11 +245,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""
             end
-        else
+        else if string match -q Q $card_type
             set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
         end
         set new_date (date +"%Y-%m-%d %H:%M:%S")
-
         if string match 0 $user_input
             exit
         else if string match r $user_input
@@ -243,33 +324,10 @@ end
 if not test -z the_key_activated
     if test $the_key_activated -eq 1
         set key_header (cat $tmp_key_contents | grep -P "^K:" )
-        if cat $tmp_key_contents | rg "^key_cleared:"
-            awk -v key="$key_header" '
-              BEGIN {
-              RS = ""
-                        ORS = "\n\n"
-                    }
-                    {
-                      if ($0 ~ key && !updated) {
-                        # Only process the first matching block
-                        if (match($0, /key_cleared: [0-9]+/)) {
-                        split(substr($0, RSTART, RLENGTH), a, " ")
-                        new_val = a[2] + 1
-                        sub(/key_cleared: [0-9]+/, "key_cleared: " new_val)
-                                                          }
-                        updated = 1}
-                        print
-                    }
-                                      ' $key_md >"$key_md.tmp" && mv "$key_md.tmp" "$key_md"
+        if cat $tmp_key_contents | rg -q "^key_cleared:"
+            property_increase_exists $key_header $key_md key_cleared
         else
-            awk -v key="$key_header" '
-              {
-                  print
-                  if ($0 ~ key) {
-                      print "key_cleared: 1"
-                  }
-              }
-                                           ' $key_md >"$key_md.tmp" && mv "$key_md.tmp" "$key_md"
+            property_increase_new $key_header $key_md key_cleared
         end
     end
 end

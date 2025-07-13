@@ -37,7 +37,7 @@ set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "^(I|Q|W|D):" $obsidian_folder/$notes)
+set default_pool_array (rg -l "^(I|Q|W|T):" $obsidian_folder/$notes)
 
 if set -q _flag_h
     help_function
@@ -244,13 +244,13 @@ end
 
 if test -z $filtered_pool[1]
 else
-    set question_array (rg --no-filename --no-line-number "^(I|Q|W|D):" $filtered_pool)
+    set question_array (rg --no-filename --no-line-number "^(I|Q|W|T):" $filtered_pool)
 end
 
 if rg "^subtags:" $tmp_key_contents
     set subtag_list (rg "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     for i in $subtag_list
-        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|D|W):.*$i" $default_pool_array)
+        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|T|W):.*$i" $default_pool_array)
     end
 end
 
@@ -269,7 +269,7 @@ if rg "^a-subtags:" $tmp_key_contents
     set a_subtag_list (rg "^a-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     set a_regex_ready (echo $a_subtag_list | sed 's/ /|/g')
     for i in $question_array
-        if echo $i | rg -q "^(Q|I|D|W):.*$a_regex_ready"
+        if echo $i | rg -q "^(Q|I|T|W):.*$a_regex_ready"
             set a_array_sort $a_array_sort $i
         end
     end
@@ -322,20 +322,20 @@ set question_array $sorted_question_array
 set count_q (echo $question_array | rg -o "Q:" | wc -l)
 set count_i (echo $question_array | rg -o "I:" | wc -l)
 set count_w (echo $question_array | rg -o "W:" | wc -l)
-set count_d (echo $question_array | rg -o "D:" | wc -l)
-set count_c (echo $question_array | rg -o "(Q|I|W|D):" | wc -l)
+set count_t (echo $question_array | rg -o "T:" | wc -l)
+set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
 
-set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Drill ($count_d)"| string split " ")[1]
+set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
 if string match -q Question $choice
     set selection Q
 else if string match -q Inspiration $choice
     set selection I
 else if string match -q Wiki $choice
     set selection W
-else if string match -q Drill $choice
-    set selection D
+else if string match -q Task $choice
+    set selection T
 else if string match -q Combined $choice
-    set selection "(Q|I|W|D)"
+    set selection "(Q|I|W|T)"
 end
 
 for i in $question_array
@@ -370,7 +370,7 @@ set sorted_unix_array (for i in $unix_array
 end | sort -n)
 
 for i in $sorted_unix_array
-    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|D).*")
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|T).*")
 end
 
 if set -q _flag_s
