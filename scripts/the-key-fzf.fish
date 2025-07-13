@@ -4,7 +4,7 @@ set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 
-if echo $argv[1] | rg "^\[.\]"
+if echo $argv[1] | rg "^\[.\]"; or echo $argv[1] | rg "^key"
     set select_key (echo $argv[1] | string split "|")[2]
     set select_key (echo $select_key | string trim -lr)
 else

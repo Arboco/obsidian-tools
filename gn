@@ -41,11 +41,10 @@ end
 if set -q _flag_i
     set file (cat $last_recorded_file)
     awk -v val="$file" '$0 != val' $obsidian_file >tmp && mv tmp $obsidian_file
-    echo "```ad-info" >>$obsidian_file
+    echo ">[!info] " >>$obsidian_file
     echo "I: $argv[1]" >>$obsidian_file
     echo "$argv[2]" >>$obsidian_file
     echo "$file" >>$obsidian_file
-    echo "```" >>$obsidian_file
     echo "" >>$obsidian_file
     exit
 end
@@ -53,11 +52,10 @@ end
 if set -q _flag_q
     set file (cat $last_recorded_file)
     awk -v val="$file" '$0 != val' $obsidian_file >tmp && mv tmp $obsidian_file
-    echo "```ad-question" >>$obsidian_file
+    echo ">[!question] " >>$obsidian_file
     echo "Q: $argv[1]" >>$obsidian_file
     echo "$argv[2]" >>$obsidian_file
     echo "$file" >>$obsidian_file
-    echo "```" >>$obsidian_file
     echo "" >>$obsidian_file
     exit
 end

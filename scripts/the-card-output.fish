@@ -225,7 +225,35 @@ end
 
 if not test -z the_key_activated
     if test $the_key_activated -eq 1
-        echo "The key was found and activated"
+        set key_header (cat $tmp_key_contents | grep -P "^K:" )
+        if cat $tmp_key_contents | rg "^key_cleared:"
+            awk -v key="$key_header" '
+              BEGIN {
+              RS = ""
+                        ORS = "\n\n"
+                    }
+                    {
+                      if ($0 ~ key && !updated) {
+                        # Only process the first matching block
+                        if (match($0, /key_cleared: [0-9]+/)) {
+                        split(substr($0, RSTART, RLENGTH), a, " ")
+                        new_val = a[2] + 1
+                        sub(/key_cleared: [0-9]+/, "key_cleared: " new_val)
+                                                          }
+                        updated = 1}
+                        print
+                    }
+                                      ' $key_md >"$key_md.tmp" && mv "$key_md.tmp" "$key_md"
+        else
+            awk -v key="$key_header" '
+              {
+                  print
+                  if ($0 ~ key) {
+                      print "key_cleared: 1"
+                  }
+              }
+                                           ' $key_md >"$key_md.tmp" && mv "$key_md.tmp" "$key_md"
+        end
     end
 end
 rm /tmp/file_contents_ready
