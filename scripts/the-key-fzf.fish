@@ -1,5 +1,15 @@
 #! /usr/bin/env fish
 
+function show_image
+    set image $argv[1]
+
+    set cols (tput cols)
+    set lines (tput lines)
+
+    kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --place {$cols}x{$lines}@0x0 "$image"
+
+end
+
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
@@ -39,8 +49,7 @@ cat /tmp/img_treasure | sed -E '/!|>\[\[/d' \
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
     set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-    #icat_half $img_path "$suffix"
-    kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align=left $img_path
+    show_image $img_path
 end
 
 rm /tmp/img_treasure
