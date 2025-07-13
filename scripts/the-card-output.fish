@@ -94,7 +94,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
     clear
     set card_type (echo "$i" | grep -o "^.")
     if string match -q Q $card_type
-        echo "$i" | glow
+        echo "$i" | perl -pe 's/`[^`]*`//g' | glow
         gum input --placeholder "Press enter to continue..."
     end
 
@@ -125,14 +125,27 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set -e mpid
     end
     clear
-    echo "Source: $target_md"
+    echo ""
     awk -v search="$trimmed" '
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
                               ' $target_md >/tmp/file_contents_ready
     set treasure_array (cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
-    cat /tmp/file_contents_ready | sed -E '/!|>\[\[/d' | glow
+
+    if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
+        cat /tmp/file_contents_ready | sed -E '/!|>\[\[/d' \
+            | sed 's/^>//g' \
+            | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
+            | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
+            | sed '/^Q:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
+            | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
+            | perl -pe 's/`[^`]*`//g' \
+            | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
+            | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
+    else
+        cat /tmp/file_contents_ready | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
+    end
     for tre in $treasure_array
         set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
         set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
@@ -153,6 +166,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
             icat_half $file_path
         end
     end
+    echo ""
+    echo "Source: $(basename $target_md)"
 
     if string match -q T $card_type
         mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
