@@ -4,10 +4,12 @@ key_cleared: 2
 key_favorite: 40
 keyring: #Keyring
 agenda: S_2025-09-22_a12
+skip: Task
 links: [[Link1]] [[Link2]]
 tags: #tag1 #tag2 
 string1: string 1
 string2: string 2
+regex1: "regex"
 cardstring1: string 1
 c-tags: #tag1 #tag2
 subtags: #subtag1 #subtag2 
@@ -20,7 +22,7 @@ f-string1: string 1
 f-subtags: #subtag1 #subtag2 
 remove: string 
 Description 
-
+![image]
 
 # Explanation 
 ## Option 
@@ -28,11 +30,12 @@ Description
 - agenda: Corresponds to -a flag, sorts keys after priority and date similiar to the agenda in  emacs. The agenda key consists of priority, year and uniquifier (optional)`(S-A-B-C-D-E-F)_yyyy-mm-dd_(uniquifier)`. The agenda key must be unique and exist only once in the system.
 - key_cleared: How many times you have cleared this key. Can be sorted with with -c flag.
 - key_favorite: Give the key a personal rating. Can be sorted by the value with the -f flag. 
-
+- skip: Put in either Question, Inspiration, Task, Wiki or Combined to skip directly to the pool you know you want instead of going trough the select menu 
 ## Card Pool increasers 
 - links: use obsidian link to include those notes in the pool 
 - tags: use tags to include those notes in the pool 
 - string: includes all notes that have that particular string in a line. The most powerful application of this is being able to use pretty much any yaml property now to add files. Add each string in a separate line with the property name incrementing like seen in the example
+- regex: like string but uses ripgrep -P sensitive regex
 - cardstring: adds cards based on string contained within cards 
 - family: the-pool related option, include the parent, children or siblings of the note where the key resides in
 - c-tags: files must contain each of those tags, requires 2 tags a minimum and works with up to 3
@@ -51,6 +54,4 @@ Keys work the same as any other card type and can be given a description and ima
 
 ## On Combinability 
 All properties should work with multiple arguments and being combined with as many properties as one lines. If this is not the case this is a bug. 
-
-
 

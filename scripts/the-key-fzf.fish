@@ -45,7 +45,9 @@ cat /tmp/img_treasure | sed -E '/!|>\[\[/d' \
     | sed '/^family:/ s/.*/\x1b[38;2;200;255;200m&\x1b[0m/' \
     | sed '/^key/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
     | sed '/^string/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/' \
-    | sed '/^cardstring/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/' \
+    | sed '/^regex/ s/.*/\x1b[38;2;176;196;222m&\x1b[0m/' \
+    | sed '/^skip:/ s/.*/\x1b[38;2;173;255;47m&\x1b[0m/' \
+    | sed '/^cardstring/ s/.*/\x1b[38;2;70;130;180m&\x1b[0m/' \
     | sed '/^links:/ s/.*/\x1b[38;2;50;205;50m&\x1b[0m/' | glow
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')

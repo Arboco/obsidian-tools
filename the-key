@@ -154,6 +154,17 @@ while true
     end
 end
 
+set num 1
+while true
+    if rg "^regex$num:" $tmp_key_contents
+        set regex (rg "^regex$num:" $tmp_key_contents | rg -oP "(?<=regex$num: ).*" | sed 's/"//g' | string trim -lr)
+        set filtered_pool $filtered_pool (rg -lP $regex $default_pool_array)
+        set num (math $num + 1)
+    else
+        break
+    end
+end
+
 if rg "^links:" $tmp_key_contents
     set md_links (rg "^links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
     set filtered_pool $filtered_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
@@ -325,7 +336,11 @@ set count_w (echo $question_array | rg -o "W:" | wc -l)
 set count_t (echo $question_array | rg -o "T:" | wc -l)
 set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
 
-set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
+if rg "^skip:" $tmp_key_contents
+    set choice (rg -oP "(?<=skip: ).*" $tmp_key_contents | string trim -lr)
+else
+    set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
+end
 if string match -q Question $choice
     set selection Q
 else if string match -q Inspiration $choice

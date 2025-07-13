@@ -5,14 +5,9 @@ function icat_half
 
     set cols (tput cols)
     set lines (tput lines)
+    set lines (math round $lines / 2)
 
-    set cell_width 9
-    set cell_height 18
-
-    set width_px (math round $cols x $cell_width / 2)
-    set height_px (math round $lines x $cell_height / 2)
-
-    kitty +kitten icat --use-window-size=$cell_width,$cell_height,$width_px,$height_px $argv[1]
+    kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --scale-up --place {$cols}x{$lines}@0x0 "$image"
 end
 
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
@@ -32,7 +27,7 @@ cat /tmp/img_treasure | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | 
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
     set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-    icat_half $img_path "$suffix"
+    icat_half $img_path
 end
 
 rm /tmp/img_treasure
