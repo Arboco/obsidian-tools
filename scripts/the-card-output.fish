@@ -171,7 +171,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             mpv --no-video $file_path >/dev/null &
             set mpid $last_pid
         else if echo $file_path | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
-            if test $generate_thumbnail -eq 1
+            if string match -q true $generate_thumbnail
                 just_thumbnail $file_path
             else
                 if test $mpv_is_running -eq 0

@@ -44,9 +44,9 @@ if set -q _flag_h
     exit
 end
 
-set generate_thumbnail 0
-if set _q_flag_t
-    set generate_thumbnail 1
+set generate_thumbnail false
+if set -q _flag_t
+    set generate_thumbnail true
 end
 
 if set -q _flag_k
