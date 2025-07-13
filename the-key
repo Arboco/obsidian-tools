@@ -68,13 +68,13 @@ end | sort | cut -f2-)
 
 if set -q _flag_c
     set c_temp (mktemp)
-    perl $script_dir/scripts/scan_keys.pl "key_cleared:" $obsidian_folder/$notes >$c_temp
+    perl $script_dir/perl/add_to_key.pl "key_cleared:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^key_cleared:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
 end
 
 if set -q _flag_f
     set c_temp (mktemp)
-    perl $script_dir/scripts/scan_keys.pl "key_favorite:" $obsidian_folder/$notes >$c_temp
+    perl $script_dir/perl/add_to_key.pl "key_favorite:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^key_favorite:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
 end
 
@@ -248,6 +248,17 @@ if rg "^subtags:" $tmp_key_contents
     end
 end
 
+set cnum 1
+while true
+    if rg "^cardstring$cnum:" $tmp_key_contents
+        set cardstring (rg -oP "(?<=cardstring$cnum: ).*" $tmp_key_contents | string trim -lr)
+        set question_array $question_array (perl $script_dir/perl/get_card.pl "$cardstring" $default_pool_array)
+        set cnum (math $cnum + 1)
+    else
+        break
+    end
+end
+
 if rg "^a-subtags:" $tmp_key_contents
     set a_subtag_list (rg "^a-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     set a_regex_ready (echo $a_subtag_list | sed 's/ /|/g')
@@ -257,6 +268,19 @@ if rg "^a-subtags:" $tmp_key_contents
         end
     end
     set question_array $a_array_sort
+end
+
+if rg "^contains:" $tmp_key_contents
+    set contains (rg -oP "(?<=contains: ).*" $tmp_key_contents | string trim -lr)
+    for i in $question_array
+        set temp_contains (mktemp)
+        set true_file_md (rg -lF "$i" $default_pool_array)
+        perl $script_dir/perl/contains.pl "$i" "$contains" $true_file_md >$temp_contains
+        if rg -q "$contains" $temp_contains
+            set contains_question_array $contains_question_array $i
+        end
+    end
+    set question_array $contains_question_array
 end
 
 if rg "^f-subtags:" $tmp_key_contents
@@ -270,6 +294,20 @@ if rg "^f-subtags:" $tmp_key_contents
         end
     end
     set question_array $survivor_subtag_pool
+end
+
+if rg "^remove:" $tmp_key_contents
+    set remove (rg -oP "(?<=remove: ).*" $tmp_key_contents | string trim -lr)
+    for i in $question_array
+        set temp_remove (mktemp)
+        set true_file_md (rg -lF "$i" $default_pool_array)
+        perl $script_dir/perl/contains.pl "$i" "$remove" $true_file_md >$temp_remove
+        if rg -q "$remove" $temp_remove
+        else
+            set removed_question_array $removed_question_array $i
+        end
+    end
+    set question_array $removed_question_array
 end
 
 set sorted_question_array (for i in $question_array; echo $i; end | sort -u)
