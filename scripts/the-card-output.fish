@@ -84,6 +84,24 @@ function property_increase_new
         } ' $end_md >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
 end
 
+function brainstorming
+    set trans_input $argv[1]
+    set key_title $argv[2]
+    echo $trans_input
+    while not string match 0 $trans_input
+        awk -v search_str="$key_title" -v append="$trans_input" '
+            BEGIN { RS=""; ORS="\n\n" }
+            {
+                if ($0 ~ search_str) {
+                    $0 = $0 "\n" append
+                }
+                print
+            } ' "$target_md" >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+        set trans_input (gum input --placeholder "Escape with 0, anything else gets added to the block")
+        echo $trans_input
+    end
+end
+
 set mpv_is_running 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
@@ -166,8 +184,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
             icat_half $file_path
         end
     end
+
     echo ""
-    echo "Source: $(basename $target_md)"
+    echo "Source: $(basename $target_md)" | sed 's/^/ /'
+    echo ""
 
     if string match -q T $card_type
         mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
@@ -184,6 +204,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
         else if string match r $input_user
             clear
             kitty nvim +/"$i" $target_md
+        else if echo "$input_user" | rg -q '^.{2,}$'
+            brainstorming $input_user $i
         else
             if cat /tmp/file_contents_ready | rg -q "^skipped:"
                 property_increase_exists $i $target_md skipped
@@ -289,6 +311,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
         else if string match d $user_input
             clear
             sed -i "s/$i/$i_trim `$new_date`/g" $target_md
+        else if echo "$user_input" | rg -q '^.{2,}$'
+            brainstorming $user_input $i
         end
     else
         if string match -q I $card_type
@@ -330,6 +354,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
             clear
             sed -i "s/$old_date/$new_date/g" $target_md
         else if string match 2 $user_input
+        else if echo "$user_input" | rg -q '^.{2,}$'
+            brainstorming $user_input $i
         end
     end
 
@@ -344,14 +370,12 @@ if not test -z $mpv_pid
     kill $mpv_pid
 end
 
-if not test -z the_key_activated
-    if test $the_key_activated -eq 1
-        set key_header (cat $tmp_key_contents | grep -P "^K:" )
-        if cat $tmp_key_contents | rg -q "^key_cleared:"
-            property_increase_exists $key_header $key_md key_cleared
-        else
-            property_increase_new $key_header $key_md key_cleared
-        end
+if string match 1 $the_key_activated
+    set key_header (cat $tmp_key_contents | grep -P "^K:" )
+    if cat $tmp_key_contents | rg -q "^key_cleared:"
+        property_increase_exists $key_header $key_md key_cleared
+    else
+        property_increase_new $key_header $key_md key_cleared
     end
 end
 rm /tmp/file_contents_ready
