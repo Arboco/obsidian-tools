@@ -214,6 +214,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             else if string match r $input_user
                 clear
                 kitty nvim +/"$i" $target_md
+                set permit_obtained true
             else if echo "$input_user" | rg -q '^.{2,}$'
                 brainstorming $input_user $i
             else if string match -q 0 $input_user
@@ -324,6 +325,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             else if string match r $user_input
                 clear
                 kitty nvim +/"$i" $target_md
+                set permit_obtained true
             else if string match 1 $user_input
                 clear
                 sed -i "s/$i/$i_trim `$new_date S-Value: 1`/g" $target_md
@@ -364,6 +366,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             else if string match r $user_input
                 clear
                 kitty nvim +/"$i" $target_md
+                set permit_obtained true
             else if string match 1 $user_input
                 clear
                 set svalue (math $svalue + 1)
