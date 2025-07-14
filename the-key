@@ -366,6 +366,11 @@ set count_w (echo $question_array | rg -o "W:" | wc -l)
 set count_t (echo $question_array | rg -o "T:" | wc -l)
 set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
 
+if rg "^timer:" $tmp_key_contents
+    set choice (rg -oP "(?<=timer: ).*" $tmp_key_contents | string trim -lr)
+    set second_counter $choice
+end
+
 if rg "^skip:" $tmp_key_contents
     set choice (rg -oP "(?<=skip: ).*" $tmp_key_contents | string trim -lr)
 else
