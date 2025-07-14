@@ -28,6 +28,7 @@ function help_function
     echo "  -c       Selects cleared and sorts in order of biggest number"
     echo "  -f       Selects favorites and sorts in order of biggest number"
     echo "  -v       Activate video functionality"
+    echo "  -q       Quickly query your key contents"
 end
 
 function true_multiline_block_ripgrep
@@ -58,7 +59,7 @@ function true_multiline_block_ripgrep
     rm $temp_rg
 end
 
-argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video h/help 'n/name=' -- $argv
+argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -513,5 +514,9 @@ if set -q _flag_e
     end
 end
 
+if set -q _flag_q
+    cat /tmp/the-card_final_sorted_array | fzf -1 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}"
+    exit
+end
 set the_key_activated 1
 source $script_dir/scripts/the-card-output.fish

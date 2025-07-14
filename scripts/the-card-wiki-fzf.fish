@@ -22,6 +22,7 @@ awk -v search="$select_key" '
       flag {print}
       /^$/ && flag {flag=0}
                               ' $key_md >/tmp/img_treasure
+
 set img_array (cat /tmp/img_treasure | grep -oP "(?<=!\[\[)[^\|?\]]*")
 cat /tmp/img_treasure | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --style=plain --color=always --language=fish | glow
 for img in $img_array

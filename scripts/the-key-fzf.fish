@@ -22,12 +22,18 @@ else
     set select_key (echo $argv[1] | string trim -r)
 end
 set key_md (rg -l $select_key $obsidian_folder/$notes)
+set base "$obsidian_folder/$notes"
+set full "$key_md"
+
+set relative (string replace -- "$base" "" -- $full)
 
 awk -v search="$select_key" '
       index($0, search) {flag=1}
       flag {print}
       /^$/ && flag {flag=0}
                               ' $key_md >/tmp/img_treasure
+
+echo -e "\e[38;2;120;120;120m$relative\e[0m"
 set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
 cat /tmp/img_treasure | sed -E '/!|>\[\[/d' \
     | sed '/^tags:/ s/.*/\x1b[38;2;255;255;0m&\x1b[0m/' \
