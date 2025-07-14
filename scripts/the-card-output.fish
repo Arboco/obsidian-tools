@@ -107,6 +107,9 @@ set mpv_is_running 0
 set cards_done 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
+    if string match -q true $want_to_exit
+        break
+    end
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
@@ -146,6 +149,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
     end
 
     set permit_obtained false
+    set once_is_enough false
     while string match -q false $permit_obtained
         clear
         echo ""
@@ -196,7 +200,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
 
         if string match -q T $card_type
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
-            set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task")
+            set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task | 0 - Exit")
             if string match -q s $input_user
                 if cat /tmp/file_contents_ready | rg -q "^skipped:"
                     property_custom_increment $i $target_md skipped 1
@@ -212,6 +216,14 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 kitty nvim +/"$i" $target_md
             else if echo "$input_user" | rg -q '^.{2,}$'
                 brainstorming $input_user $i
+            else if string match 0 $input_user
+                if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                    property_increase_exists $i $target_md skipped
+                else
+                    property_increase_new $i $target_md skipped
+                end
+                set want_to_exit true
+                break
             else
                 if cat /tmp/file_contents_ready | rg -q "^skipped:"
                     property_increase_exists $i $target_md skipped
@@ -284,7 +296,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
 
         if string match -q I $card_type
-            gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
+            if string match -q false $once_is_enough
+                gum spin --spinner moon --title "Get inspired..." -- sleep $second_counter
+                set once_is_enough true
+            end
         end
 
         echo ""
@@ -304,7 +319,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
             end
             set new_date (date +"%Y-%m-%d %H:%M:%S")
             if string match 0 $user_input
-                exit
+                set want_to_exit true
+                break
             else if string match r $user_input
                 clear
                 kitty nvim +/"$i" $target_md
@@ -343,7 +359,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
             set svalue (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
 
             if string match 0 $user_input
-                exit
+                set want_to_exit true
+                break
             else if string match r $user_input
                 clear
                 kitty nvim +/"$i" $target_md
@@ -374,7 +391,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
             end
         end
     end
-
     set cards_done (math $cards_done + 1)
     set -e target_md
 end
@@ -387,7 +403,7 @@ if not test -z $mpv_pid
     kill $mpv_pid
 end
 
-if string match 1 $the_key_activated
+if string match -q 1 $the_key_activated
     set key_header (cat $tmp_key_contents | grep -P "^K:" )
     if cat $tmp_key_contents | rg -q "^cards_cleared:"
         property_custom_increment $key_header $key_md cards_cleared $cards_done

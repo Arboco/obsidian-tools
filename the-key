@@ -22,12 +22,12 @@ end
 function help_function
     echo "  -s       Respects Sequence"
     echo "  -e       Edit Sequence"
-    echo "  -i       Reverses List, on default this shows the last keys used"
+    echo "  -r       Reverses List"
     echo "  -k       Activates keyring feature"
     echo "  -a       Activates agenda"
     echo "  -c       Selects cleared and sorts in order of biggest number"
     echo "  -f       Selects favorites and sorts in order of biggest number"
-    echo "  -t       Suppress Video output and only generate thumbnail"
+    echo "  -v       Activate video functionality"
 end
 
 function true_multiline_block_ripgrep
@@ -59,7 +59,7 @@ function true_multiline_block_ripgrep
     rm $temp_rg
 end
 
-argparse --name=pool i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite t/thumbnail h/help 'n/name=' -- $argv
+argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -73,15 +73,15 @@ if set -q _flag_h
     exit
 end
 
-set generate_thumbnail false
-if set -q _flag_t
-    set generate_thumbnail true
+set generate_thumbnail true
+if set -q _flag_v
+    set generate_thumbnail false
 end
 
 if set -q _flag_k
     rm /tmp/keyring_awk_result
     set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
-    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf --delimiter='#' --with-nth=-1)
+    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -1 --query "$argv[1]" --delimiter='#' --with-nth=-1)
     set keyring_file_list (rg -l "keyring: $keyring_select" $key_array_filelist)
     for i in $keyring_file_list
         awk -v term="$keyring_select" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $i >>/tmp/keyring_awk_result
@@ -117,27 +117,52 @@ if set -q _flag_f
     rm $c_temp
 end
 
-if set -q _flag_i
+if set -q _flag_r
     set sorted_key_array (printf "%s\n" $sorted_key_array | tac)
 end
 
 if set -q _flag_a
     set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
-    set agenda_keys (rg -oP "(?<=^agenda: ).*" $key_array_filelist | sort -u | string trim -lr)
+    set agenda_keys (true_multiline_block_ripgrep K "agenda:")
+
+    set date_list (mktemp)
     for i in $agenda_keys
-        set key_file (echo $i | string split ":")[1]
-        set key_of_agenda (echo $i | string split ":")[2]
-        set agenda_temp (mktemp)
-        awk -v term="$key_of_agenda" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $key_file >$agenda_temp
-        set priority (echo $key_of_agenda | rg -o "^.")
-        set agenda_date (echo $key_of_agenda | rg -o "....-..-..")
-        set key_header (cat $agenda_temp | rg "^K:" | string split "`")[1]
-        set agenda_plus_key_header "[$priority] - [$agenda_date] | $key_header"
+        set split_key (echo $i | string split "|")
+        set priority (echo $split_key[1] | rg -o "(S|A|B|C|D|E|F)")
+        set agenda_date (echo $split_key[1] | rg -o "(S|A|B|C|D|E|F) ....-..-.." | rg -o "....-..-..")
+        set key_header (echo $split_key[2] | string trim -lr)
+        echo "$agenda_date" >>$date_list
+
+        if test -z $agenda_date
+            set agenda_plus_key_header "[$priority] | $key_header"
+        else
+            set agenda_plus_key_header "[$priority] - [$agenda_date] | $key_header"
+        end
         set agenda_plus_key_header_array $agenda_plus_key_header_array $agenda_plus_key_header
-        rm $agenda_temp
     end
 
     set today (date +%s)
+    set closest_date ""
+    set min_diff ""
+
+    for line in (cat $date_list)
+        set timestamp (begin; date -d $line +%s 2>/dev/null; end)
+
+        if test -z "$timestamp"
+            continue
+        end
+
+        set diff (math "abs($timestamp - $today)")
+
+        if test -z "$min_diff" -o $diff -lt $min_diff
+            set min_diff $diff
+            set closest_date $line
+        end
+    end
+
+    echo $closest_date
+    rm $date_list
+
     set tmpfile (mktemp)
 
     for item in $agenda_plus_key_header_array
@@ -157,11 +182,11 @@ for i in $sorted_key_array
 end
 
 if set -q _flag_a
-    set select_key (for i in $final_sorted_agenda; echo $i; end | fzf --no-sort --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    set select_key (for i in $final_sorted_agenda; echo $i; end | sed "s/\] - \[$closest_date/\] ⏰\[$closest_date/g" | fzf --no-sort --style=full --preview "$script_dir/scripts/the-key-fzf.fish {}")
 else
-    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf -1 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
 end
-if echo $select_key | rg "^\[.\]"; or echo $select_key | rg "^key"
+if echo $select_key | rg "^\[.\]"; or echo $select_key | rg "^key"; or echo $select_key | rg "^cards_cleared"
     set select_key (echo $select_key | string split " | ")[2]
 end
 set select_key_trim (echo $select_key | string trim -r)
