@@ -76,12 +76,14 @@ if set -q _flag_c
     set c_temp (mktemp)
     perl $script_dir/perl/add_to_key.pl "cards_cleared:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^cards_cleared:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
+    rm $c_temp
 end
 
 if set -q _flag_f
     set c_temp (mktemp)
     perl $script_dir/perl/add_to_key.pl "key_favorite:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^key_favorite:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
+    rm $c_temp
 end
 
 if set -q _flag_i
@@ -101,6 +103,7 @@ if set -q _flag_a
         set key_header (cat $agenda_temp | rg "^K:" | string split "`")[1]
         set agenda_plus_key_header "[$priority] - [$agenda_date] | $key_header"
         set agenda_plus_key_header_array $agenda_plus_key_header_array $agenda_plus_key_header
+        rm $agenda_temp
     end
 
     set today (date +%s)
@@ -123,9 +126,9 @@ for i in $sorted_key_array
 end
 
 if set -q _flag_a
-    set select_key (for i in $final_sorted_agenda; echo $i; end | fzf --no-sort --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    set select_key (for i in $final_sorted_agenda; echo $i; end | fzf --no-sort --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
 else
-    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
 end
 if echo $select_key | rg "^\[.\]"; or echo $select_key | rg "^key"
     set select_key (echo $select_key | string split " | ")[2]
@@ -296,6 +299,7 @@ if rg "^contains:" $tmp_key_contents
         if rg -q "$contains" $temp_contains
             set contains_question_array $contains_question_array $i
         end
+        rm $temp_contains
     end
     set question_array $contains_question_array
 end
@@ -323,6 +327,7 @@ if rg "^remove:" $tmp_key_contents
         else
             set removed_question_array $removed_question_array $i
         end
+        rm $temp_remove
     end
     set question_array $removed_question_array
 end
