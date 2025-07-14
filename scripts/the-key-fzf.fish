@@ -8,14 +8,13 @@ function show_image
     set lines (math round $lines / 2)
 
     kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --scale-up --place {$cols}x{$lines}@0x0 "$image"
-
 end
 
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 
-if echo $argv[1] | rg "^\[.\]"; or echo $argv[1] | rg "^key"; or echo $argv[1] | rg "^cards"
+if echo $argv[1] | rg -q "^\[.\]"; or echo $argv[1] | rg -q "^key"; or echo $argv[1] | rg -q "^cards"
     set select_key (echo $argv[1] | string split "|")[2]
     set select_key (echo $select_key | string trim -lr)
 else
@@ -33,10 +32,9 @@ awk -v search="$select_key" '
       /^$/ && flag {flag=0}
                               ' $key_md >/tmp/img_treasure
 
-echo "Hello world!"
 echo -e "\e[38;2;120;120;120m$relative\e[0m"
 set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
-cat /tmp/img_treasure | awk '!/^(!|\>)\[\[/' \
+cat /tmp/img_treasure | awk '!/(!|>)\[\[/' \
     | sed '/^tags/ s/.*/\x1b[38;2;255;255;0m&\x1b[0m/' \
     | sed '/^keyring:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
     | sed '/^subtags:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
