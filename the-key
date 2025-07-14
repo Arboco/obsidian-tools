@@ -30,6 +30,35 @@ function help_function
     echo "  -t       Suppress Video output and only generate thumbnail"
 end
 
+function true_multiline_block_ripgrep
+    set temp_rg (mktemp)
+    set card_type $argv[1]
+    set key_string $argv[2]
+    set only_key_header $argv[3]
+    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string .*\$" $obsidian_folder/$notes >$temp_rg >ripgrepresult
+
+    cat ripgrepresult | while read line
+        if echo $line | rg -q "($card_type:|$key_string)"
+        else
+            sed -i 1d ripgrepresult
+            continue
+        end
+        set puzzle_pieces $puzzle_pieces $line
+        if not test -z $puzzle_pieces[2]
+            if string match -q true $only_key_header
+                set completed_puzzle "$puzzle_pieces[1]"
+            else
+                set completed_puzzle "$puzzle_pieces[2] | $puzzle_pieces[1]"
+            end
+            set -e puzzle_pieces
+            echo $completed_puzzle
+        end
+    end
+
+    cat $temp_rg
+    rm $temp_rg
+end
+
 argparse --name=pool i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite t/thumbnail h/help 'n/name=' -- $argv
 or return
 
@@ -74,14 +103,16 @@ end | sort | cut -f2-)
 
 if set -q _flag_c
     set c_temp (mktemp)
-    perl $script_dir/perl/add_to_key.pl "cards_cleared:" $obsidian_folder/$notes >$c_temp
+    true_multiline_block_ripgrep K "cards_cleared:" >$c_temp
+    #perl $script_dir/perl/add_to_key.pl "cards_cleared:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^cards_cleared:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
     rm $c_temp
 end
 
 if set -q _flag_f
     set c_temp (mktemp)
-    perl $script_dir/perl/add_to_key.pl "key_favorite:" $obsidian_folder/$notes >$c_temp
+    true_multiline_block_ripgrep K "key_favorite:" >$c_temp
+    #perl $script_dir/perl/add_to_key.pl "key_favorite:" $obsidian_folder/$notes >$c_temp
     set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^key_favorite:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
     rm $c_temp
 end
@@ -272,7 +303,7 @@ set cnum 1
 while true
     if rg "^cardstring$cnum:" $tmp_key_contents
         set cardstring (rg -oP "(?<=cardstring$cnum: ).*" $tmp_key_contents | string trim -lr)
-        set question_array $question_array (perl $script_dir/perl/get_card.pl "$cardstring" $default_pool_array)
+        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|T|W)" "$cardstring" true $default_pool_array)
         set cnum (math $cnum + 1)
     else
         break
@@ -292,16 +323,10 @@ end
 
 if rg "^contains:" $tmp_key_contents
     set contains (rg -oP "(?<=contains: ).*" $tmp_key_contents | string trim -lr)
-    for i in $question_array
-        set temp_contains (mktemp)
-        set true_file_md (rg -lF "$i" $default_pool_array)
-        perl $script_dir/perl/contains.pl "$i" "$contains" $true_file_md >$temp_contains
-        if rg -q "$contains" $temp_contains
-            set contains_question_array $contains_question_array $i
-        end
-        rm $temp_contains
-    end
-    set question_array $contains_question_array
+    set temp_contains (mktemp)
+    true_multiline_block_ripgrep "(Q|I|T|W)" "character:" true >$temp_contains
+    set question_array (cat $temp_contains)
+    rm $temp_contains
 end
 
 if rg "^f-subtags:" $tmp_key_contents
@@ -358,19 +383,11 @@ else if string match -q Combined $choice
     set selection "(Q|I|W|T)"
 end
 
-for i in $question_array
-    if echo $i | rg -q "^$selection"
-        set question_array_sort $question_array_sort $i
-    end
-end
-
-set question_array $question_array_sort
-
 # Sorting Algorithm
 for i in $question_array
     if echo $i | rg -q "....-..-.. ..:..:.."
         set raw_date (echo "$i" | rg -o "....-..-.. ..:..:..")
-        if echo $i | rg -P "(?<=S-Value: )[-0-9]*"
+        if echo $i | rg -Pq "(?<=S-Value: )[-0-9]*"
             set raw_value (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
         else
             set raw_value 0
