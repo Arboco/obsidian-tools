@@ -15,7 +15,7 @@ set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 
-if echo $argv[1] | rg "^\[.\]"; or echo $argv[1] | rg "^key"
+if echo $argv[1] | rg "^\[.\]"; or echo $argv[1] | rg "^key"; or echo $argv[1] | rg "^cards"
     set select_key (echo $argv[1] | string split "|")[2]
     set select_key (echo $select_key | string trim -lr)
 else
@@ -44,6 +44,7 @@ cat /tmp/img_treasure | sed -E '/!|>\[\[/d' \
     | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
     | sed '/^family:/ s/.*/\x1b[38;2;200;255;200m&\x1b[0m/' \
     | sed '/^key/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
+    | sed '/^cards_cleared:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
     | sed '/^string/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/' \
     | sed '/^regex/ s/.*/\x1b[38;2;176;196;222m&\x1b[0m/' \
     | sed '/^skip:/ s/.*/\x1b[38;2;173;255;47m&\x1b[0m/' \

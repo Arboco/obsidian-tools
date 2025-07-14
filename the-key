@@ -74,8 +74,8 @@ end | sort | cut -f2-)
 
 if set -q _flag_c
     set c_temp (mktemp)
-    perl $script_dir/perl/add_to_key.pl "key_cleared:" $obsidian_folder/$notes >$c_temp
-    set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^key_cleared:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
+    perl $script_dir/perl/add_to_key.pl "cards_cleared:" $obsidian_folder/$notes >$c_temp
+    set sorted_key_array (cat $c_temp | awk '{for(i=1;i<=NF;i++){if($i ~ /^cards_cleared:/){print $(i+1) " " $0}}}' | sort -nr | cut -d' ' -f2-)
 end
 
 if set -q _flag_f

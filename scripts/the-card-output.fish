@@ -46,42 +46,42 @@ function just_thumbnail
     rm $temp_thumb
 end
 
-function property_increase_exists
+function property_custom_increment
     set search_key $argv[1]
     set end_md $argv[2]
     set property $argv[3]
-    awk -v key="$search_key" -v property="$property" '
+    set increment $argv[4]
+    awk -v key="$search_key" -v property="$property" -v inc="$increment" '
         BEGIN {
             RS = ""
             ORS = "\n\n"
         }
         {
             if ($0 ~ key && !updated) {
-                # Build dynamic regex to match "property: [0-9]+"
                 regex = property ": [0-9]+"
                 if (match($0, regex)) {
                     split(substr($0, RSTART, RLENGTH), a, " ")
-                    new_val = a[2] + 1
+                    new_val = a[2] + inc
                     sub(regex, property ": " new_val)
                 }
                 updated = 1
             }
             print
-        }
-        ' "$end_md" >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
+        } ' "$end_md" >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
 end
 
 function property_increase_new
     set search_key $argv[1]
     set end_md $argv[2]
     set property $argv[3]
-    awk -v key="$search_key" -v property="$property" '
+    set value $argv[4]
+    awk -v key="$search_key" -v property="$property" -v val="$value" '
         {
             print
             if ($0 ~ key) {
-                print property": 1"
+                print property ": " val
             }
-        } ' $end_md >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
+        }' "$end_md" >"$end_md.tmp" && mv "$end_md.tmp" "$end_md"
 end
 
 function brainstorming
@@ -103,6 +103,8 @@ function brainstorming
 end
 
 set mpv_is_running 0
+
+set cards_done 0
 
 for i in (cat /tmp/the-card_final_sorted_array)
     set i_trim (string trim -r -- $i)
@@ -194,9 +196,9 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task")
         if string match -q s $input_user
             if cat /tmp/file_contents_ready | rg -q "^skipped:"
-                property_increase_exists $i $target_md skipped
+                property_custom_increment $i $target_md skipped 1
             else
-                property_increase_new $i $target_md skipped
+                property_increase_new $i $target_md skipped 1
             end
         else if string match o $input_user
             clear
@@ -358,7 +360,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             brainstorming $user_input $i
         end
     end
-
+    set cards_done (math $cards_done + 1)
     set -e target_md
 end
 
@@ -372,10 +374,10 @@ end
 
 if string match 1 $the_key_activated
     set key_header (cat $tmp_key_contents | grep -P "^K:" )
-    if cat $tmp_key_contents | rg -q "^key_cleared:"
-        property_increase_exists $key_header $key_md key_cleared
+    if cat $tmp_key_contents | rg -q "^cards_cleared:"
+        property_custom_increment $key_header $key_md cards_cleared $cards_done
     else
-        property_increase_new $key_header $key_md key_cleared
+        property_increase_new $key_header $key_md cards_cleared $cards_done
     end
 end
 rm /tmp/file_contents_ready
