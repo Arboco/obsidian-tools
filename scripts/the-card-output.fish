@@ -35,6 +35,7 @@ function icat_half
         kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$image"
     end
 
+    sleep 0.3
     rm "$temp_image"
 end
 
@@ -43,6 +44,8 @@ function just_thumbnail
     set temp_thumb (mktemp)
     ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
     icat_half $temp_thumb.jpg
+
+    sleep 0.3
     rm $temp_thumb
 end
 
@@ -216,7 +219,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 kitty nvim +/"$i" $target_md
             else if echo "$input_user" | rg -q '^.{2,}$'
                 brainstorming $input_user $i
-            else if string match 0 $input_user
+            else if string match -q 0 $input_user
                 if cat /tmp/file_contents_ready | rg -q "^skipped:"
                     property_increase_exists $i $target_md skipped
                 else
@@ -318,7 +321,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
             end
             set new_date (date +"%Y-%m-%d %H:%M:%S")
-            if string match 0 $user_input
+            if string match -q 0 $user_input
                 set want_to_exit true
                 break
             else if string match r $user_input
@@ -358,7 +361,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             set new_date (date +"%Y-%m-%d %H:%M:%S")
             set svalue (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
 
-            if string match 0 $user_input
+            if string match -q 0 $user_input
                 set want_to_exit true
                 break
             else if string match r $user_input
@@ -391,7 +394,9 @@ for i in (cat /tmp/the-card_final_sorted_array)
             end
         end
     end
-    set cards_done (math $cards_done + 1)
+    if string match -q true $permit_obtained
+        set cards_done (math $cards_done + 1)
+    end
     set -e target_md
 end
 
