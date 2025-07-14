@@ -1,10 +1,11 @@
 
-K: ⭐ Model Template Example for the-key #1 `2025-07-13 12:14:44`
-key_cleared: 2 
+K: 🧩 Model Template Example for the-key #1 🧩 `2025-07-14 14:19:07` `2025-07-14 16:54:14`
+cards_cleared: 2 
 key_favorite: 40
 keyring: #Keyring
-agenda: S_2025-09-22_a12
+agenda: S 2025-09-22
 skip: Task
+timer: 3
 links: [[Link1]] [[Link2]]
 tags: #tag1 #tag2 
 string1: string 1
@@ -22,15 +23,16 @@ f-string1: string 1
 f-subtags: #subtag1 #subtag2 
 remove: string 
 Description 
-![image]
+
 
 # Explanation 
 ## Option 
 - keyring: Corresponds to -k flag, bundles the key in a group with other keys 
-- agenda: Corresponds to -a flag, sorts keys after priority and date similiar to the agenda in  emacs. The agenda key consists of priority, year and uniquifier (optional)`(S-A-B-C-D-E-F)_yyyy-mm-dd_(uniquifier)`. The agenda key must be unique and exist only once in the system.
-- key_cleared: How many times you have cleared this key. Can be sorted with with -c flag.
+- agenda: Corresponds to -a flag, sorts keys after priority and date similiar to the agenda in  emacs. The agenda key consists of priority and date (optional). Date format is `yyyy-mm-dd`
+- cards_cleared: How many cards you have cleared of this key. Can be sorted with with -c flag.
 - key_favorite: Give the key a personal rating. Can be sorted by the value with the -f flag. 
 - skip: Put in either Question, Inspiration, Task, Wiki or Combined to skip directly to the pool you know you want instead of going trough the select menu 
+- timer: set the seconds for inspiration so you are not prompted any longer 
 ## Card Pool increasers 
 - links: use obsidian link to include those notes in the pool 
 - tags: use tags to include those notes in the pool 
@@ -54,4 +56,3 @@ Keys work the same as any other card type and can be given a description and ima
 
 ## On Combinability 
 All properties should work with multiple arguments and being combined with as many properties as one lines. If this is not the case this is a bug. 
-

@@ -35,12 +35,12 @@ function true_multiline_block_ripgrep
     set card_type $argv[1]
     set key_string $argv[2]
     set only_key_header $argv[3]
-    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string .*\$" $obsidian_folder/$notes >$temp_rg >ripgrepresult
+    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string .*\$" $obsidian_folder/$notes >$temp_rg
 
-    cat ripgrepresult | while read line
+    cat $temp_rg | while read line
         if echo $line | rg -q "($card_type:|$key_string)"
         else
-            sed -i 1d ripgrepresult
+            sed -i 1d $temp_rg
             continue
         end
         set puzzle_pieces $puzzle_pieces $line
@@ -55,7 +55,6 @@ function true_multiline_block_ripgrep
         end
     end
 
-    cat $temp_rg
     rm $temp_rg
 end
 
@@ -82,6 +81,8 @@ if set -q _flag_k
     rm /tmp/keyring_awk_result
     set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
     set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -1 --query "$argv[1]" --delimiter='#' --with-nth=-1)
+    set -e argv[1]
+    set argv[1] $argv[2]
     set keyring_file_list (rg -l "keyring: $keyring_select" $key_array_filelist)
     for i in $keyring_file_list
         awk -v term="$keyring_select" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $i >>/tmp/keyring_awk_result
@@ -129,9 +130,11 @@ if set -q _flag_a
     for i in $agenda_keys
         set split_key (echo $i | string split "|")
         set priority (echo $split_key[1] | rg -o "(S|A|B|C|D|E|F)")
-        set agenda_date (echo $split_key[1] | rg -o "(S|A|B|C|D|E|F) ....-..-.." | rg -o "....-..-..")
+        if echo $i | rg -q "(S|A|B|C|D|E|F) ....-..-.."
+            set agenda_date (echo $split_key[1] | rg -o "(S|A|B|C|D|E|F) ....-..-.." | rg -o "....-..-..")
+            echo "$agenda_date" >>$date_list
+        end
         set key_header (echo $split_key[2] | string trim -lr)
-        echo "$agenda_date" >>$date_list
 
         if test -z $agenda_date
             set agenda_plus_key_header "[$priority] | $key_header"
@@ -139,6 +142,7 @@ if set -q _flag_a
             set agenda_plus_key_header "[$priority] - [$agenda_date] | $key_header"
         end
         set agenda_plus_key_header_array $agenda_plus_key_header_array $agenda_plus_key_header
+        set -e agenda_date
     end
 
     set today (date +%s)
