@@ -36,7 +36,7 @@ function true_multiline_block_ripgrep
     set card_type $argv[1]
     set key_string $argv[2]
     set only_key_header $argv[3]
-    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string .*\$" $obsidian_folder/$notes >$temp_rg
+    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string.*\$" $obsidian_folder/$notes >$temp_rg
 
     cat $temp_rg | while read line
         if echo $line | rg -q "($card_type:|$key_string)"
@@ -354,7 +354,7 @@ end
 if rg "^contains:" $tmp_key_contents
     set contains (rg -oP "(?<=contains: ).*" $tmp_key_contents | string trim -lr)
     set temp_contains (mktemp)
-    true_multiline_block_ripgrep "(Q|I|T|W)" "character:" true >$temp_contains
+    true_multiline_block_ripgrep "(Q|I|T|W)" "$contains" true >$temp_contains
     set question_array (cat $temp_contains)
     rm $temp_contains
 end
@@ -515,7 +515,7 @@ if set -q _flag_e
 end
 
 if set -q _flag_q
-    cat /tmp/the-card_final_sorted_array | fzf -1 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}"
+    cat /tmp/the-card_final_sorted_array | fzf --no-sort --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}"
     exit
 end
 set the_key_activated 1

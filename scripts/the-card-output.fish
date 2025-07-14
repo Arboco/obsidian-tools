@@ -3,6 +3,7 @@
 set script_dir (realpath (status dirname))
 set parent_dir (dirname (status --current-filename))
 set parent_dir (dirname $parent_dir)
+set cleanup_list
 
 function mpv-small
     set file $argv[1]
@@ -24,6 +25,7 @@ function icat_half
     set image $argv[1]
     set suffix (echo "$image" | rg -oP '\.[^.\\/]+$')
     set temp_image (mktemp --suffix $suffix)
+    set cleanup_list $cleanup_list $temp_image
 
     set term_size (kitty icat --print-window-size | string split "x")
     set img_size (identify -format "%w %h" $image | string split " ")
@@ -34,19 +36,14 @@ function icat_half
     else
         kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$image"
     end
-
-    sleep 0.3
-    rm "$temp_image"
 end
 
 function just_thumbnail
     set file $argv[1]
     set temp_thumb (mktemp)
+    set cleanup_list $cleanup_list $temp_thumb
     ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
     icat_half $temp_thumb.jpg
-
-    sleep 0.3
-    rm $temp_thumb
 end
 
 function property_custom_increment
@@ -164,7 +161,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set treasure_array (cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat /tmp/file_contents_ready | sed -E '/!|>\[\[/d' \
+            cat /tmp/file_contents_ready | awk '!/^(!|\>)\[\[/' \
                 | sed 's/^>//g' \
                 | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
                 | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
@@ -414,6 +411,12 @@ if string match -q 1 $the_key_activated
         property_custom_increment $key_header $key_md cards_cleared $cards_done
     else
         property_increase_new $key_header $key_md cards_cleared $cards_done
+    end
+end
+
+for i in $cleanup_list
+    if test -e $i
+        rm $i
     end
 end
 rm /tmp/file_contents_ready
