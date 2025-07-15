@@ -1,5 +1,7 @@
 #! /usr/bin/env fish
 
-set selection (cat $HOME/.config/ortscripts/history | fzf)
+set script_dir (realpath (status dirname))
+
+set selection (cat $HOME/.config/ortscripts/history | fzf --delimiter='\"' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 
 eval $selection

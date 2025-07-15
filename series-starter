@@ -22,7 +22,7 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/series-history | fzf --delimiter='series/' --with-nth=-1)
+    set history_selection (tac ~/.config/ortscripts/series-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
     if echo $history_selection | rg "#Memento"
         set _flag_m 1
     end
@@ -39,7 +39,7 @@ set notes (ot_config_grab "NotesFolder")
 set series_folder tvseries
 set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if not set -q _flag_i
-    set obsidian_md (rg -l "seriespath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1)
+    set obsidian_md (rg -l "seriespath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
 set raw_file_name (basename -s ".md" $obsidian_md)
 

@@ -1,5 +1,7 @@
 #! /usr/bin/env fish 
 
+set script_dir (realpath (status dirname))
+
 function help_function
     echo "Options:"
     echo "  -i       History"
@@ -14,7 +16,7 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/manga-history | fzf --delimiter='/' --with-nth=-1)
+    set history_selection (tac ~/.config/ortscripts/manga-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
     set manga_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
@@ -24,7 +26,7 @@ set notes (ot_config_grab "NotesFolder")
 set resources (ot_config_grab "ObsidianResourceFolder")
 set script_dir (realpath (status dirname))
 if test -z $manga_md
-    set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1)
+    set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
 set folder_title (basename -s ".md" $manga_md)
 set folder_title_sanitized (echo $folder_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
