@@ -148,17 +148,33 @@ for i in (cat /tmp/the-card_final_sorted_array)
 
     set permit_obtained false
     set once_is_enough false
+    set card_content /tmp/file_contents_ready
     while string match -q false $permit_obtained
         clear
         echo ""
         awk -v search="$trimmed" '
-      index($0, search) {flag=1}
-      flag {print}
-      /^$/ && flag {flag=0}
-                              ' $target_md >/tmp/file_contents_ready
+          index($0, search) {flag=1}
+          flag {print}
+          /^$/ && flag {flag=0}
+                                  ' $target_md >$card_content
+
+        # Getting and setting up all data for data and s-value 
+        if cat $card_content | rg -q '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}'
+            set card_date (cat $card_content | rg -o '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
+            set card_has_date true
+        else
+            set card_has_date false
+        end
+
+        if cat $card_content | rg -q S-Value
+            set s_value (cat $card_content | rg -o 'S-Value.*' | rg -oP '.?[0-9]')
+            set card_has_svalue true
+        else
+            set card_has_svalue false
+        end
 
         set image_list /tmp/image-list-the-card-output
-        cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*" >$image_list
+        cat $card_content | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*" >$image_list
 
         if string match -q true $mindpalace_format
             set first_image (head -n 1 $image_list)
@@ -172,10 +188,12 @@ for i in (cat /tmp/the-card_final_sorted_array)
         if string match -q Q $card_type
             echo "$i" | perl -pe 's/`[^`]*`//g' | sed -E 's/#[0-9]+//g' | glow
             gum input --placeholder "Press enter to continue..."
+            clear
+            echo ""
         end
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat /tmp/file_contents_ready | awk '!/^(!|\>)\[\[/' \
+            cat $card_content | awk '!/^(!|\>)\[\[/' \
                 | sed 's/^>//g' \
                 | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
                 | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
@@ -185,7 +203,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
                 | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
         else
-            cat /tmp/file_contents_ready | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
+            cat $card_content | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
         end
         cat $image_list | while read tre
             set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
@@ -215,7 +233,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
             set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task | 0 - Exit")
             if string match -q s $input_user
-                if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                if cat $card_content | rg -q "^skipped:"
                     property_custom_increment $i $target_md skipped 1
                 else
                     property_increase_new $i $target_md skipped 1
@@ -231,7 +249,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             else if echo "$input_user" | rg -q '^.{2,}$'
                 brainstorming $input_user $i
             else if string match -q 0 $input_user
-                if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                if cat $card_content | rg -q "^skipped:"
                     property_increase_exists $i $target_md skipped
                 else
                     property_increase_new $i $target_md skipped
@@ -239,7 +257,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 set want_to_exit true
                 break
             else
-                if cat /tmp/file_contents_ready | rg -q "^skipped:"
+                if cat $card_content | rg -q "^skipped:"
                     property_increase_exists $i $target_md skipped
                 else
                     property_increase_new $i $target_md skipped
@@ -247,7 +265,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 set permit_obtained true
             end
 
-            if cat /tmp/file_contents_ready | rg "^skipped: 9"
+            if cat $card_content | rg "^skipped: 9"
                 clear
                 cat $parent_dir/helper/humiliation
                 ffplay -nodisp -autoexit $parent_dir/helper/scary_sound.mp3 >/dev/null 2>&1 &
@@ -317,94 +335,94 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
 
         echo ""
-        if not echo $i | rg -qP '`'
-            if string match -q W $card_type
-                set user_input (gum input --placeholder "0 - Exit | r - Revise | o - Open File")
-                if string match 1 $user_input; or string match 2 $user_input
-                    set user_input ""
-                end
-            else if string match -q I $card_type
-                set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
-                if string match 1 $user_input; or string match 2 $user_input
-                    set user_input ""
-                end
-            else if string match -q Q $card_type
-                set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
+        if string match -q W $card_type
+            set user_input (gum input --placeholder "0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input; or string match d $user_input
+                set user_input ""
             end
-            set new_date (date +"%Y-%m-%d %H:%M:%S")
-            if string match -q 0 $user_input
-                set want_to_exit true
-                break
-            else if string match r $user_input
-                clear
-                kitty nvim +/"$i" $target_md
-                set permit_obtained true
-            else if string match 1 $user_input
-                clear
-                sed -i "s/$i/$i_trim `$new_date S-Value: 1`/g" $target_md
-                set permit_obtained true
-            else if string match 2 $user_input
-                clear
-                sed -i "s/$i/$i_trim `$new_date S-Value: -1`/g" $target_md
-                set permit_obtained true
-            else if string match o $user_input
-                clear
-                setsid bash -c 'obsidian "obsidian://'"$target_md"'" >/dev/null 2>&1' </dev/null &>/dev/null &
-            else if string match d $user_input
-                clear
-                sed -i "s/$i/$i_trim `$new_date`/g" $target_md
-                set permit_obtained true
-            else if echo "$user_input" | rg -q '^.{2,}$'
-                brainstorming $user_input $i
+        else if string match -q I $card_type
+            set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input
+                set user_input ""
             end
-        else
-            if string match -q I $card_type
-                set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
-                if string match 1 $user_input; or string match 2 $user_input
-                    set user_input ""
-                end
-            else
-                set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
-                if string match d $user_input
-                    set user_input ""
-                end
+        else if string match -q Q $card_type
+            set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
+            if string match d $user_input
+                set user_input ""
             end
-            set old_date (echo $i | rg -o "`.*:[0-9]+" | sed 's/`//g')
-            set new_date (date +"%Y-%m-%d %H:%M:%S")
-            set svalue (echo $i | rg -oP "(?<=S-Value: )[-0-9]*")
+        else if string match -q I $card_type
+            set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+            if string match 1 $user_input; or string match 2 $user_input
+                set user_input ""
+            end
+        end
 
-            if string match -q 0 $user_input
-                set want_to_exit true
-                break
-            else if string match r $user_input
-                clear
-                kitty nvim +/"$i" $target_md
-                set permit_obtained true
-            else if string match 1 $user_input
-                clear
-                set svalue (math $svalue + 1)
-                set new_i (echo $i | string replace -r 'S-Value: -?\d+' "S-Value: $svalue" -- $line)
-                sed -i "s/$i/$new_i/g" $target_md
-                sed -i "s/$old_date/$new_date/g" $target_md
-                set permit_obtained true
-            else if string match 2 $user_input
-                clear
-                set svalue (math $svalue - 1)
-                set new_i (echo $i | string replace -r 'S-Value: -?\d+' "S-Value: $svalue" -- $line)
-                sed -i "s/$i/$new_i/g" $target_md
-                sed -i "s/$old_date/$new_date/g" $target_md
-                set permit_obtained true
-            else if string match o $user_input
-                clear
-                setsid bash -c 'obsidian "obsidian://'"$target_md"'" >/dev/null 2>&1' </dev/null &>/dev/null &
-            else if string match d $user_input
-                clear
-                sed -i "s/$old_date/$new_date/g" $target_md
-                set permit_obtained true
-            else if string match 2 $user_input
-            else if echo "$user_input" | rg -q '^.{2,}$'
-                brainstorming $user_input $i
+        if string match -q 0 $user_input
+            set want_to_exit true
+            break
+        end
+
+        if string match r $user_input
+            clear
+            kitty nvim +/"$i" $target_md
+            set permit_obtained true
+        end
+
+        if string match o $user_input
+            clear
+            setsid bash -c 'obsidian "obsidian://'"$target_md"'" >/dev/null 2>&1' </dev/null &>/dev/null &
+        end
+
+        # Removing old date and svalue
+        if echo $i | rg "$card_type.*`"
+            set cleaned_i (echo $i | awk '{sub(/`.*/, ""); print}')
+            awk -v target="$i" '
+                {
+                    if ($0 == target) {
+                        sub(/`.*$/, "", $0)
+                    }
+                    print
+                }' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+            set i $cleaned_i
+        end
+
+        set new_date (date +"%Y-%m-%d %H:%M:%S")
+
+        if string match 1 $user_input; or string match 2 $user_input
+            clear
+            if string match 1 $user_input
+                set s_value (math $s_value + 1)
+            else
+                set s_value (math $s_value - 1)
             end
+            set meta_append "`$new_date S-Value: $s_value`"
+            awk -v target="$i" -v append_str=" $meta_append" '
+              {
+                  if ($0 == target) {
+                      sub(/[[:space:]]+$/, "", $0)     # Trim trailing whitespace
+                      $0 = $0 append_str               # Append the string
+                  }
+                  print
+              } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+            set permit_obtained true
+        end
+
+        if string match d $user_input
+            clear
+            set meta_append "`$new_date`"
+            awk -v target="$i" -v append_str=" $meta_append" '
+                {
+                    if ($0 == target) {
+                        sub(/[[:space:]]+$/, "", $0)     # Trim trailing whitespace
+                        $0 = $0 append_str               # Append the string
+                    }
+                    print
+                } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+            set permit_obtained true
+        end
+
+        if echo "$user_input" | rg -q '^.{2,}$'
+            brainstorming $user_input $i
         end
     end
     if string match -q true $permit_obtained
@@ -412,7 +430,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
     end
     set -e target_md
 end
-
 if not test -z $mpid
     kill $mpid
 end
@@ -438,4 +455,4 @@ for i in $cleanup_list
     end
 end
 
-rm /tmp/file_contents_ready
+rm $card_content
