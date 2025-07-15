@@ -18,6 +18,8 @@ if echo $argv[1] | rg -q ".md"
     set md_title (echo $argv[1] | string split "|")[1]
     set md_title (basename $md_title)
     set md_title (echo $md_title | string trim -lr)
+else if string match -q mp $argv[2]
+    set md_title "$argv[1].md"
 else
     set md_title (echo $argv[1] | string split '"')[2]
     set md_title "$md_title.md"

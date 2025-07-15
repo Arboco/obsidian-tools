@@ -25,15 +25,26 @@ set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
 set hold_button (ot_config_grab "Profile"$id"HoldButton")
+set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
+set mindpalace_number 1
 
 if test -z (ot_config_grab "Profile"$id"ScreenshotButton")
     set screenshot_button screenshot_button
-else if test -z (ot_config_grab "Profile"$id"RecordButton")
+end
+if test -z (ot_config_grab "Profile"$id"RecordButton")
     set record_button record_button
-else if test -z (ot_config_grab "Profile"$id"AudioButton")
+end
+if test -z (ot_config_grab "Profile"$id"AudioButton")
     set audio_button audio_button
-else if test -z (ot_config_grab "Profile"$id"SelectScreenshotButton")
+end
+if test -z (ot_config_grab "Profile"$id"SelectScreenshotButton")
     set select_screenshot select_screenshot
+end
+if test -z (ot_config_grab "Profile"$id"HoldButton")
+    set select_screenshot hold_screenshot
+end
+if test -z (ot_config_grab "Profile"$id"MindPalace")
+    set select_screenshot mind_palace_button
 end
 
 mkdir -p $screenshot_folder
@@ -62,7 +73,33 @@ evtest $devinput | while read line
         set hold_trigger 1
     end
 
-    # for screenshots
+    # for mindpalace
+    if string match -q "*$mindpalace_button), value 1" "$line"; and test $hold_trigger -eq 1
+        echo \a
+        set timestamp (date +%F_%H%M%S)
+        set fs_name "$folder_title-$timestamp.jpg"
+        scrot -u $screenshot_folder/$fs_name
+
+        if grep "cut:" $note_file
+            echo "cut found"
+            set numcut (string split ' ' (grep -oP "(?<=cut: ).*" $note_file))
+            gm mogrify -quality 50 -shave $numcut[1]x$numcut[2] $screenshot_folder/$fs_name
+            sleep 1
+        else
+            gm mogrify -quality 50 -fuzz 5% -trim $screenshot_folder/$fs_name
+        end
+
+        set uuid (uuidgen)
+        echo "```ad-mp" >>$note_file
+        echo "I: $uuid #$mindpalace_number" >>$note_file
+        echo "![[$fs_name]]" >>$note_file
+        echo "```" >>$note_file
+        echo "" >>$note_file
+
+        set mindpalace_number (math $mindpalace_number + 1)
+    end
+
+    # for generic screenshots 
     if string match -q "*$screenshot_button), value 1" "$line"; and test $hold_trigger -eq 1
         echo \a
         set timestamp (date +%F_%H%M%S)
@@ -74,9 +111,10 @@ evtest $devinput | while read line
             set numcut (string split ' ' (grep -oP "(?<=cut: ).*" $note_file))
             gm mogrify -shave $numcut[1]x$numcut[2] $screenshot_folder/$fs_name
             sleep 1
+        else
+            gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
         end
 
-        gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
         echo -e "![[$fs_name]]\n" >>"$note_file"
         echo "![[$fs_name]]" >$last_recorded_file
     end

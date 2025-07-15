@@ -36,6 +36,7 @@ function icat_half
     else
         kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$image"
     end
+    rm $temp_image
 end
 
 function just_thumbnail
@@ -44,6 +45,7 @@ function just_thumbnail
     set cleanup_list $cleanup_list $temp_thumb
     ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
     icat_half $temp_thumb.jpg
+    rm $temp_thumb
 end
 
 function property_custom_increment
@@ -116,10 +118,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
 
     clear
     set card_type (echo "$i" | grep -o "^.")
-    if string match -q Q $card_type
-        echo "$i" | perl -pe 's/`[^`]*`//g' | sed -E 's/#[0-9]+//g' | glow
-        gum input --placeholder "Press enter to continue..."
-    end
 
     if string match -q Combined $choice
     else
@@ -158,7 +156,23 @@ for i in (cat /tmp/the-card_final_sorted_array)
       flag {print}
       /^$/ && flag {flag=0}
                               ' $target_md >/tmp/file_contents_ready
-        set treasure_array (cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
+
+        set image_list /tmp/image-list-the-card-output
+        cat /tmp/file_contents_ready | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*" >$image_list
+
+        if string match -q true $mindpalace_format
+            set first_image (head -n 1 $image_list)
+            set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$first_image")
+            icat_half $file_path
+            echo ""
+            sed -i 1d $image_list
+            gum input --placeholder "Press enter to continue..."
+        end
+
+        if string match -q Q $card_type
+            echo "$i" | perl -pe 's/`[^`]*`//g' | sed -E 's/#[0-9]+//g' | glow
+            gum input --placeholder "Press enter to continue..."
+        end
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
             cat /tmp/file_contents_ready | awk '!/^(!|\>)\[\[/' \
@@ -173,7 +187,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         else
             cat /tmp/file_contents_ready | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
         end
-        for tre in $treasure_array
+        cat $image_list | while read tre
             set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
             set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
             if echo $file_path | rg -q '(mp3|aac|flac|wav|alac|ogg|aiff|dsd)$'
@@ -193,7 +207,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 icat_half $file_path
             end
         end
-
         echo ""
         echo "Source: $(basename $target_md)" | sed 's/^/ /'
         echo ""
@@ -251,11 +264,11 @@ for i in (cat /tmp/the-card_final_sorted_array)
                     break
                 else if string match -q d $input_user
                     awk -v start="$i" '
-                  BEGIN { skip = 0 }
-                  /^$/ { skip = 0; print; next }
-                  skip || $0 ~ start { skip = 1; next }
-                  { print }
-                  ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+                        BEGIN { skip = 0 }
+                        /^$/ { skip = 0; print; next }
+                        skip || $0 ~ start { skip = 1; next }
+                        { print }
+                        ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
                     set permit_obtained true
                 else if string match -q a $input_user
                     mkdir -p $obsidian_folder/$notes/archive
@@ -264,31 +277,31 @@ for i in (cat /tmp/the-card_final_sorted_array)
                     set cur_date (date +"%Y-%m-%dT%H:%M:%S")
                     set cur_date (echo "archived: $cur_date")
                     awk -v start="$i" -v out="$archive_file" -v date="$cur_date" '
-                    BEGIN {
-                        copying = 0
-                        skipped = 0
-                    }
-                    {
-                        if (!skipped && $0 ~ start) {
-                            copying = 1
-                            sub(/^T: /, "", $0)    # Remove "T: " from matched line
-                            print $0 >> out
-                            next
+                        BEGIN {
+                            copying = 0
+                            skipped = 0
                         }
-
-                        if (copying) {
-                            if ($0 == "") {
-                                print date >> out   # Add date instead of the empty line
-                                copying = 0
-                                skipped = 1
+                        {
+                            if (!skipped && $0 ~ start) {
+                                copying = 1
+                                sub(/^T: /, "", $0)    # Remove "T: " from matched line
+                                print $0 >> out
                                 next
                             }
-                            print $0 >> out
-                            next
-                        }
 
-                        print
-                    } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
+                            if (copying) {
+                                if ($0 == "") {
+                                    print date >> out   # Add date instead of the empty line
+                                    copying = 0
+                                    skipped = 1
+                                    next
+                                }
+                                print $0 >> out
+                                next
+                            }
+
+                            print
+                        } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
                     echo "" >>$archive_file
                     set permit_obtained true
                 end
@@ -415,6 +428,8 @@ if string match -q 1 $the_key_activated
     else
         property_increase_new $key_header $key_md cards_cleared $cards_done
     end
+    set key_date (date +"%Y-%m-%d %H:%M:%S")
+    sed -i "s/.*$select_key_trim.*/$select_key_trim `$key_date`/g" $key_md
 end
 
 for i in $cleanup_list
@@ -422,4 +437,5 @@ for i in $cleanup_list
         rm $i
     end
 end
+
 rm /tmp/file_contents_ready
