@@ -91,7 +91,7 @@ evtest $devinput | while read line
 
         set uuid (uuidgen)
         echo "```ad-mp" >>$note_file
-        echo "I: $uuid #$mindpalace_number" >>$note_file
+        echo "I: $uuid #$mindpalace_number #zero" >>$note_file
         echo "![[$fs_name]]" >>$note_file
         echo "```" >>$note_file
         echo "" >>$note_file

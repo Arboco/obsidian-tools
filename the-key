@@ -411,6 +411,14 @@ end
 set sorted_question_array (for i in $question_array; echo $i; end | sort -u)
 set question_array $sorted_question_array
 
+for i in $question_array
+    if echo $i | rg -q "#zero"
+    else
+        set removed_zero $removed_zero $i
+    end
+end
+set question_array $removed_zero
+
 set count_q (echo $question_array | rg -o "Q:" | wc -l)
 set count_i (echo $question_array | rg -o "I:" | wc -l)
 set count_w (echo $question_array | rg -o "W:" | wc -l)
