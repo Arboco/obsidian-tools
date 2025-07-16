@@ -230,9 +230,25 @@ for i in (cat /tmp/the-card_final_sorted_array)
                 icat_half $file_path
             end
         end
+
+        if cat $card_content | rg -q "#bronze"
+            set trophy (echo "󱉏 B" | sed 's/.*/\x1b[38;5;208m&\x1b[0m/')
+        else if cat $card_content | rg -q "#silver"
+            set trophy (echo "󱉏 S" | sed 's/.*/\x1b[38;5;250m&\x1b[0m/')
+        else if cat $card_content | rg -q "#gold"
+            set trophy (echo "󱉏 G" | sed 's/.*/\x1b[38;5;220m&\x1b[0m/')
+        else if cat $card_content | rg -q "#platinum"
+            set trophy (echo "󱉏 P" | sed 's/.*/\x1b[38;5;254m&\x1b[0m/')
+        else if cat $card_content | rg -q "#diamond"
+            set trophy (echo " D" | sed 's/.*/\x1b[38;5;45m&\x1b[0m/')
+        else if cat $card_content | rg -q "#obsidian"
+            set trophy (echo "󰂩 O" | sed 's/.*/\x1b[38;5;93m&\x1b[0m/')
+        end
+
+        set source $(basename $target_md | sed 's/.*/\x1b[38;5;240m&\x1b[0m/')
         echo ""
-        echo "Source: $(basename $target_md)" | sed 's/^/ /'
-        echo $tags | sed 's/^/ /'
+        echo "$source $trophy" | sed 's/^/ /'
+        echo $tags | sed 's/.*/\x1b[38;5;240m&\x1b[0m/' | sed 's/^/ /'
         echo ""
 
         if string match -q T $card_type

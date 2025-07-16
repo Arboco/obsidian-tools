@@ -31,6 +31,8 @@ function help_function
     echo "  -q       Quickly query your key contents"
     echo "  -m       Activates Mind Palace mode"
     echo "  -p       Like keyring but for Mind Palaces"
+    echo "  -d       Refresh database, currently only refreshes trophies"
+    echo "  -t       Opens trophy view"
 end
 
 function true_multiline_block_ripgrep
@@ -72,7 +74,7 @@ function check_tag_exists
     end
 end
 
-argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace h/help 'n/name=' -- $argv
+argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy d/database h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -83,6 +85,22 @@ set default_pool_array (rg -l "^(I|Q|W|T):" $obsidian_folder/$notes)
 
 if not set -q _flag_k; or not set -q _flag_p
     set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
+end
+
+if set -q _flag_d
+    set trophy_file ~/.config/ortscripts/thekey_trophies.txt
+    if test -e $trophy_file
+        rm $trophy_file
+    end
+    for i in $key_array
+        $script_dir/the-key headless "$i"
+    end
+    exit
+end
+
+if string match headless $argv[1]
+    set headless_mode_activated true
+    set select_key $argv[2]
 end
 
 if set -q _flag_h
@@ -121,6 +139,16 @@ if set -q _flag_p
         awk -v term="$keyring_select" 'BEGIN { RS=""; FS="\n" } $0 ~ term { print $0 "\n" }' $i >>/tmp/keyring_awk_result
     end
     set key_array (rg --no-filename --no-line-number "^K:" /tmp/keyring_awk_result)
+end
+
+if set -q _flag_t
+    set trophies_sorted (cat ~/.config/ortscripts/thekey_trophies.txt | sort -t '|' -k1,1nr)
+    for i in $trophies_sorted
+        set cut_out (echo "$i" | string split "|")[3]
+        set cut_out (echo $cut_out | string trim -lr)
+        set trophies_key $trophies_key $cut_out
+    end
+    set select_key (for i in $trophies_key; echo $i; end | fzf -0 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {} trophy")
 end
 
 set sorted_key_array (
@@ -216,13 +244,16 @@ for i in $sorted_key_array
     set trim_sorted_key_array $trim_sorted_key_array (echo $i | string split "`")[1]
 end
 
-if set -q _flag_a
-    set select_key (for i in $final_sorted_agenda; echo $i; end | sed "s/\] - \[$closest_date/\] ⏰\[$closest_date/g" | fzf --no-sort --style=full --preview "$script_dir/scripts/the-key-fzf.fish {}")
+if string match true $headless_mode_activated; or set -q _flag_t
 else
-    set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf -0 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
-end
-if echo $select_key | rg "^\[.\]"; or echo $select_key | rg "^key"; or echo $select_key | rg "^cards_cleared"
-    set select_key (echo $select_key | string split " | ")[2]
+    if set -q _flag_a
+        set select_key (for i in $final_sorted_agenda; echo $i; end | sed "s/\] - \[$closest_date/\] ⏰\[$closest_date/g" | fzf --no-sort --style=full --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    else
+        set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf -0 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    end
+    if echo $select_key | rg "^\[.\]"; or echo $select_key | rg "^key"; or echo $select_key | rg "^cards_cleared"
+        set select_key (echo $select_key | string split " | ")[2]
+    end
 end
 set select_key_trim (echo $select_key | string trim -lr)
 if string match -q "K:" $select_key_trim
@@ -270,18 +301,6 @@ if rg "^tags:" $tmp_key_contents
     set tag_list (rg "^tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
     for i in $tag_list
         set filtered_pool $filtered_pool (rg -l "^  - $i\$" $default_pool_array)
-    end
-end
-
-if rg "^c-tags:" $tmp_key_contents
-    set ctag_list (rg "^c-tags:" $tmp_key_contents | rg -o "#.*\b" | sed 's/#//g' | string split " " | string trim -lr)
-    set cpool_one (rg -l "^  - $ctag_list[1]\$" $default_pool_array)
-    set cpool_two (rg -l "^  - $ctag_list[2]\$" $cpool_one)
-    if test -z ctag_list[3]
-        set cpool_three (rg -l "^  - $ctag_list[2]\$" $cpool_two)
-        set filtered_pool $filtered_pool $cpool_three
-    else
-        set filtered_pool $filtered_pool $cpool_two
     end
 end
 
@@ -427,32 +446,35 @@ for i in $question_array
 end
 set question_array $removed_zero
 
-set count_q (echo $question_array | rg -o "Q:" | wc -l)
-set count_i (echo $question_array | rg -o "I:" | wc -l)
-set count_w (echo $question_array | rg -o "W:" | wc -l)
-set count_t (echo $question_array | rg -o "T:" | wc -l)
-set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
-
-if rg "^timer:" $tmp_key_contents
-    set choice (rg -oP "(?<=timer: ).*" $tmp_key_contents | string trim -lr)
-    set second_counter $choice
-end
-
-if rg "^skip:" $tmp_key_contents
-    set choice (rg -oP "(?<=skip: ).*" $tmp_key_contents | string trim -lr)
+if string match true $headless_mode_activated
 else
-    set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
-end
-if string match -q Question $choice
-    set selection Q
-else if string match -q Inspiration $choice
-    set selection I
-else if string match -q Wiki $choice
-    set selection W
-else if string match -q Task $choice
-    set selection T
-else if string match -q Combined $choice
-    set selection "(Q|I|W|T)"
+    set count_q (echo $question_array | rg -o "Q:" | wc -l)
+    set count_i (echo $question_array | rg -o "I:" | wc -l)
+    set count_w (echo $question_array | rg -o "W:" | wc -l)
+    set count_t (echo $question_array | rg -o "T:" | wc -l)
+    set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
+
+    if rg "^timer:" $tmp_key_contents
+        set choice (rg -oP "(?<=timer: ).*" $tmp_key_contents | string trim -lr)
+        set second_counter $choice
+    end
+
+    if rg "^skip:" $tmp_key_contents
+        set choice (rg -oP "(?<=skip: ).*" $tmp_key_contents | string trim -lr)
+    else
+        set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
+    end
+    if string match -q Question $choice
+        set selection Q
+    else if string match -q Inspiration $choice
+        set selection I
+    else if string match -q Wiki $choice
+        set selection W
+    else if string match -q Task $choice
+        set selection T
+    else if string match -q Combined $choice
+        set selection "(Q|I|W|T)"
+    end
 end
 
 # Sorting Algorithm
@@ -561,4 +583,50 @@ if set -q _flag_q
     exit
 end
 set the_key_activated 1
-source $script_dir/scripts/the-card-output.fish
+
+if string match -q true $headless_mode_activated
+    echo "Currently working on $select_key_trim"
+    set trophy_file ~/.config/ortscripts/thekey_trophies.txt
+    set total_value 0
+    set bronze 0
+    set silver 0
+    set gold 0
+    set platinum 0
+    set diamond 0
+    set obsidian 0
+    cat /tmp/the-card_final_sorted_array | while read line
+        set trim (string trim -r -- $line)
+        set trimmed (string split '`' -- $trim)[1]
+        set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
+        set card_content /tmp/headless_card_contents
+        awk -v search="$trimmed" '
+          index($0, search) {flag=1}
+          flag {print}
+          /^$/ && flag {flag=0} ' $target_md >$card_content
+        if cat $card_content | rg "#bronze"
+            set bronze (math $bronze + 1)
+            set total_value (math $total_value + 1)
+        else if cat $card_content | rg "#silver"
+            set silver (math $silver + 1)
+            set total_value (math $total_value + 2)
+        else if cat $card_content | rg "#gold"
+            set gold (math $gold + 1)
+            set total_value (math $total_value + 4)
+        else if cat $card_content | rg "#platinum"
+            set platinum (math $platinum + 1)
+            set total_value (math $total_value + 8)
+        else if cat $card_content | rg "#diamond"
+            set diamond (math $diamond + 1)
+            set total_value (math $total_value + 16)
+        else if cat $card_content | rg "#obsidian"
+            set obsidian (math $obsidian + 1)
+            set total_value (math $total_value + 32)
+        end
+    end
+    if test $total_value -lt 1
+    else
+        echo "$total_value | bronze=$bronze silver=$silver gold=$gold platinum=$platinum diamond=$diamond obsidian=$obsidian | $select_key_trim" >>$trophy_file
+    end
+else
+    source $script_dir/scripts/the-card-output.fish
+end

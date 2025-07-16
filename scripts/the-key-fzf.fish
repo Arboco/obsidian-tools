@@ -25,6 +25,23 @@ set base "$obsidian_folder/$notes"
 set full "$key_md"
 
 set relative (string replace -- "$base" "" -- $full)
+if string match -q trophy $argv[2]
+    set trophy_line (cat ~/.config/ortscripts/thekey_trophies.txt | rg "$select_key")
+    set bronze (echo $trophy_line | rg -oP "(?<=bronze=)[0-9]+")
+    set bronze (echo "󱉏 :$bronze" | sed 's/.*/\x1b[38;5;208m&\x1b[0m/')
+    set silver (echo $trophy_line | rg -oP "(?<=silver=)[0-9]+")
+    set silver (echo "󱉏 :$silver" | sed 's/.*/\x1b[38;5;250m&\x1b[0m/')
+    set gold (echo $trophy_line | rg -oP "(?<=gold=)[0-9]+")
+    set gold (echo "󱉏 :$gold" | sed 's/.*/\x1b[38;5;220m&\x1b[0m/')
+    set platinum (echo $trophy_line | rg -oP "(?<=platinum=)[0-9]+")
+    set platinum (echo "󱉏 :$platinum" | sed 's/.*/\x1b[38;5;254m&\x1b[0m/')
+    set diamond (echo $trophy_line | rg -oP "(?<=diamond=)[0-9]+")
+    set diamond (echo " :$diamond" | sed 's/.*/\x1b[38;5;45m&\x1b[0m/')
+    set obsidian (echo $trophy_line | rg -oP "(?<=obsidian=)[0-9]+")
+    set obsidian (echo "󰂩 :$obsidian" | sed 's/.*/\x1b[38;5;93m&\x1b[0m/')
+
+    echo "$bronze $silver $gold $platinum $diamond $obsidian"
+end
 
 awk -v search="$select_key" '
       index($0, search) {flag=1}
