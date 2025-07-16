@@ -22,14 +22,15 @@ end
 function help_function
     echo "  -s       Respects Sequence"
     echo "  -e       Edit Sequence"
-    echo "  -r       Reverses List"
+    echo "  -i       Reverses List, by default this creates a history view"
+    echo "  -r       Random key gets auto selected"
     echo "  -k       Activates keyring feature"
     echo "  -a       Activates agenda"
     echo "  -c       Selects cleared and sorts in order of biggest number"
     echo "  -f       Selects favorites and sorts in order of biggest number"
     echo "  -v       Activate video functionality"
     echo "  -q       Quickly query your key contents"
-    echo "  -m       Activates Mind Palace mode"
+    echo "  -m       Deactivates Mind Palace mode"
     echo "  -p       Like keyring but for Mind Palaces"
     echo "  -d       Refresh database, currently only refreshes trophies"
     echo "  -t       Opens trophy view"
@@ -74,7 +75,7 @@ function check_tag_exists
     end
 end
 
-argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy d/database h/help 'n/name=' -- $argv
+argparse --name=pool r/random i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy d/database h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -106,10 +107,6 @@ end
 if set -q _flag_h
     help_function
     exit
-end
-
-if set -q _flag_m
-    set mindpalace_format true
 end
 
 set generate_thumbnail true
@@ -244,7 +241,13 @@ for i in $sorted_key_array
     set trim_sorted_key_array $trim_sorted_key_array (echo $i | string split "`")[1]
 end
 
-if string match true $headless_mode_activated; or set -q _flag_t
+if set -q _flag_r
+    set array_length (count $trim_sorted_key_array)
+    set random_selection (random 1 $array_length)
+    set select_key $trim_sorted_key_array[$random_selection]
+end
+
+if string match true $headless_mode_activated; or set -q _flag_t; or set -q _flag_r
 else
     if set -q _flag_a
         set select_key (for i in $final_sorted_agenda; echo $i; end | sed "s/\] - \[$closest_date/\] ⏰\[$closest_date/g" | fzf --no-sort --style=full --preview "$script_dir/scripts/the-key-fzf.fish {}")
@@ -295,6 +298,15 @@ end
 if rg "^links:" $tmp_key_contents
     set md_links (rg "^links:" $tmp_key_contents | rg -o "\[.*\]" | string split "] [" | sed 's/\[//g' | sed 's/\]//g' | string trim -lr)
     set filtered_pool $filtered_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
+end
+
+if rg "^mp:" $tmp_key_contents
+    set mindpalace_format true
+end
+
+if set -q _flag_m
+    set mindpalace_format false
+    set -q _flag_s 1
 end
 
 if rg "^tags:" $tmp_key_contents
