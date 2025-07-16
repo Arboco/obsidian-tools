@@ -90,7 +90,7 @@ function brainstorming
     set trans_input $argv[1]
     set key_title $argv[2]
     echo $trans_input
-    while not string match 0 $trans_input
+    while not string match "" $trans_input
         awk -v search_str="$key_title" -v append="$trans_input" '
             BEGIN { RS=""; ORS="\n\n" }
             {
@@ -99,7 +99,7 @@ function brainstorming
                 }
                 print
             } ' "$target_md" >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
-        set trans_input (gum input --placeholder "Escape with 0, anything else gets added to the block")
+        set trans_input (gum input --placeholder "Escape by pressing empty Enter, anything else gets added to the block")
         echo $trans_input
     end
 end
@@ -141,15 +141,14 @@ for i in (cat /tmp/the-card_final_sorted_array)
         clear
     end
 
-    if not test -z $mpid
-        kill $mpid
-        set -e mpid
-    end
-
     set permit_obtained false
     set once_is_enough false
     set card_content /tmp/file_contents_ready
     while string match -q false $permit_obtained
+        if not test -z $mpid
+            kill $mpid
+            set -e mpid
+        end
         clear
         echo ""
         awk -v search="$trimmed" '
@@ -251,6 +250,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
         echo $tags | sed 's/.*/\x1b[38;5;240m&\x1b[0m/' | sed 's/^/ /'
         echo ""
 
+        set -e trophy
+
         if string match -q T $card_type
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
             set input_user (gum input --placeholder "s - Skip | r - Revise | o - Open File | c - Complete Task | 0 - Exit")
@@ -267,7 +268,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
             else if string match r $input_user
                 clear
                 kitty nvim +/"$i" $target_md
-                set permit_obtained true
             else if echo "$input_user" | rg -q '^.{2,}$'
                 brainstorming $input_user $i
             else if string match -q 0 $input_user
@@ -387,7 +387,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
         if string match r $user_input
             clear
             kitty nvim +/"$i" $target_md
-            set permit_obtained true
         end
 
         if string match o $user_input

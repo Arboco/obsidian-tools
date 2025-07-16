@@ -10,6 +10,17 @@ function show_image
     kitty +kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --align left --scale-up --place {$cols}x{$lines}@0x0 "$image"
 end
 
+function just_thumbnail
+    set file $argv[1]
+    set temp_thumb (mktemp)
+    set cleanup_list $cleanup_list $temp_thumb
+    ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
+    show_image $temp_thumb.jpg
+    rm $temp_thumb
+end
+
+set script_dir (dirname (status --current-filename))
+set parent_dir (dirname $script_dir)
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
@@ -20,7 +31,7 @@ if echo $argv[1] | rg -q "^\[.\]"; or echo $argv[1] | rg -q "^key"; or echo $arg
 else
     set select_key (echo $argv[1] | string trim -r)
 end
-set key_md (rg -l $select_key $obsidian_folder/$notes)
+set key_md (rg -lF $select_key $obsidian_folder/$notes)
 set base "$obsidian_folder/$notes"
 set full "$key_md"
 
@@ -52,7 +63,7 @@ awk -v search="$select_key" '
                               ' $key_md >/tmp/img_treasure
 
 echo -e "\e[38;2;120;120;120m$relative\e[0m"
-set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
+set img_array (cat /tmp/img_treasure | grep -oP '(?<=(!|>)\[\[)[^\|?\]]*')
 cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
     | sed '/^tags/ s/.*/\x1b[38;2;255;255;0m&\x1b[0m/' \
     | sed '/^keyring:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
@@ -80,7 +91,12 @@ cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
     set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")
-    show_image $img_path
+    set img_basename (basename $img_path)
+    if echo $img_basename | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
+        just_thumbnail $img_path
+    else
+        show_image $img_path
+    end
 end
 
 rm /tmp/img_treasure

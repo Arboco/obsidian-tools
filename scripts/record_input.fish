@@ -27,6 +27,7 @@ set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
 set hold_button (ot_config_grab "Profile"$id"HoldButton")
 set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
 set mindpalace_number 1
+set mind_palace_uuid (uuidgen)
 
 if test -z (ot_config_grab "Profile"$id"ScreenshotButton")
     set screenshot_button screenshot_button
@@ -90,10 +91,10 @@ evtest $devinput | while read line
         end
 
         set uuid (uuidgen)
-        echo "```ad-mp" >>$note_file
         echo "I: $uuid #$mindpalace_number #zero" >>$note_file
+        echo "uuid: $mind_palace_uuid" >>$note_file
+        echo ">" >>$note_file
         echo "![[$fs_name]]" >>$note_file
-        echo "```" >>$note_file
         echo "" >>$note_file
 
         set mindpalace_number (math $mindpalace_number + 1)
