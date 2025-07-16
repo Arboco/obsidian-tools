@@ -37,6 +37,7 @@ set img_array (cat /tmp/img_treasure | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*")
 cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
     | sed '/^tags/ s/.*/\x1b[38;2;255;255;0m&\x1b[0m/' \
     | sed '/^keyring:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
+    | sed '/^mp:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
     | sed '/^subtags:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
     | sed '/^c-tags:/ s/.*/\x1b[38;2;180;160;220m&\x1b[0m/' \
     | sed '/^f-tags:/ s/.*/\x1b[38;2;255;100;100m&\x1b[0m/' \
@@ -46,6 +47,7 @@ cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
     | sed '/^remove:/ s/.*/\x1b[38;2;220;20;60m&\x1b[0m/' \
     | sed '/^a-subtags:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^contains:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
+    | sed '/^uuid:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
     | sed '/^family:/ s/.*/\x1b[38;2;200;255;200m&\x1b[0m/' \
     | sed '/^key/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \

@@ -380,6 +380,14 @@ if rg "^contains:" $tmp_key_contents
     rm $temp_contains
 end
 
+if rg "^uuid:" $tmp_key_contents
+    set contains ( rg "uuid" $tmp_key_contents | rg -o '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b')
+    set temp_contains (mktemp)
+    true_multiline_block_ripgrep "(Q|I|T|W)" "$contains" true >$temp_contains
+    set question_array (cat $temp_contains)
+    rm $temp_contains
+end
+
 if rg "^f-subtags:" $tmp_key_contents
     set evil_subtag_list (rg "^f-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
 
