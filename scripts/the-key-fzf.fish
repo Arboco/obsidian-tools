@@ -27,6 +27,8 @@ set full "$key_md"
 set relative (string replace -- "$base" "" -- $full)
 if string match -q trophy $argv[2]
     set trophy_line (cat ~/.config/ortscripts/thekey_trophies.txt | rg "$select_key")
+    set total_value (echo $trophy_line | rg -o '^[0-9]+')
+    set total_value (echo " :$total_value")
     set bronze (echo $trophy_line | rg -oP "(?<=bronze=)[0-9]+")
     set bronze (echo "󱉏 :$bronze" | sed 's/.*/\x1b[38;5;208m&\x1b[0m/')
     set silver (echo $trophy_line | rg -oP "(?<=silver=)[0-9]+")
@@ -40,7 +42,7 @@ if string match -q trophy $argv[2]
     set obsidian (echo $trophy_line | rg -oP "(?<=obsidian=)[0-9]+")
     set obsidian (echo "󰂩 :$obsidian" | sed 's/.*/\x1b[38;5;93m&\x1b[0m/')
 
-    echo "$bronze $silver $gold $platinum $diamond $obsidian"
+    echo "$total_value $bronze $silver $gold $platinum $diamond $obsidian"
 end
 
 awk -v search="$select_key" '
