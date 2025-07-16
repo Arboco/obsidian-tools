@@ -61,6 +61,17 @@ function true_multiline_block_ripgrep
     rm $temp_rg
 end
 
+function check_tag_exists
+    set key $argv[1]
+    set tag $argv[2]
+    if rg -U -oP --no-filename "$key.*(?:\n(?!\s*\n).*)*?$tag.*\$" $obsidian_folder/$notes
+
+        echo true
+    else
+        echo false
+    end
+end
+
 argparse --name=pool r/reverse s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace h/help 'n/name=' -- $argv
 or return
 
@@ -319,7 +330,7 @@ if rg "^f-tags:" $tmp_key_contents
 
     set tag_evil_regex_ready (echo $ftag_list | sed 's/ /|/g')
     for i in $filtered_pool
-        if rg -qP "^  - ($tag_evil_regex_ready)" "$i"
+        if rg -qP "^  - ($tag_evil_regex_ready)\$" "$i"
         else
             set tag_survivor_pool $tag_survivor_pool $i
         end
@@ -346,7 +357,7 @@ end
 if rg "^subtags:" $tmp_key_contents
     set subtag_list (rg "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     for i in $subtag_list
-        set question_array $question_array (rg --no-filename --no-line-number "^(Q|I|T|W):.*$i" $default_pool_array)
+        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|W|T)" $i true)
     end
 end
 
@@ -361,11 +372,10 @@ while true
     end
 end
 
-if rg "^a-subtags:" $tmp_key_contents
-    set a_subtag_list (rg "^a-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
-    set a_regex_ready (echo $a_subtag_list | sed 's/ /|/g')
+if rg "^a-subtag:" $tmp_key_contents
+    set a_subtag (rg "^a-subtag:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     for i in $question_array
-        if echo $i | rg -q "^(Q|I|T|W):.*$a_regex_ready"
+        if string match -q true (check_tag_exists $i $a_subtag)
             set a_array_sort $a_array_sort $i
         end
     end
@@ -388,26 +398,16 @@ if rg "^uuid:" $tmp_key_contents
     rm $temp_contains
 end
 
-if rg "^f-subtags:" $tmp_key_contents
-    set evil_subtag_list (rg "^f-subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
-
-    set subtag_evil_regex_ready (echo $evil_subtag_list | sed 's/ /|/g')
-    for i in $question_array
-        if echo $i | rg -q "$subtag_evil_regex_ready"
-        else
-            set survivor_subtag_pool $survivor_subtag_pool $i
-        end
-    end
-    set question_array $survivor_subtag_pool
-end
-
 if rg "^remove:" $tmp_key_contents
     set remove (rg -oP "(?<=remove: ).*" $tmp_key_contents | string trim -lr)
+    set temp_remove (mktemp)
+
     for i in $question_array
-        set temp_remove (mktemp)
         set true_file_md (rg -lF "$i" $default_pool_array)
-        perl $script_dir/perl/contains.pl "$i" "$remove" $true_file_md >$temp_remove
-        if rg -q "$remove" $temp_remove
+        for r in $remove
+            perl $script_dir/perl/exists.pl "$i" "$r" $true_file_md >>$temp_remove
+        end
+        if test -s $temp_remove
         else
             set removed_question_array $removed_question_array $i
         end

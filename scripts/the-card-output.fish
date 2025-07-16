@@ -192,9 +192,14 @@ for i in (cat /tmp/the-card_final_sorted_array)
             echo ""
         end
 
+        set tags (cat $card_content | rg -o '#[A-Za-z0-9_\\/]+')
+
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat $card_content | awk '!/^(!|\>)\[\[/' \
+            cat $card_content | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
                 | sed 's/^>//g' \
+                | sed '/!\[/d' \
+                | sed '/^uuid:/d' \
+                | sed '/^---/d' \
                 | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
                 | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
                 | sed '/^Q:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
@@ -227,6 +232,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
         echo ""
         echo "Source: $(basename $target_md)" | sed 's/^/ /'
+        echo $tags | sed 's/^/ /'
         echo ""
 
         if string match -q T $card_type
