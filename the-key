@@ -463,7 +463,7 @@ set sorted_question_array (for i in $question_array; echo $i; end | sort -u)
 set question_array $sorted_question_array
 
 for i in $question_array
-    if echo $i | rg -q "#zero"
+    if echo $i | rg -q '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
     else
         set removed_zero $removed_zero $i
     end
