@@ -21,7 +21,7 @@ end
 
 function help_function
     echo "  -s       Respects Sequence"
-    echo "  -e       Edit Sequence"
+    echo "  -e       Re-enumerate Sequence"
     echo "  -i       Reverses List, by default this creates a history view"
     echo "  -r       Random key gets auto selected"
     echo "  -k       Activates keyring feature"
@@ -32,7 +32,7 @@ function help_function
     echo "  -q       Quickly query your key contents"
     echo "  -m       Deactivates Mind Palace mode"
     echo "  -p       Like keyring but for Mind Palaces"
-    echo "  -d       Refresh database, currently only refreshes trophies"
+    echo "  -g       Generate trophy file"
     echo "  -t       Opens trophy view"
 end
 
@@ -75,7 +75,7 @@ function check_tag_exists
     end
 end
 
-argparse --name=pool r/random i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy d/database h/help 'n/name=' -- $argv
+argparse --name=pool r/random i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy g/generate h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -88,7 +88,7 @@ if not set -q _flag_k; or not set -q _flag_p
     set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
 end
 
-if set -q _flag_d
+if set -q _flag_g
     set trophy_file ~/.config/ortscripts/thekey_trophies.txt
     if test -e $trophy_file
         rm $trophy_file
@@ -139,9 +139,12 @@ if set -q _flag_p
 end
 
 if set -q _flag_t
+
     set trophies_sorted (cat ~/.config/ortscripts/thekey_trophies.txt | sort -t '|' -k1,1nr)
+
     for i in $trophies_sorted
         set cut_out (echo "$i" | string split "|")[3]
+        set cut_out (echo $cut_out | string split "`")[1]
         set cut_out (echo $cut_out | string trim -lr)
         set trophies_key $trophies_key $cut_out
     end
@@ -552,50 +555,33 @@ end
 clear
 
 if set -q _flag_e
-    set sequence 1
-    set numline 1
-    while true
-        set cur_line (awk -v n=$numline 'NR == n' /tmp/the-card_final_sorted_array)
-        set target_md (rg -lF "$cur_line" $obsidian_folder/$notes)
-        set split_key (echo $cur_line | string split "`")
-        echo $cur_line
-        echo ""
-        echo "Sequence currently at $sequence"
-        set user_input (gum input --placeholder "s - Sequence | 0 - Stop")
-        if string match -q s $user_input
-            if echo $cur_line | rg "....-..-.."
-                if echo $cur_line | rg "#[0-9]+"
-                    set new_key (echo $cur_line | string replace -r '#[0-9]+' "#$sequence")
-                else
-                    set new_key (echo $cur_line | string trim -lr)
-                    set new_key "$new_key #$sequence"
-                    set new_key "$new_key `$split_key[2]`"
-                end
-            else
-                if echo $cur_line | rg "#[0-9]+"
-                    set new_key (echo $cur_line | string replace -r '#[0-9]+' "#$sequence")
-                else
-                    set new_key (echo $cur_line | string trim -lr)
-                    set new_key "$cur_line #$sequence"
-                end
-            end
-            set sequence (math $sequence + 1)
-            awk -v s1="$cur_line" -v s2="$new_key" '{gsub(s1, s2)}1' $target_md >tmp && mv tmp $target_md
-            awk -v val="$cur_line" '$0 != val' /tmp/the-card_final_sorted_array >tmp && mv tmp /tmp/the-card_final_sorted_array
+    cat /tmp/the-card_final_sorted_array
+    gum input --placeholder "Press enter if you are satisfied with the order of this list"
+    set new_number 1
+    echo "--- New Order ---"
+    cat /tmp/the-card_final_sorted_array | while read line
+        set sequence_md (rg -lF "$line" $obsidian_folder/$notes)
+        if echo $line | rg -q "#[0-9]+"
+            set get_number (echo $line | rg -o "#[0-9]+")
+            set modified_key (echo $line | string split "$get_number")[1]
+            set modified_key (echo $modified_key | string trim -lr)
+        else if echo $line | rg -q "`....-..-.."
+            set modified_key (echo $line | string split "`")[1]
+            set modified_key (echo $modified_key | string trim -lr)
+        else
+            set modified_key (echo $line | string trim -lr)
         end
-        if string match -q 0 $user_input
-            exit
+        if echo $line | rg -q "`....-..-.."
+            set date (echo $line | rg -o "`.*`")
+            set replacement "$modified_key #$new_number $date"
+        else
+            set replacement "$modified_key #$new_number"
         end
-        set line_count (cat /tmp/the-card_final_sorted_array | count)
-        set numline (math $numline + 1)
-        if test $numline -gt $line_count
-            set numline 1
-        end
-        if not grep -q '[^[:space:]]' /tmp/the-card_final_sorted_array
-            exit
-        end
-        clear
+        set new_number (math $new_number + 1)
+        sed -i "s/$line/$replacement/g" $sequence_md
+        echo $replacement
     end
+    exit
 end
 
 if set -q _flag_q
@@ -643,6 +629,7 @@ if string match -q true $headless_mode_activated
             set total_value (math $total_value + 32)
         end
     end
+
     if test $total_value -lt 1
     else
         echo "$total_value | bronze=$bronze silver=$silver gold=$gold platinum=$platinum diamond=$diamond obsidian=$obsidian | $select_key_trim" >>$trophy_file

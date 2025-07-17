@@ -78,6 +78,7 @@ cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
     | sed '/^a-subtags:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^contains:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^uuid:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
+    | sed '/^mpid:/ s/.*/\x1b[38;2;255;105;180m&\x1b[0m/' \
     | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
     | sed '/^family:/ s/.*/\x1b[38;2;200;255;200m&\x1b[0m/' \
     | sed '/^key/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
