@@ -21,6 +21,26 @@ function mpv-small
     i3-msg '[class="mpv"] floating enable'
 end
 
+function image_in_corner
+    set image $argv[1]
+    set cols (tput cols)
+    set lines (tput lines)
+
+    set img_width 20
+    set img_height 10
+
+    set x (math "$cols - $img_width")
+    set y (math "floor(($lines - $img_height) / 2)")
+
+    kitty +kitten icat \
+        --clear \
+        --transfer-mode=memory \
+        --unicode-placeholder \
+        --stdin=no \
+        --place {$img_width}x{$img_height}@{$x}x{$y} \
+        "$image"
+end
+
 function icat_half
     set image $argv[1]
     set suffix (echo "$image" | rg -oP '\.[^.\\/]+$')
@@ -192,6 +212,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
 
         set tags (cat $card_content | rg -o '#[A-Za-z0-9_\\/]+')
+        set uuid_image_shown false
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
             cat $card_content | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
@@ -224,7 +245,9 @@ for i in (cat /tmp/the-card_final_sorted_array)
                     end
                     echo '{ "command": ["loadfile", "'"$file_path"'"] }' | socat - /tmp/mpv-socket
                 end
-
+            else if cat $card_content | rg -q "^uuid:"; and string match -q false $uuid_image_shown; and string match -q false $mindpalace_format
+                image_in_corner $file_path
+                set uuid_image_shown true
             else
                 icat_half $file_path
             end

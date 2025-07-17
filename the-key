@@ -300,13 +300,13 @@ if rg "^links:" $tmp_key_contents
     set filtered_pool $filtered_pool (for i in $md_links; find $obsidian_folder/$notes/* -type f -name "$i.md"; end)
 end
 
+set mindpalace_format false
 if rg "^mp:" $tmp_key_contents
     set mindpalace_format true
 end
 
 if set -q _flag_m
     set mindpalace_format false
-    set -q _flag_s 1
 end
 
 if rg "^tags:" $tmp_key_contents
