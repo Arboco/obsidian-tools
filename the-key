@@ -499,14 +499,14 @@ else
     else if string match -q Combined $choice
         set selection "(Q|I|W|T)"
     end
-end
 
-for i in $question_array
-    if echo $i | rg -q "^$selection:"
-        set selection_filtered_array $selection_filtered_array $i
+    for i in $question_array
+        if echo $i | rg -q "^$selection:"
+            set selection_filtered_array $selection_filtered_array $i
+        end
     end
+    set question_array $selection_filtered_array
 end
-set question_array $selection_filtered_array
 
 # Sorting Algorithm
 for i in $question_array
@@ -560,7 +560,9 @@ if set -q _flag_z
     set final_sorted_array $shuffled
 end
 
-rm /tmp/the-card_final_sorted_array
+if test -e /tmp/the-card_final_sorted_array
+    rm /tmp/the-card_final_sorted_array
+end
 for i in $final_sorted_array
     echo $i >>/tmp/the-card_final_sorted_array
 end
@@ -642,7 +644,6 @@ if string match -q true $headless_mode_activated
             set total_value (math $total_value + 32)
         end
     end
-
     if test $total_value -lt 1
     else
         echo "$total_value | bronze=$bronze silver=$silver gold=$gold platinum=$platinum diamond=$diamond obsidian=$obsidian | $select_key_trim" >>$trophy_file
