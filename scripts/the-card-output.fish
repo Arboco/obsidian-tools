@@ -215,7 +215,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set mpid_image_shown false
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat $card_content | awk '!/(!|>)\[\[|`/' \
+            cat $card_content | awk '!/(!|>)\[\[/' \
                 | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
                 | sed 's/^>//g' \
                 | sed '/!\[/d' \

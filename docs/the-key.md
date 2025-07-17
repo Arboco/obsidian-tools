@@ -1,8 +1,9 @@
 
-K: 🧩 Model Template Example for the-key #1 🧩 `2025-07-14 14:19:07` `2025-07-14 16:54:14`
+K: 🧩 Model Template Example for the-key #1 🧩
 cards_cleared: 2 
 key_favorite: 40
 keyring: #Keyring
+mp: [[Resident Evil 3 Nemesis]]
 agenda: S 2025-09-22
 skip: Task
 timer: 3
@@ -12,22 +13,22 @@ string1: string 1
 string2: string 2
 regex1: "regex"
 cardstring1: string 1
-c-tags: #tag1 #tag2
 subtags: #subtag1 #subtag2 
 contains: string 
-a-subtags: #subtag 
+uuid: d3ec90bf-9bde-4b5b-978b-c1b79951331d
+a-subtag: #subtag 
 family: parent children siblings 
 f-tags: #tag1 
 f-links: [[Link]]
 f-string1: string 1
-f-subtags: #subtag1 #subtag2 
 remove: string 
 Description 
-
+>[[omnipoten-wizard-of-love.gif]]
 
 # Explanation 
 ## Option 
 - keyring: Corresponds to -k flag, bundles the key in a group with other keys 
+- mp: Same as keyring just especially for mind palaces 
 - agenda: Corresponds to -a flag, sorts keys after priority and date similiar to the agenda in  emacs. The agenda key consists of priority and date (optional). Date format is `yyyy-mm-dd`
 - cards_cleared: How many cards you have cleared of this key. Can be sorted with with -c flag.
 - key_favorite: Give the key a personal rating. Can be sorted by the value with the -f flag. 
@@ -40,17 +41,16 @@ Description
 - regex: like string but uses ripgrep -P sensitive regex
 - cardstring: adds cards based on string contained within cards 
 - family: the-pool related option, include the parent, children or siblings of the note where the key resides in
-- c-tags: files must contain each of those tags, requires 2 tags a minimum and works with up to 3
-- subtags: include only the cards given that subtag
+- subtags: include the cards given that subtag, a subtag is a tag found anywhere in the card contents 
 
 ## Filters 
-- a-subtags: filter the entire card pool to only include cards with that subtag
+- a-subtag: filter the entire card pool to only include cards with that subtag
 - contains: filter based on a line inside the card 
+- uuid: filter based on uuid 
 - f-tags: removes notes with that tag
 - f-links: removes the linked notes
 - f-string: removes notes with that string
-- f-subtags: removes all cards with that subtag
-- remove: remove based on a line inside the card 
+- remove: remove based on a line inside the card, multiple instances of this can be done by using the same property line by line
 
 Keys work the same as any other card type and can be given a description and images to display as long there are no empty lines. 
 

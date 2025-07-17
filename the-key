@@ -501,6 +501,13 @@ else
     end
 end
 
+for i in $question_array
+    if echo $i | rg -q "^$selection:"
+        set selection_filtered_array $selection_filtered_array $i
+    end
+end
+set question_array $selection_filtered_array
+
 # Sorting Algorithm
 for i in $question_array
     if echo $i | rg -q "....-..-.. ..:..:.."
