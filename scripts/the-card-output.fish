@@ -218,7 +218,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             cat $card_content | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
                 | sed 's/^>//g' \
                 | sed '/!\[/d' \
-                | sed '/^uuid:/d' \
+                | sed '/^mpid:/d' \
                 | sed '/^---/d' \
                 | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
                 | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \

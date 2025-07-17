@@ -24,6 +24,7 @@ function help_function
     echo "  -e       Re-enumerate Sequence"
     echo "  -i       Reverses List, by default this creates a history view"
     echo "  -r       Random key gets auto selected"
+    echo "  -z       Card order gets randomized"
     echo "  -k       Activates keyring feature"
     echo "  -a       Activates agenda"
     echo "  -c       Selects cleared and sorts in order of biggest number"
@@ -75,7 +76,7 @@ function check_tag_exists
     end
 end
 
-argparse --name=pool r/random i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy g/generate h/help 'n/name=' -- $argv
+argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy g/generate h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -267,7 +268,7 @@ if string match -q "K:" $select_key_trim
     exit
 end
 
-set key_md (rg -l $select_key $obsidian_folder/$notes)
+set key_md (rg -lF $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
 
 awk -v search="$select_key_trim" '
@@ -545,6 +546,11 @@ if set -q _flag_s
 ' | sort -n | cut -f2-)
 
     set final_sorted_array $x
+end
+
+if set -q _flag_z
+    set shuffled (printf "%s\n" $final_sorted_array | shuf)
+    set final_sorted_array $shuffled
 end
 
 rm /tmp/the-card_final_sorted_array
