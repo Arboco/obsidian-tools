@@ -212,7 +212,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
 
         set tags (cat $card_content | rg -o '#[A-Za-z0-9_\\/]+')
-        set uuid_image_shown false
+        set mpid_image_shown false
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
             cat $card_content | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
@@ -245,9 +245,9 @@ for i in (cat /tmp/the-card_final_sorted_array)
                     end
                     echo '{ "command": ["loadfile", "'"$file_path"'"] }' | socat - /tmp/mpv-socket
                 end
-            else if cat $card_content | rg -q "^uuid:"; and string match -q false $uuid_image_shown; and string match -q false $mindpalace_format
+            else if cat $card_content | rg -q "^mpid:"; and string match -q false $mpid_image_shown; and string match -q false $mindpalace_format
                 image_in_corner $file_path
-                set uuid_image_shown true
+                set mpid_image_shown true
             else
                 icat_half $file_path
             end
