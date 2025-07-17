@@ -215,7 +215,8 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set mpid_image_shown false
 
         if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat $card_content | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
+            cat $card_content | awk '!/(!|>)\[\[|`/' \
+                | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
                 | sed 's/^>//g' \
                 | sed '/!\[/d' \
                 | sed '/^mpid:/d' \
@@ -267,13 +268,18 @@ for i in (cat /tmp/the-card_final_sorted_array)
             set trophy (echo "󰂩 O" | sed 's/.*/\x1b[38;5;93m&\x1b[0m/')
         end
 
+        if cat $card_content | rg -q "#readmore"
+            set readmore "󰑇 "
+        end
+
         set source $(basename $target_md | sed 's/.*/\x1b[38;5;240m&\x1b[0m/')
         echo ""
-        echo "$source $trophy" | sed 's/^/ /'
+        echo "$source $trophy $readmore" | sed 's/^/ /'
         echo $tags | sed 's/.*/\x1b[38;5;240m&\x1b[0m/' | sed 's/^/ /'
         echo ""
 
         set -e trophy
+        set -e readmore
 
         if string match -q T $card_type
             mkdir -p $obsidian_folder/$obsidian_resource/drill_evidence
