@@ -54,7 +54,7 @@ set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 
 if string match -q keyring $argv[2]
-    true_multiline_block_ripgrep K "$argv[1]" true | sed 's/.*/\x1b[38;2;186;85;211m&\x1b[0m/'
+    true_multiline_block_ripgrep K "$argv[1]" true | sed 's/.*/\x1b[38;2;135;206;250m&\x1b[0m/'
     exit
 end
 
