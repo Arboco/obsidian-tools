@@ -19,11 +19,44 @@ function just_thumbnail
     rm $temp_thumb
 end
 
+function true_multiline_block_ripgrep
+    set temp_rg (mktemp)
+    set card_type $argv[1]
+    set key_string $argv[2]
+    set only_key_header $argv[3]
+    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string.*\$" $obsidian_folder/$notes >$temp_rg
+
+    cat $temp_rg | while read line
+        if echo $line | rg -q "($card_type:|$key_string)"
+        else
+            sed -i 1d $temp_rg
+            continue
+        end
+        set puzzle_pieces $puzzle_pieces $line
+        if not test -z $puzzle_pieces[2]
+            if string match -q true $only_key_header
+                set completed_puzzle "$puzzle_pieces[1]"
+            else
+                set completed_puzzle "$puzzle_pieces[2] | $puzzle_pieces[1]"
+            end
+            set -e puzzle_pieces
+            echo $completed_puzzle
+        end
+    end
+
+    rm $temp_rg
+end
+
 set script_dir (dirname (status --current-filename))
 set parent_dir (dirname $script_dir)
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
+
+if string match -q keyring $argv[2]
+    true_multiline_block_ripgrep K "$argv[1]" true | sed 's/.*/\x1b[38;2;186;85;211m&\x1b[0m/'
+    exit
+end
 
 if echo $argv[1] | rg -q "^\[.\]"; or echo $argv[1] | rg -q "^key"; or echo $argv[1] | rg -q "^cards"
     set select_key (echo $argv[1] | string split "|")[2]

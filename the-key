@@ -119,7 +119,7 @@ end
 if set -q _flag_k
     rm /tmp/keyring_awk_result
     set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
-    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -0 --query "$argv[1]" --delimiter='#' --with-nth=-1)
+    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -0 --query "$argv[1]" --delimiter='#' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {} keyring")
     set -e argv[1]
     set argv[1] $argv[2]
     set keyring_file_list (rg -l "keyring: $keyring_select" $key_array_filelist)
