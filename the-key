@@ -305,8 +305,10 @@ set tmp_key_contents /tmp/the-key-content
 if set -q _flag_m
     set sound_file_name (rg -oP "(?<=sound:).*" $tmp_key_contents | string trim -lr)
     set sound_file (find $obsidian_folder/$obsidian_resource/* -name "$sound_file_name")
-    mpv --no-video --loop "$sound_file" >/dev/null &
-    set -g lsound_mpv $last_pid
+    while test -z $lsound_mpv
+        mpv --no-video --loop "$sound_file" >/dev/null &
+        set -g lsound_mpv $last_pid
+    end
     echo $lsound_mpv
 end
 
