@@ -1,0 +1,34 @@
+#! /usr/bin/env fish
+
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
+set notes (ot_config_grab "NotesFolder")
+set flameshot_mp_folder "$obsidian_folder/$obsidian_resource/flameshot_mp"
+mkdir -p $flameshot_mp_folder
+set obsidian_md (find $obsidian_folder/$notes/* -type f -iname "*.md" | fzf -0 --delimiter='/' --with-nth=-1)
+set image_name (basename -s ".md" $obsidian_md)
+set image_name (echo $image_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set select_screenshot (ot_config_grab "FlameshotScreenshot")
+set mindpalace_number 1
+set mind_palace_uuid (uuidgen)
+set device_name (ot_config_grab "FlameshotDeviceName")
+
+yes | evtest >/dev/null 2>/tmp/evtest-info.txt
+set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+
+evtest $devinput | while read line
+    if string match -q "*$select_screenshot), value 1" "$line"
+        set timestamp (date +%F_%H%M%S)
+        set final_name "$image_name-$timestamp"
+        set img_path $flameshot_mp_folder/$final_name
+        flameshot gui --path $img_path
+
+        set uuid (uuidgen)
+        echo "I: $uuid #$mindpalace_number" >>$obsidian_md
+        echo "mpid: $mind_palace_uuid" >>$obsidian_md
+        echo ">" >>$obsidian_md
+        echo "![[$final_name.jpg]]" >>$obsidian_md
+        echo "" >>$obsidian_md
+        set mindpalace_number (math $mindpalace_number + 1)
+    end
+end
