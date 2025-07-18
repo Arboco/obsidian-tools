@@ -1,5 +1,33 @@
 #! /usr/bin/env fish
 
+function true_multiline_block_ripgrep
+    set temp_rg (mktemp)
+    set card_type $argv[1]
+    set key_string $argv[2]
+    set only_key_header $argv[3]
+    rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string.*\$" $obsidian_folder/$notes >$temp_rg
+
+    cat $temp_rg | while read line
+        if echo $line | rg -q "($card_type:|$key_string)"
+        else
+            sed -i 1d $temp_rg
+            continue
+        end
+        set puzzle_pieces $puzzle_pieces $line
+        if not test -z $puzzle_pieces[2]
+            if string match -q true $only_key_header
+                set completed_puzzle "$puzzle_pieces[1]"
+            else
+                set completed_puzzle "$puzzle_pieces[2] | $puzzle_pieces[1]"
+            end
+            set -e puzzle_pieces
+            echo $completed_puzzle
+        end
+    end
+
+    rm $temp_rg
+end
+
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
@@ -10,7 +38,20 @@ set image_name (basename -s ".md" $obsidian_md)
 set image_name (echo $image_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 set select_screenshot (ot_config_grab "FlameshotScreenshot")
 set mindpalace_number 1
-set mind_palace_uuid (uuidgen)
+if rg -q "mpid:" $obsidian_md
+    set mind_palace_uuid (rg -oP "(?<=mpid:).*" $obsidian_md | sort -u | fzf)
+    set mind_palace_uuid (echo $mind_palace_uuid | string trim -lr)
+    set number_array (true_multiline_block_ripgrep I "$mind_palace_uuid" true)
+    for i in $number_array
+        set temp_number (echo $i | rg -o '#[0-9]+' | rg -o '[0-9]+')
+        if test $temp_number -gt $mindpalace_number
+            set mindpalace_number $temp_number
+        end
+    end
+    set mindpalace_number (math $mindpalace_number + 1)
+else
+    set mind_palace_uuid (uuidgen)
+end
 set device_name (ot_config_grab "FlameshotDeviceName")
 
 yes | evtest >/dev/null 2>/tmp/evtest-info.txt

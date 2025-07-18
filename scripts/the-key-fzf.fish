@@ -128,6 +128,7 @@ for img in $img_array
     set img_basename (basename $img_path)
     if echo $img_basename | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
         just_thumbnail $img_path
+    else if echo $img_basename | rg -q '(mp3|aac|flac|wav|alac|ogg|aiff|dsd)$'
     else
         show_image $img_path
     end
