@@ -29,7 +29,7 @@ function help_function
     echo "  -q       Query your key contents for quick testing"
     echo ""
     echo "  -p       Palaces"
-    echo "  -m       Deactivates Memory Palace mode"
+    echo "  -l       Deactivates 'lose' Memory Palace mode"
     echo ""
     echo "  -t       Trophy view"
     echo "  -g       Generate trophy file"
@@ -43,7 +43,7 @@ function help_function
     echo "  -z       Card order gets randomized"
     echo ""
     echo "  -v       Activate video functionality"
-    echo "  -l       Activates key sound file"
+    echo "  -m       Activates key sound file"
 end
 
 function true_multiline_block_ripgrep
@@ -85,7 +85,7 @@ function check_tag_exists
     end
 end
 
-argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/mind p/palace t/trophy g/generate l/lofi h/help 'n/name=' -- $argv
+argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/music p/palace t/trophy g/generate l/lose h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -302,7 +302,7 @@ end
 set key_md (rg -lF $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
 
-if set -q _flag_l
+if set -q _flag_m
     set sound_file_name (rg -oP "(?<=sound:).*" $tmp_key_contents | string trim -lr)
     set sound_file (find $obsidian_folder/$obsidian_resource/* -name "$sound_file_name")
     mpv --no-video --loop "$sound_file" >/dev/null &
@@ -348,7 +348,7 @@ if rg "^mp:" $tmp_key_contents
     set mindpalace_format true
 end
 
-if set -q _flag_m
+if set -q _flag_l
     set mindpalace_format false
 end
 
