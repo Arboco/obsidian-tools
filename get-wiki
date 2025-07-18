@@ -1,0 +1,76 @@
+#! /usr/bin/env fish
+
+function help_function
+    echo "  -v       Activates video functionality"
+end
+
+function icat_half
+    set image $argv[1]
+    set suffix (echo "$image" | rg -oP '\.[^.\\/]+$')
+    set temp_image (mktemp --suffix $suffix)
+    set cleanup_list $cleanup_list $temp_image
+
+    set term_size (kitty icat --print-window-size | string split "x")
+    set img_size (identify -format "%w %h" $image | string split " ")
+    set max_wanted_height (math round $term_size[2] / 2)
+    if test $img_size[2] -gt $max_wanted_height
+        magick "$image" -resize x$max_wanted_height $temp_image
+        kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$temp_image"
+    else
+        kitty +kitten icat --transfer-mode=memory --stdin=no --align=left "$image"
+    end
+    rm $temp_image
+end
+
+function just_thumbnail
+    set file $argv[1]
+    set temp_thumb (mktemp)
+    set cleanup_list $cleanup_list $temp_thumb
+    ffmpeg -y -ss 00:00:01 -i "$file" -frames:v 1 -update 1 -q:v 2 "$temp_thumb.jpg" >/dev/null 2>&1
+    icat_half $temp_thumb.jpg
+    rm $temp_thumb
+end
+
+argparse --name=pool v/video h/help 'n/name=' -- $argv
+or return
+
+set script_dir (realpath (status dirname))
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
+set notes (ot_config_grab "NotesFolder")
+set wiki_array (rg --no-filename --no-line-number  "^W:" $obsidian_folder/$notes)
+
+set card_content /tmp/wiki_contents_ready
+set wiki_choice (for w in $wiki_array; echo $w; end | fzf --delimiter='W: ' --with-nth=-1 -0 --preview "$script_dir/scripts/the-card-wiki-fzf.fish {}")
+set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
+set trimmed (string split '`' -- $wiki_choice)[1]
+
+awk -v search="$trimmed" '
+          index($0, search) {flag=1}
+          flag {print}
+          /^$/ && flag {flag=0}
+                                  ' $target_md >$card_content
+
+set image_list /tmp/image-list-the-card-output
+cat $card_content | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*" >$image_list
+
+cat $card_content | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
+
+cat $image_list | while read tre
+    set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
+    set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
+    if echo $file_path | rg -q '(mp3|aac|flac|wav|alac|ogg|aiff|dsd)$'
+        mpv --no-video $file_path >/dev/null &
+        set mpid $last_pid
+    else if echo $file_path | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
+        if set -q _flag_v
+            if test $mpv_is_running -eq 0
+                mpv-small &
+            else
+                just_thumbnail $file_path
+            end
+        end
+    else
+        icat_half $file_path
+    end
+end

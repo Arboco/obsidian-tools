@@ -139,15 +139,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
     clear
     set card_type (echo "$i" | grep -o "^.")
 
-    if string match -q Combined $choice
-    else
-        if string match -q W $card_type
-            set wiki_choice (for w in $question_array; echo $w; end | fzf -0 --preview "$script_dir/the-card-wiki-fzf.fish {}")
-            set target_md (rg -lF "$wiki_choice" $obsidian_folder/$notes)
-            set trimmed (string split '`' -- $wiki_choice)[1]
-        end
-    end
-
     if string match -q I $card_type
         if test -z $second_counter
             echo "Minimum amount of time in seconds to observe inspiration:"
@@ -214,23 +205,20 @@ for i in (cat /tmp/the-card_final_sorted_array)
         set tags (cat $card_content | rg -o '#[A-Za-z0-9_\\/]+')
         set mpid_image_shown false
 
-        if string match -q T $card_type; or string match -q Q $card_type; or string match -q I $card_type
-            cat $card_content | awk '!/(!|>)\[\[/' \
-                | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
-                | sed 's/^>//g' \
-                | sed '/!\[/d' \
-                | sed '/^mpid:/d' \
-                | sed '/^---/d' \
-                | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
-                | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
-                | sed '/^Q:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
-                | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
-                | perl -pe 's/`[^`]*`//g' \
-                | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
-                | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
-        else
-            cat $card_content | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
-        end
+        cat $card_content | awk '!/(!|>)\[\[/' \
+            | awk '{ gsub(/#[A-Za-z0-9_\/]+/, ""); print }' \
+            | sed 's/^>//g' \
+            | sed '/!\[/d' \
+            | sed '/^mpid:/d' \
+            | sed '/^---/d' \
+            | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
+            | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
+            | sed '/^Q:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
+            | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
+            | perl -pe 's/`[^`]*`//g' \
+            | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
+            | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
+
         cat $image_list | while read tre
             set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
             set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
@@ -388,22 +376,14 @@ for i in (cat /tmp/the-card_final_sorted_array)
         end
 
         echo ""
-        if string match -q W $card_type
-            set user_input (gum input --placeholder "0 - Exit | r - Revise | o - Open File")
-            if string match 1 $user_input; or string match 2 $user_input; or string match d $user_input
-                set user_input ""
-            end
-        else if string match -q I $card_type
-            set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
-            if string match 1 $user_input; or string match 2 $user_input
-                set user_input ""
-            end
-        else if string match -q Q $card_type
+
+        if string match -q Q $card_type
             set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
             if string match d $user_input
                 set user_input ""
             end
-        else if string match -q I $card_type
+        end
+        if string match -q I $card_type
             set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
             if string match 1 $user_input; or string match 2 $user_input
                 set user_input ""

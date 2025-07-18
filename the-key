@@ -84,7 +84,7 @@ set script_dir (realpath (status dirname))
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
 set notes (ot_config_grab "NotesFolder")
-set default_pool_array (rg -l "^(I|Q|W|T):" $obsidian_folder/$notes)
+set default_pool_array (rg -l "^(I|Q|T):" $obsidian_folder/$notes)
 
 if not set -q _flag_k; or not set -q _flag_p
     set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
@@ -395,13 +395,13 @@ end
 
 if test -z $filtered_pool[1]
 else
-    set question_array (rg --no-filename --no-line-number "^(I|Q|W|T):" $filtered_pool)
+    set question_array (rg --no-filename --no-line-number "^(I|Q|T):" $filtered_pool)
 end
 
 if rg "^subtags:" $tmp_key_contents
     set subtag_list (rg "^subtags:" $tmp_key_contents | rg -o "#.*\b" | string split " " | string trim -lr)
     for i in $subtag_list
-        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|W|T)" $i true)
+        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|T)" $i true)
     end
 end
 
@@ -409,7 +409,7 @@ set cnum 1
 while true
     if rg "^cardstring$cnum:" $tmp_key_contents
         set cardstring (rg -oP "(?<=cardstring$cnum: ).*" $tmp_key_contents | string trim -lr)
-        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|T|W)" "$cardstring" true $default_pool_array)
+        set question_array $question_array (true_multiline_block_ripgrep "(Q|I|T)" "$cardstring" true $default_pool_array)
         set cnum (math $cnum + 1)
     else
         break
@@ -429,7 +429,7 @@ end
 if rg "^contains:" $tmp_key_contents
     set contains (rg -oP "(?<=contains: ).*" $tmp_key_contents | string trim -lr)
     set temp_contains (mktemp)
-    true_multiline_block_ripgrep "(Q|I|T|W)" "$contains" true >$temp_contains
+    true_multiline_block_ripgrep "(Q|I|T)" "$contains" true >$temp_contains
     set question_array (cat $temp_contains)
     rm $temp_contains
 end
@@ -437,7 +437,7 @@ end
 if rg "^uuid:" $tmp_key_contents
     set contains ( rg "uuid" $tmp_key_contents | rg -o '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b')
     set temp_contains (mktemp)
-    true_multiline_block_ripgrep "(Q|I|T|W)" "$contains" true >$temp_contains
+    true_multiline_block_ripgrep "(Q|I|T)" "$contains" true >$temp_contains
     set question_array (cat $temp_contains)
     rm $temp_contains
 end
@@ -445,7 +445,7 @@ end
 if rg "^mpid:" $tmp_key_contents
     set contains ( rg "mpid" $tmp_key_contents | rg -o '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b')
     set temp_contains (mktemp)
-    true_multiline_block_ripgrep "(Q|I|T|W)" "$contains" true >$temp_contains
+    true_multiline_block_ripgrep "(Q|I|T)" "$contains" true >$temp_contains
     set question_array (cat $temp_contains)
     rm $temp_contains
 end
@@ -483,9 +483,8 @@ if string match true $headless_mode_activated
 else
     set count_q (echo $question_array | rg -o "Q:" | wc -l)
     set count_i (echo $question_array | rg -o "I:" | wc -l)
-    set count_w (echo $question_array | rg -o "W:" | wc -l)
     set count_t (echo $question_array | rg -o "T:" | wc -l)
-    set count_c (echo $question_array | rg -o "(Q|I|W|T):" | wc -l)
+    set count_c (echo $question_array | rg -o "(Q|I|T):" | wc -l)
 
     if rg "^timer:" $tmp_key_contents
         set choice (rg -oP "(?<=timer: ).*" $tmp_key_contents | string trim -lr)
@@ -495,18 +494,16 @@ else
     if rg "^skip:" $tmp_key_contents
         set choice (rg -oP "(?<=skip: ).*" $tmp_key_contents | string trim -lr)
     else
-        set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Wiki ($count_w)" "Task ($count_t)"| string split " ")[1]
+        set choice (gum choose --limit 1 "Combined ($count_c)" "Question ($count_q)" "Inspiration ($count_i)" "Task ($count_t)"| string split " ")[1]
     end
     if string match -q Question $choice
         set selection Q
     else if string match -q Inspiration $choice
         set selection I
-    else if string match -q Wiki $choice
-        set selection W
     else if string match -q Task $choice
         set selection T
     else if string match -q Combined $choice
-        set selection "(Q|I|W|T)"
+        set selection "(Q|I|T)"
     end
 
     for i in $question_array
@@ -541,7 +538,7 @@ set sorted_unix_array (for i in $unix_array
 end | sort -n)
 
 for i in $sorted_unix_array
-    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|W|T).*")
+    set final_sorted_array $final_sorted_array (echo "$i" | rg -o "(Q|I|T).*")
 end
 
 if set -q _flag_s
