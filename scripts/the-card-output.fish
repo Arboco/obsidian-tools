@@ -235,8 +235,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
             set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
             set file_path (find $obsidian_folder/$obsidian_resource -type f -name "$tre")
             if echo $file_path | rg -q '(mp3|aac|flac|wav|alac|ogg|aiff|dsd)$'
-                mpv --no-video $file_path >/dev/null &
-                set mpid $last_pid
+                if test -z $lsound_mpv
+                    mpv --no-video $file_path >/dev/null &
+                    set mpid $last_pid
+                end
             else if echo $file_path | rg -q '(mp4|mkv|mov|avi|webm|flv|wmv)$'
                 if string match -q true $generate_thumbnail
                     just_thumbnail $file_path
@@ -483,7 +485,9 @@ end
 if not test -z $mpid
     kill $mpid
 end
-
+if not test -z $lsound_mpv
+    kill $lsound_mpv
+end
 if not test -z $mpv_pid
     kill $mpv_pid
 end
