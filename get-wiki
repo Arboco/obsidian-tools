@@ -54,7 +54,13 @@ awk -v search="$trimmed" '
 set image_list /tmp/image-list-the-card-output
 cat $card_content | grep -oP "(?<=(!|>)\[\[)[^\|?\]]*" >$image_list
 
-cat $card_content | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --wrap auto --color=always --language=fish
+cat $card_content \
+    | sed "/!\[\[/d" \
+    | sed 's/```shell/\n/g' \
+    | sed 's/```/\n/g' \
+    | awk '!/(!|>)\[\[/' \
+    | sed 's/^>//g' \
+    | bat --color=always --language=fish
 
 cat $image_list | while read tre
     set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')

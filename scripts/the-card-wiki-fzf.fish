@@ -24,7 +24,13 @@ awk -v search="$select_key" '
                               ' $key_md >/tmp/img_treasure
 
 set img_array (cat /tmp/img_treasure | grep -oP "(?<=!\[\[)[^\|?\]]*")
-cat /tmp/img_treasure | sed "/!\[\[/d" | sed 's/```shell//g' | sed 's/```//g' | bat --style=plain --color=always --language=fish | glow
+cat /tmp/img_treasure \
+    | sed "/!\[\[/d" \
+    | sed 's/```shell/\n/g' \
+    | sed 's/```/\n/g' \
+    | awk '!/(!|>)\[\[/' \
+    | sed 's/^>//g' \
+    | bat --style=plain --color=always --language=fish
 for img in $img_array
     set suffix (echo $img | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
     set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img")

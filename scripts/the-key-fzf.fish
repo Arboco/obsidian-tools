@@ -64,7 +64,7 @@ awk -v search="$select_key" '
 
 echo -e "\e[38;2;120;120;120m$relative\e[0m"
 set img_array (cat /tmp/img_treasure | grep -oP '(?<=(!|>)\[\[)[^\|?\]]*')
-cat /tmp/img_treasure | awk '!/(!|>)\[\[|`/' \
+cat /tmp/img_treasure | awk '!/(!|>)\[\[/' \
     | sed '/^tags/ s/.*/\x1b[38;2;255;255;0m&\x1b[0m/' \
     | sed '/^keyring:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
     | sed '/^mp:/ s/.*/\x1b[38;2;186;85;211m&\x1b[0m/' \
