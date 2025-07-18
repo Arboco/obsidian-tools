@@ -74,7 +74,7 @@ if not string match -q mp $argv[2]
 end
 
 if string match -q mp $argv[2]
-    true_multiline_block_ripgrep K "$argv[1]" true | sed 's/.*/\x1b[38;2;135;206;250m&\x1b[0m/'
+    true_multiline_block_ripgrep K "mp: \[\[$argv[1]" true | sed 's/.*/\x1b[38;2;135;206;250m&\x1b[0m/'
 end
 
 rm /tmp/yaml-block
