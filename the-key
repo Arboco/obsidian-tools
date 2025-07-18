@@ -335,9 +335,15 @@ if set -q _flag_m
     set sound_file (find $obsidian_folder/$obsidian_resource/* -name "$sound_file_name")
     while test -z $lsound_mpv
         mpv --no-video --loop "$sound_file" >/dev/null 2>>~/.config/ortscripts/error.log &
-        set -g lsound_mpv $last_pid
+        set lsound_mpv $last_pid
+        sleep 0.5
+        if test -d /proc/$lsound_mpv
+            echo "Music should work"
+        else
+            echo "Music didn't start, restarting"
+            set -e lsound_mpv
+        end
     end
-    echo $lsound_mpv
 end
 
 awk -v search="$select_key_trim" '
