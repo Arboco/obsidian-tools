@@ -61,19 +61,19 @@ awk -v search="---" '
       /^$/ && flag {flag=0}
                               ' $key_md >/tmp/yaml-block
 
+set img_filename (cat /tmp/yaml-block | grep "cover-img" | grep -o "\[\[.*\]\]" | sed 's/\[//g' | sed 's/\]//g')
+set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img_filename")
+show_image $img_path
+echo ""
+echo ""
+
 if not string match -q mp $argv[2]
     cat /tmp/yaml-block | sed -e /url/d -e /cover-img/d -e /score/d -e /---/d |
         awk '/^cssclasses:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' |
         awk '/^tags:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' | bat --language=Markdown
-    echo ""
 end
-set img_filename (cat /tmp/yaml-block | grep "cover-img" | grep -o "\[\[.*\]\]" | sed 's/\[//g' | sed 's/\]//g')
-set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img_filename")
-show_image $img_path
 
 if string match -q mp $argv[2]
-    echo ""
-    echo ""
     true_multiline_block_ripgrep K "$argv[1]" true | sed 's/.*/\x1b[38;2;186;85;211m&\x1b[0m/'
 end
 
