@@ -41,8 +41,9 @@ Profile1IdleCounter: 180
 Profile2DeviceName: Xbox
 Profile2ControllerCheck: 1
 #HoldButton only works if ControllerCheck is 1 
-Profile2HoldButton: BTN_SELECT
-Profile2ScreenshotButton: BTN_SOUTH
+Profile2HoldButton: KEY_RECORD
+Profile2ScreenshotButton: BTN_TL
+Profile2MindPalace: BTN_THUMBR
 Profile2RecordButton: BTN_WEST
 Profile2AudioButton: BTN_EAST
 Profile2EscapeButton: ABS_HAT0Y
@@ -53,6 +54,11 @@ Profile2InputBlock: ABS_R?[XY].*value -?[0-9]{1,4}([^0-9]|$)
 # Manga Reader 
 MangaDeviceName: 8BitDo Retro R8 Mouse Adapter 8BitDo Retro R8 Mouse Adapter Keyboard
 MangaScreenshot: KEY_A
+MangaAudio: KEY_B
+
+# flameshot_mp 
+FlameshotDeviceName: 8BitDo Retro R8 Mouse Adapter 8BitDo Retro R8 Mouse Adapter Keyboard 
+FlameshotScreenshot: KEY_A 
 
 # Profile 3 flag -w  
 
@@ -68,7 +74,7 @@ SessionLimit: 15
 
 # the-card 
 # how many seconds is one point worth. 48 hours = 172800, 36 hours = 129600, 24 hours = 86400, 12 hours = 43200, 6 hours = 21600:
-ValueSeconds: 86400 
+ValueSeconds: 21600 
 
 # manga-reader
 BrowserManga: firefox
