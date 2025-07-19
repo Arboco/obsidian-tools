@@ -673,6 +673,9 @@ end
 
 if set -q _flag_q
     set one_card (cat /tmp/the-card_final_sorted_array | fzf --no-sort --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
+    if test -z $one_card
+        exit
+    end
     echo $one_card >/tmp/the-card_final_sorted_array
 end
 set the_key_activated 1
