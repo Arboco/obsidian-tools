@@ -29,23 +29,23 @@ set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
 set mindpalace_number 1
 set mind_palace_uuid (uuidgen)
 
-if test -z (ot_config_grab "Profile"$id"ScreenshotButton")
+if test -z $screenshot_button
     set screenshot_button screenshot_button
 end
-if test -z (ot_config_grab "Profile"$id"RecordButton")
+if test -z $record_button
     set record_button record_button
 end
-if test -z (ot_config_grab "Profile"$id"AudioButton")
+if test -z $audio_button
     set audio_button audio_button
 end
-if test -z (ot_config_grab "Profile"$id"SelectScreenshotButton")
+if test -z $select_screenshot
     set select_screenshot select_screenshot
 end
-if test -z (ot_config_grab "Profile"$id"HoldButton")
+if test -z $hold_button
     set select_screenshot hold_screenshot
 end
-if test -z (ot_config_grab "Profile"$id"MindPalace")
-    set select_screenshot mind_palace_button
+if test -z $mindpalace_button
+    set mindpalace_button mind_palace_button
 end
 
 mkdir -p $screenshot_folder
