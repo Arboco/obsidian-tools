@@ -66,11 +66,18 @@ set img_path (find $obsidian_folder/$obsidian_resource -type f -name "$img_filen
 show_image $img_path
 echo ""
 echo ""
+if cat /tmp/yaml-block | rg -q "^playtime:"
+    set playtime (cat /tmp/yaml-block | rg "^playtime:" | rg -o "[0-9]+")
+    set playtime (math $playtime / 60 / 60 | rg -o "[0-9]+\..")
+    set playtime "Playtime: $playtime hours"
+end
 
 if not string match -q mp $argv[2]
     cat /tmp/yaml-block | sed -e /url/d -e /cover-img/d -e /score/d -e /---/d |
-        awk '/^cssclasses:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' |
-        awk '/^tags:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' | bat --language=Markdown
+        awk '/^cssclasses:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' \
+        | awk '/^tags:/ {d=1; next} d && /^[A-Za-z]/ {d=0} !d' \
+        | sed '/^playtime:/d' | bat --language=Markdown
+    echo $playtime | sed 's/.*/\x1b[38;2;152;255;152m&\x1b[0m/'
 end
 
 if string match -q mp $argv[2]
