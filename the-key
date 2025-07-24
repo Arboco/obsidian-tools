@@ -330,11 +330,17 @@ end
 set key_md (rg -lF $select_key $obsidian_folder/$notes)
 set tmp_key_contents /tmp/the-key-content
 
+awk -v search="$select_key_trim" '
+      index($0, search) {flag=1}
+      flag {print}
+      /^$/ && flag {flag=0}
+                              ' $key_md >$tmp_key_contents
+
 if set -q _flag_m
     set sound_file_name (rg -oP "(?<=sound:).*" $tmp_key_contents | string trim -lr)
     set sound_file (find $obsidian_folder/$obsidian_resource/* -name "$sound_file_name")
     while test -z $lsound_mpv
-        mpv --no-video --loop "$sound_file" >/dev/null 2>>~/.config/ortscripts/error.log &
+        mpv --no-video --loop "$sound_file" >/dev/null &
         set lsound_mpv $last_pid
         sleep 0.5
         if test -d /proc/$lsound_mpv
@@ -345,12 +351,6 @@ if set -q _flag_m
         end
     end
 end
-
-awk -v search="$select_key_trim" '
-      index($0, search) {flag=1}
-      flag {print}
-      /^$/ && flag {flag=0}
-                              ' $key_md >$tmp_key_contents
 
 set num 1
 while true
