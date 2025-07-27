@@ -30,10 +30,13 @@ set start (date +%s)
 if set -q _flag_i
     set selection_last_played (rg -oP "(?<=last_played: ).*" $obsidian/$notes)
     for i in $selection_last_played
-        set game_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
-        set game_last_played (echo $i | string split ".md:")[2]
-        set final_string "$game_last_played | $game_title"
-        set final_list $final_list $final_string
+        set mdsplit (echo $i | string split ":")[1]
+        if rg -q '^launch:' $mdsplit
+            set game_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set game_last_played (echo $i | string split ".md:")[2]
+            set final_string "$game_last_played | $game_title"
+            set final_list $final_list $final_string
+        end
     end
     set final_sorted_list (printf "%s\n" $final_list | sort -r)
     for i in $final_sorted_list
