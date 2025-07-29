@@ -162,6 +162,10 @@ evtest $devinput | while read line
         echo -e "![[$fv_name]]\n" >>"$note_file"
         echo "![[$fv_name]]" >$last_recorded_file
 
+        # Audio button serves as reset to start new mind palace chain 
+        set mindpalace_number 1
+        set mind_palace_uuid (uuidgen)
+
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
         $script_dir/input-ffmpeg-escaper.fish "$id" &
 

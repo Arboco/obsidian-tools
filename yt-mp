@@ -37,7 +37,7 @@ end
 if test -d $screenshot_folder
     echo "folder exists"
 else
-    mkdir $screenshot_folder
+    mkdir -p $screenshot_folder
 end
 
 set counter 0

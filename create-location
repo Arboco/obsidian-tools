@@ -1,0 +1,33 @@
+#! /usr/bin/env fish
+
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set obsidian_resource (ot_config_grab "ObsidianResourceFolder")
+set notes (ot_config_grab "NotesFolder")
+set resource_game_folder "$obsidian_folder/$obsidian_resource/mindpalace/games"
+mkdir -p $resource_game_folder
+set obsidian_md (find $obsidian_folder/$notes/* -type f -iname "*.md" | fzf -0 --delimiter='/' --with-nth=-1)
+set obsidian_name (basename -s ".md" $obsidian_md)
+echo "Name of area"
+read name_location
+set target_note "$obsidian_folder/$notes/locations/game/$name_location.md"
+set cover_image (gum file $HOME/Pictures)
+set suffix (echo (string split '.' $cover_image)[-1])
+set cover_name "$obsidian_name-$name_location-cover.$suffix"
+mv $cover_image $resource_game_folder/$cover_name
+
+echo --- >>$target_note
+echo "tags:" >>$target_note
+echo "  - game" >>$target_note
+echo "  - mp" >>$target_note
+echo "origin: \"[[$obsidian_name]]\"" >>$target_note
+echo "map: \"$name_location\"" >>$target_note
+echo "cover-img: \"[[$cover_name]]\"" >>$target_note
+echo --- >>$target_note
+
+echo "" >>$target_note
+echo "```ad-key" >>$target_note
+echo "K: $name_location - $obsidian_name" >>$target_note
+echo "mpid:" >>$target_note
+echo "mp: [[$obsidian_name]]" >>$target_note
+echo "![[$cover_name]]" >>$target_note
+echo "```" >>$target_note

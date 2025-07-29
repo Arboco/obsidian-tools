@@ -135,7 +135,6 @@ for i in (cat /tmp/the-card_final_sorted_array)
     set i_trim (string trim -r -- $i)
     set trimmed (string split '`' -- $i_trim)[1]
     set target_md (rg -lF "$trimmed" $obsidian_folder/$notes)
-
     clear
     set card_type (echo "$i" | grep -o "^.")
 
