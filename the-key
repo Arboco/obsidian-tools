@@ -177,7 +177,8 @@ end
 if set -q _flag_k
     rm /tmp/keyring_awk_result
     set key_array_filelist (rg -l "^K:" $obsidian_folder/$notes)
-    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -0 --query "$argv[1]" --delimiter='#' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {} keyring")
+    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -1 --query "$argv[1]" --delimiter='#' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {} keyring")
+    set -e argv[1]
     if test -z $keyring_select
         exit
     end
@@ -214,7 +215,7 @@ if set -q _flag_t
         set cut_out (echo $cut_out | string trim -lr)
         set trophies_key $trophies_key $cut_out
     end
-    set select_key (for i in $trophies_key; echo $i; end | fzf -0 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {} trophy")
+    set select_key (for i in $trophies_key; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {} trophy")
     if test -z $select_key
         exit
     end
@@ -327,14 +328,14 @@ else
         end
     else
         while test -z $select_key
-            set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf -0 --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
+            set select_key (for i in $trim_sorted_key_array; echo $i; end | fzf --no-sort --delimiter='K: ' --with-nth=-1 --style=full --query "$argv[1]" --preview "$script_dir/scripts/the-key-fzf.fish {}")
             if test -z $select_key
                 if set -q _flag_p
                     set keyring_select (rg "^mp:" $key_array_filelist | rg -oP '(?<=mp: \[\[)[^\]]*' | sort -u | string trim -lr | fzf --no-sort --style=full --preview "$script_dir/scripts/media-fzf.fish {} mp")
                     set_sorted_key $keyring_select mp
                 end
                 if set -q _flag_k
-                    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf -0 --query "$argv[1]" --delimiter='#' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {} keyring")
+                    set keyring_select (rg "^keyring:" $key_array_filelist | rg -o "#.*\b" | sort -u | string trim -lr | fzf --query "$argv[1]" --delimiter='#' --with-nth=-1 --preview "$script_dir/scripts/the-key-fzf.fish {} keyring")
                     set_sorted_key $keyring_select keyring
                 end
             end
