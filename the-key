@@ -19,6 +19,26 @@ function get_priority
     end
 end
 
+function escape-for-ripgrep
+    set input "$argv[1]"
+    set input (string replace -a '\\' '\\\\' -- $input)
+    set input (string replace -a '.' '\\.' -- $input)
+    set input (string replace -a '^' '\\^' -- $input)
+    set input (string replace -a '$' '\\$' -- $input)
+    set input (string replace -a '*' '\\*' -- $input)
+    set input (string replace -a '+' '\\+' -- $input)
+    set input (string replace -a '?' '\\?' -- $input)
+    set input (string replace -a '(' '\\(' -- $input)
+    set input (string replace -a ')' '\\)' -- $input)
+    set input (string replace -a '[' '\\[' -- $input)
+    set input (string replace -a ']' '\\]' -- $input)
+    set input (string replace -a '{' '\\{' -- $input)
+    set input (string replace -a '}' '\\}' -- $input)
+    set input (string replace -a '|' '\\|' -- $input)
+    set input (string replace -a '/' '\\/' -- $input)
+    echo $input
+end
+
 function help_function
     echo "  --- Modes ---"
 
@@ -48,7 +68,7 @@ end
 
 function true_multiline_block_ripgrep
     set temp_rg (mktemp)
-    set card_type $argv[1]
+    set card_type (escape-for-ripgrep $argv[1])
     set key_string $argv[2]
     set only_key_header $argv[3]
     rg -U -oP --no-filename "$card_type:.*(?:\n(?!\s*\n).*)*?$key_string.*\$" $obsidian_folder/$notes >$temp_rg
@@ -75,10 +95,9 @@ function true_multiline_block_ripgrep
 end
 
 function check_tag_exists
-    set key $argv[1]
+    set key (escape-for-ripgrep $argv[1])
     set tag $argv[2]
     if rg -U -oP --no-filename "$key.*(?:\n(?!\s*\n).*)*?$tag.*\$" $obsidian_folder/$notes
-
         echo true
     else
         echo false
@@ -114,7 +133,7 @@ function set_sorted_key
     set trim_sorted_key_array $sortyboy
 end
 
-argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda c/cleared f/favorite v/video q/query m/music p/palace t/trophy g/generate l/lose h/help 'n/name=' -- $argv
+argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda A/Active c/cleared f/favorite v/video q/query m/music p/palace t/trophy g/generate l/lose h/help 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -534,6 +553,21 @@ if rg "^remove:" $tmp_key_contents
         rm $temp_remove
     end
     set question_array $removed_question_array
+end
+
+if set -q _flag_A
+    for i in $question_array
+        set subtags_for_selection $subtags_for_selection (rg -U -oP --no-filename "$i.*(?:\n(?!\s*\n).*)*?#.*\$" $obsidian_folder/$notes | rg -o --pcre2 '\B#(?!\d)\w+')
+    end
+    set subtags_for_selection (for i in $subtags_for_selection; echo $i; end | sort -u | gum choose --no-limit)
+    set subtags_for_selection (echo $subtags_for_selection | sed 's/ /|/g')
+    set subtags_for_selection "($subtags_for_selection)"
+    for i in $question_array
+        if string match -q true (check_tag_exists $i $subtags_for_selection)
+            set a_array_sort $a_array_sort $i
+        end
+    end
+    set question_array $a_array_sort
 end
 
 set sorted_question_array (for i in $question_array; echo $i; end | sort -u)
