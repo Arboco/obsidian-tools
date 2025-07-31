@@ -64,6 +64,9 @@ function help_function
     echo ""
     echo "  -v       Activate video functionality"
     echo "  -m       Activates key sound file"
+    echo ""
+    echo "  --- Filters ---"
+    echo "  -A       A dynamic filter for subtags"
 end
 
 function true_multiline_block_ripgrep
