@@ -35,7 +35,6 @@ function escape-for-ripgrep
     set input (string replace -a '{' '\\{' -- $input)
     set input (string replace -a '}' '\\}' -- $input)
     set input (string replace -a '|' '\\|' -- $input)
-    set input (string replace -a '/' '\\/' -- $input)
     echo $input
 end
 
