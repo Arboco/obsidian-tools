@@ -716,6 +716,7 @@ if set -q _flag_q
     end
     echo $one_card >/tmp/the-card_final_sorted_array
 end
+set second_counter 0
 set the_key_activated 1
 
 if string match -q true $headless_mode_activated

@@ -209,6 +209,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
             | sed 's/^>//g' \
             | sed '/!\[/d' \
             | sed '/^mpid:/d' \
+            | sed '/^script:/d' \
             | sed '/^---/d' \
             | sed '/^I:/ s/.*/\x1b[38;2;173;216;230m&\x1b[0m/' \
             | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
@@ -217,6 +218,11 @@ for i in (cat /tmp/the-card_final_sorted_array)
             | perl -pe 's/`[^`]*`//g' \
             | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
             | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
+
+        if cat $card_content | rg -q "script:"
+            set script_function (cat $card_content | rg -oP '(?<=script:).*')
+            eval $script_function
+        end
 
         cat $image_list | while read tre
             set suffix (echo $tre | rg -o '[^.\\\\/:*?"<>|\\r\\n]+$')
