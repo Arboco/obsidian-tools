@@ -1,10 +1,10 @@
 #! /usr/bin/env fish
+
+argparse --name=gameinit h/help f/firefox 'n/name=' -- $argv
+or return
+
 set obsidian (ot_config_grab "ObsidianMainFolder")
-if test -e /tmp/obsidian_last.txt
-    set note_file (cat /tmp/obsidian_last.txt)
-else
-    set note_file (echo "$obsidian/notes/misc/japtrans-output.md")
-end
+set note_file (echo "$obsidian/notes/misc/japtrans-output.md")
 set resource_folder (ot_config_grab "ObsidianResourceFolder")
 set drop_folder $obsidian/$resource_folder/japtrans
 mkdir -p $drop_folder
@@ -18,6 +18,13 @@ set select_screenshot (ot_config_grab "MangaScreenshot")
 
 source ~/python/jap-trans/bin/activate.fish
 python3 $script_dir/python/jap-trans-server.py &
+
+if set -q _flag_f
+    echo "hooking firefox"
+    sleep 5
+    set firefoxid (xdotool getwindowfocus)
+    echo "hooked $firefoxid"
+end
 
 yes | evtest >/dev/null 2>/tmp/evtest-info.txt
 set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
@@ -50,7 +57,7 @@ evtest $devinput | while read line
         set uuid_name (uuidgen)
         set fs_name "$uuid_name-$timestamp.jpg"
         scrot -s $drop_folder/$fs_name
-        echo -e "![[$fs_name]]\n" >>"$note_file"
+        #echo -e "![[$fs_name]]\n" >>"$note_file"
 
         set url "http://127.0.0.1:8081"
         curl --silent --head --fail $url >/dev/null
@@ -59,6 +66,9 @@ evtest $devinput | while read line
             set response (curl -s "$url/?q=$drop_folder/$fs_name")
             echo "$response" >>"$note_file"
             echo "$response"
+            if set -q _flag_f
+                xdotool key --window "$firefoxid" --clearmodifiers ctrl+r
+            end
         else
             echo "Server not reachable"
         end

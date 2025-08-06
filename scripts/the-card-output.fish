@@ -154,6 +154,7 @@ for i in (cat /tmp/the-card_final_sorted_array)
     set permit_obtained false
     set once_is_enough false
     set card_content /tmp/file_contents_ready
+    set code_block /tmp/card_code_block
     while string match -q false $permit_obtained
         if not test -z $mpid
             kill $mpid
@@ -166,6 +167,25 @@ for i in (cat /tmp/the-card_final_sorted_array)
           flag {print}
           /^$/ && flag {flag=0}
                                   ' $target_md >$card_content
+
+        set bat_code bash
+        if cat $card_content | rg -q "```[a-zA-Z]"
+            set bat_code (cat $card_content | rg -o '^```(\w+)' | sed 's/`//g')
+        end
+
+        awk '
+            BEGIN { in_block = 0 }
+            /^```/ {
+                in_block = !in_block
+                next
+            }
+            in_block { print }
+            ' $card_content >$code_block
+
+        awk '
+            /^```/ { in_block = !in_block; next }
+            !in_block
+            ' $card_content >tmp && mv tmp $card_content
 
         # Getting and setting up all data for data and s-value 
         if cat $card_content | rg -q '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}'
@@ -215,9 +235,10 @@ for i in (cat /tmp/the-card_final_sorted_array)
             | sed '/^T:/ {/second_counter/ s/.*/\x1b[38;2;255;165;0m&\x1b[0m/}' \
             | sed '/^Q:/ s/.*/\x1b[38;2;152;255;152m&\x1b[0m/' \
             | sed '/^agenda:/ s/.*/\x1b[38;2;0;255;255m&\x1b[0m/' \
-            | perl -pe 's/`[^`]*`//g' \
             | perl -pe 's/(#\w+)/"\e[38;2;255;255;0m$1\e[0m"/ge' \
             | fold -s -w 90 | bat -p --language=Markdown | sed 's/^/    /'
+
+        cat $code_block | bat -l $bat_code
 
         if cat $card_content | rg -q "script:"
             set script_function (cat $card_content | rg -oP '(?<=script:).*')
