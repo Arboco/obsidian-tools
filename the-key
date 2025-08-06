@@ -52,6 +52,7 @@ function help_function
     echo ""
     echo "  -t       Trophy view"
     echo "  -g       Generate trophy file"
+    echo "  -P       Practice mode, loops card pool endlessly"
     echo ""
     echo "  --- Options ---"
     echo "  -i       Reverses List, by default this creates a history view"
@@ -135,7 +136,7 @@ function set_sorted_key
     set trim_sorted_key_array $sortyboy
 end
 
-argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda A/Active c/cleared f/favorite v/video q/query m/music p/palace t/trophy g/generate l/lose h/help 'n/name=' -- $argv
+argparse --name=pool r/random z/zufall i/history s/sequence e/edit k/keyring a/agenda A/Active c/cleared f/favorite v/video q/query m/music p/palace t/trophy g/generate l/lose h/help P/practice 'n/name=' -- $argv
 or return
 
 set script_dir (realpath (status dirname))
@@ -146,6 +147,11 @@ set default_pool_array (rg -l "^(I|Q|T):" $obsidian_folder/$notes)
 
 if not set -q _flag_k; or not set -q _flag_p
     set key_array (rg --no-filename --no-line-number "^K:" $obsidian_folder/$notes)
+end
+
+set practice_mode false
+if set -q _flag_P
+    set practice_mode true
 end
 
 if set -q _flag_g
