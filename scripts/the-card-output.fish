@@ -413,13 +413,17 @@ while true
             echo ""
 
             if string match -q Q $card_type
-                set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
-                if string match d $user_input
+                echo "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File"
+                #set user_input (gum input --placeholder "1 - Correct | 2 - Wrong | 0 - Exit | r - Revise | o - Open File")
+                read -n 1 user_input
+                if string match 3 $user_input
                     set user_input ""
                 end
             end
             if string match -q I $card_type
-                set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+                echo "3 - Date | 0 - Exit | r - Revise | o - Open File"
+                #set user_input (gum input --placeholder "d - Date | 0 - Exit | r - Revise | o - Open File")
+                read -n 1 user_input
                 if string match 1 $user_input; or string match 2 $user_input
                     set user_input ""
                 end
@@ -474,7 +478,7 @@ while true
                 set permit_obtained true
             end
 
-            if string match d $user_input
+            if string match 3 $user_input
                 clear
                 set meta_append "`$new_date`"
                 awk -v target="$i" -v append_str=" $meta_append" '
