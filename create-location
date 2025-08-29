@@ -26,7 +26,7 @@ echo --- >>$target_note
 
 echo "" >>$target_note
 echo "```ad-key" >>$target_note
-echo "K: $name_location - $obsidian_name" >>$target_note
+echo "$name_location - $obsidian_name" >>$target_note
 echo "mpid:" >>$target_note
 echo "mp: [[$obsidian_name]]" >>$target_note
 echo "![[$cover_name]]" >>$target_note

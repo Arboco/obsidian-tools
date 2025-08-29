@@ -429,6 +429,11 @@ while true
                 end
             end
 
+            if string match -q " " $user_input
+                set text_insert (gum input --placeholder "Enter text to append")
+                brainstorming $text_insert $i
+            end
+
             if string match -q 0 $user_input
                 set want_to_exit true
                 break
@@ -490,10 +495,6 @@ while true
                     print
                 } ' $target_md >"$target_md.tmp" && mv "$target_md.tmp" "$target_md"
                 set permit_obtained true
-            end
-
-            if echo "$user_input" | rg -q '^.{2,}$'
-                brainstorming $user_input $i
             end
         end
         if string match -q true $permit_obtained
