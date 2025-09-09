@@ -31,3 +31,5 @@ echo "mpid:" >>$target_note
 echo "mp: [[$obsidian_name]]" >>$target_note
 echo "![[$cover_name]]" >>$target_note
 echo "```" >>$target_note
+
+sed -i '/^tags:/a\  - mindpalace' $obsidian_md
