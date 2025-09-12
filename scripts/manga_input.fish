@@ -27,7 +27,7 @@ evtest $devinput | while read line
         set timestamp (date +%F_%H%M%S)
         if rg -q "cover-img:" $volume_md
         else
-            sed -i "/^origin:/a\\cover-img: \"!\[\[$folder_title-$timestamp.jpg\]\]\"" $volume_md
+            sed -i "/^origin:/a\\cover-img: \"\[\[$folder_title-$timestamp.jpg\]\]\"" $volume_md
         end
         scrot -s $screenshot_folder/$folder_title-$timestamp.jpg
         echo -e "![[$folder_title-$timestamp.jpg]]\n" >>$volume_md

@@ -97,7 +97,7 @@ else
     echo --- >>$episode_md_final
     echo "origin: \"[[$raw_file_name]]\"" \
         \n"episode: $current_episode" \
-        \n"cover-img: \"![[$thumbnail_picture]]\"" \
+        \n"cover-img: \"[[$thumbnail_picture]]\"" \
         \n"tags:" \
         \n"  - anime" \
         \n"  - db" \

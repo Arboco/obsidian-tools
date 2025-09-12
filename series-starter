@@ -128,7 +128,7 @@ else
     echo "origin: \"[[$raw_file_name]]\"" \
         \n"season: $current_season" \
         \n"episode: $current_episode" \
-        \n"cover-img: \"![[$thumbnail_picture]]\"" \
+        \n"cover-img: \"[[$thumbnail_picture]]\"" \
         \n"tags:" \
         \n"  - tvseries" \
         \n"  - db" \
