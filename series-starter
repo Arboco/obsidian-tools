@@ -104,7 +104,7 @@ if rg "anachronic: true" $obsidian_md
         set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
     end
 else
-    set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort)
+    set episode_array (find $a_path/ -maxdepth 1 -regextype posix-extended -regex ".*(mp4|mkv|mov|avi|webm|flv|wmv)" | sort -V)
     set episode_to_play "$episode_array[$current_episode]"
 end
 
@@ -141,7 +141,13 @@ if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
 end
 
 set parent_md $obsidian_md
-if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/series-dataview-insert
+
+set dataviewcheck false
+if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md
+    set dataviewcheck true
+end
+
+if string match false $dataviewcheck; and test -f $HOME/.config/ortscripts/series-dataview-insert
     sed -i "/^tags:/i\\cssclasses:" "$parent_md"
     sed -i "/^cssclasses:/a\\  - cards" "$parent_md"
     sed -i "/^cssclasses:/a\\  - table-max" "$parent_md"

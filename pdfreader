@@ -1,0 +1,53 @@
+#! /usr/bin/env fish 
+
+set script_dir (realpath (status dirname))
+
+function help_function
+    echo "Options:"
+    echo "  -i       History"
+end
+
+argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+or return
+
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
+set script_dir (realpath (status dirname))
+
+if not set -q _flag_i
+    set obsidian_md (rg -l "pdfpath:" $obsidian_folder | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+end
+set raw_file_name (basename -s ".md" $obsidian_md)
+
+echo "$episode_md" >/tmp/obsidian_last.txt
+$script_dir/scripts/pdf_input.fish "$obsidian_md" &
+
+set pdf_path (cat $obsidian_md | grep 'pdfpath:')
+set pdf_path (echo $pdf_path | grep -oP '(?<=pdfpath: ).*$')
+
+if cat $obsidian_md | grep -q "pages:"
+    set page_num (cat $obsidian_md | rg "pages:" | rg -o "[0-9]+")
+    echo $page_num
+else
+    set page_num 0
+end
+
+okular --page $page_num $pdf_path &
+sleep 2
+set okular_instance (echo (qdbus | grep okular)[1] | string trim -lr)
+echo $okular_instance
+
+while qdbus | grep $okular_instance
+    set current_page (qdbus $okular_instance /okular org.kde.okular.currentPage)
+    echo $current_page
+    sleep 1
+end
+
+if grep -q "pages:" $obsidian_md
+    sed -i '/pages:/d' "$obsidian_md"
+end
+sed -i "/^pdfpath:/a\\pages: $current_page" "$obsidian_md"
+
+echo $obsidian_md
+echo $pdf_path
