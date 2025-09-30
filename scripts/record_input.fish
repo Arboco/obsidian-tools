@@ -58,9 +58,16 @@ end
 mkdir -p $screenshot_folder
 
 # required since event number can change
-yes | evtest >/dev/null 2>/tmp/evtest-info.txt
-set devinput (cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
-echo (date +%s) >/tmp/xbox_time.txt
+
+set controller_was_found 0
+while not string match 1 $controller_was_found
+    yes | evtest >/dev/null 2>/tmp/evtest-info.txt
+    if cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+'
+        set devinput (cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
+        set controller_was_found 1
+        echo (date +%s) >/tmp/xbox_time.txt
+    end
+end
 
 while true
     if test -e $devinput
