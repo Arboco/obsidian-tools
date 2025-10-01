@@ -100,5 +100,7 @@ if set -q _flag_c
     end
 end
 
-echo "" >>$obsidian_file
+set cur_date (date +"%d-%m-%Y %H:%M:%S")
+echo ">[!note] `$cur_date`" >>$obsidian_file
 echo "$argv[1]" >>$obsidian_file
+echo "" >>$obsidian_file

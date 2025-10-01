@@ -40,7 +40,7 @@ if not set -q _flag_i
 end
 set raw_file_name (basename -s ".md" $obsidian_md)
 
-echo "$episode_md" >/tmp/obsidian_last.txt
+echo "$obsidian_md" >/tmp/obsidian_last.txt
 $script_dir/scripts/pdf_input.fish "$obsidian_md" &
 
 set pdf_path (cat $obsidian_md | grep 'pdfpath:')
@@ -58,9 +58,22 @@ sleep 2
 set okular_instance (echo (qdbus | grep okular)[1] | string trim -lr)
 echo $okular_instance
 
+echo 0 | xclip -selection clipboard
+set clipboard_old 0
 while qdbus | grep $okular_instance
     set current_page (qdbus $okular_instance /okular org.kde.okular.currentPage)
     echo $current_page
+
+    set clipboard_new (xclip -o -selection clipboard)
+    if string match $clipboard_old $clipboard_new
+    else
+        set cur_date (date +"%d-%m-%Y %H:%M:%S")
+        set clipboard_old $clipboard_new
+        echo ">[!quote] Page: $current_page `$cur_date`" >>$obsidian_md
+        echo $clipboard_new >>$obsidian_md
+        echo "" >>$obsidian_md
+    end
+
     sleep 1
 end
 
