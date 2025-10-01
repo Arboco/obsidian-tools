@@ -216,7 +216,7 @@ if test $debug -eq 1
     set info_final_playtime (grep -oP "(?<=playtime: ).*" $selection_md)
 else
     cp $selection_md /tmp/clone.md
-    awk -v var="$result_seconds" '/playtime/ { 
+    awk -v var="$result_seconds" '/playtime:/ { 
   for (i = 1; i <= NF; i++) { 
         if ($i ~ /^[0-9]+$/) $i = $i + var; 
     } 
