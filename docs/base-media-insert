@@ -1,0 +1,22 @@
+
+```base
+filters:
+  and:
+    - origin == this.file
+formulas:
+  Title: if(name, name, file.name)
+views:
+  - type: cards
+    name: Related
+    order:
+      - formula.Title
+    sort:
+      - property: file.mtime
+        direction: DESC
+    image: note.cover-img
+    imageAspectRatio: 1
+    imageFit: ""
+    cardSize: 150
+
+```
+

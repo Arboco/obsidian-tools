@@ -77,6 +77,8 @@ while qdbus | grep $okular_instance
     sleep 1
 end
 
+kill $(jobs -p)
+
 if grep -q "pages:" $obsidian_md
     sed -i '/pages:/d' "$obsidian_md"
 end

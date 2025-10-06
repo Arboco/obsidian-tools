@@ -1,7 +1,11 @@
 # Must be put in .config/ortscripts/ 
 
-Version: 0.2b 
+Version: 0.6a 
 ObsidianMainFolder: /home/anon/ortup/important/notes/ortvault
+
+#character-inserter
+CharacterNote: /home/anon/ortup/important/notes/ortvault/notes/character_db/character-inserter
+CharacterRes: /home/anon/ortup/important/notes/ortvault/resources/character_db/character-inserter
 
 # The specifc names for the folders inside your vault 
 ObsidianResourceFolder: resources
@@ -27,29 +31,51 @@ PoolEscapeButton: KEY_BACKSPACE
 # Profile 1 flag -v 
 # select your device with evtest
 # hook counter can be customized per game with hook-values property 
-Profile1DeviceName: 8bitdo-numpad-kanata|8BitDo Retro 18 Numpad Keyboard
+Profile1DeviceName: NuPhy
 Profile1ControllerCheck: 0
-Profile1ScreenshotButton: KEY_KP1
-Profile1SelectScreenshotButton: KEY_KP4
-Profile1RecordButton: KEY_KP2
-Profile1AudioButton: KEY_KP3
-Profile1EscapeButton: KEY_KP0 
-Profile1HookCounter: 15
+Profile1ScreenshotButton: KEY_SYSRQ
+Profile1SelectScreenshotButton: KEY_MINUS
+Profile1MindPalace: KEY_RIGHTSHIFT
+Profile1RecordButton: KEY_EQUAL
+Profile1AudioButton: KEY_HOME
+Profile1EscapeButton: KEY_END 
+Profile1HookCounter: 30
 Profile1IdleCounter: 180
 
 # Profile 2 flag -x 
-Profile2DeviceName: Xbox
+Profile2DeviceName: 8BitDo Ultimate 2
 Profile2ControllerCheck: 1
 #HoldButton only works if ControllerCheck is 1 
-Profile2HoldButton: KEY_RECORD
-Profile2ScreenshotButton: BTN_TL
-Profile2MindPalace: BTN_THUMBR
-Profile2RecordButton: BTN_WEST
-Profile2AudioButton: BTN_EAST
+Profile2HoldButton: BTN_THUMBL
+Profile2ScreenshotButton: ABS_HAT0Y
+Profile2MindPalace: ABS_HAT0X
+Profile2RecordButton: BTN_MODE
+Profile2AudioButton: BTN_THUMBR
 Profile2EscapeButton: ABS_HAT0Y
-Profile2HookCounter: 20
+Profile2HookCounter: 30
 Profile2IdleCounter: 180
 Profile2InputBlock: ABS_R?[XY].*value -?[0-9]{1,4}([^0-9]|$) 
+Profile2AltButton: BTN_TR
+
+Profile2HoldButtonAlt: BTN_THUMBL
+Profile2ScreenshotButtonAlt: BTN_WEST
+Profile2MindPalaceAlt: BTN_EAST
+Profile2RecordButtonAlt: BTN_MODE
+Profile2AudioButtonAlt: BTN_THUMBR
+Profile2EscapeButtonAlt: ABS_HAT0Y
+
+
+# Profile 2 flag -w
+Profile3DeviceName: 8BitDo Pro 3
+Profile3ControllerCheck: 1
+Profile3HoldButton: BTN_MODE
+Profile3ScreenshotButton: BTN_Z
+Profile3MindPalace: BTN_C
+Profile3RecordButton: BTN_TRIGGER_HAPPY1
+Profile3AudioButton: BTN_TRIGGER_HAPPY2
+Profile3EscapeButton: ABS_HAT0Y
+Profile3HookCounter: 30
+Profile3IdleCounter: 180
 
 # Manga Reader 
 MangaDeviceName: 8BitDo Retro R8 Mouse Adapter 8BitDo Retro R8 Mouse Adapter Keyboard
@@ -70,7 +96,7 @@ StartupCompensator: 30
 # Option to insert a timeline inside the note that tracks on what day you played for how many minutes, this has nothing to do with playtime recording, it's just an extra 
 TimelineOption: 1
 # Option to add a limit on how many minutes the first recorded session must be to be inserted into note, to avoid cluttering the timeline with pointless sessions 
-SessionLimit: 15
+SessionLimit: 10
 
 # the-card 
 # how many seconds is one point worth. 48 hours = 172800, 36 hours = 129600, 24 hours = 86400, 12 hours = 43200, 6 hours = 21600:

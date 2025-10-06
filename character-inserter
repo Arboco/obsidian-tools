@@ -1,0 +1,107 @@
+#! /usr/bin/env fish 
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set folder_note (ot_config_grab "CharacterNote")
+set folder_res (ot_config_grab "CharacterRes")
+
+argparse --name=gn b/boy h/help 'n/name=' -- $argv
+or return
+
+set gender female
+if set -q _flag_b
+    set gender male
+end
+
+set obsidian_md (rg -l "  - db" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+set obs_name (basename -s ".md" $obsidian_md)
+set hyphen_title (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+if cat $obsidian_md | rg "platform: doujin"
+    set medium doujin
+else if cat $obsidian_md | rg "  - vn"
+    set medium vn
+else if cat $obsidian_md | rg "  - weg"
+    set medium game
+else if cat $obsidian_md | rg "  - game"
+    set medium game
+else if cat $obsidian_md | rg "  - anime"
+    set medium anime
+else if cat $obsidian_md | rg "  - manga"
+    set medium manga
+else if cat $obsidian_md | rg "  - ln"
+    set medium ln
+else if cat $obsidian_md | rg "type: movie"
+    set medium film
+else if cat $obsidian_md | rg "type: tv"
+    set medium tv
+end
+
+echo "Character name:"
+read name
+echo "Attachement:"
+read attachement
+echo "Personality:"
+read personality
+echo "Design:"
+read design
+
+set escape_sequence 0
+set loop_counter 0
+set origin_traits (awk '/^traits:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' (rg -l "traits:" .) | sort -u)
+set traits_list
+while string match 0 $escape_sequence
+    set traits (for i in $origin_traits; echo $i; end | sort -u | fzf --delimiter='/' --with-nth=-1)
+    if string match escape $traits
+        set escape_sequence 1
+    else
+        set traits_list $traits_list $traits
+        set loop_counter (math $loop_counter + 1)
+    end
+end
+
+set cover_image (gum file $HOME/Pictures)
+set suffix (echo (string split '.' $cover_image)[-1])
+set cover_name "$name-$hyphen_title-cover.$suffix"
+mv $cover_image $folder_res/$cover_name
+
+if grep "  - chardb" $obsidian_md
+else
+    sed -i '/^tags:/a\  - chardb' $obsidian_md
+end
+
+if not grep -q "```base" $obsidian_md; and test -f $HOME/.config/ortscripts/base-media-insert
+    sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
+    sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
+    set input_file $obsidian_md
+    set insert_file $HOME/.config/ortscripts/base-media-insert
+
+    set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+    set after_line (math $last_delim_line + 1)
+
+    head -n $last_delim_line $input_file >/tmp/temp_before.txt
+    tail -n +$after_line $input_file >/tmp/temp_after.txt
+    cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+    mv /tmp/temp_combined.txt $input_file
+end
+
+set md "$folder_note/$name - $obs_name.md"
+
+echo --- >>$md
+echo "name: \"$name\"" >>$md
+echo "origin: \"[[$obs_name]]\"" >>$md
+echo "cover-img: \"[[$cover_name]]\"" >>$md
+echo "tags:" >>$md
+echo "  - chardb" >>$md
+echo "medium: \"$medium\"" >>$md
+echo "character: \"$gender\"" >>$md
+echo "attachement: $attachement" >>$md
+echo "personality: $personality" >>$md
+echo "design: $design" >>$md
+echo "traits:" >>$md
+if test $loop_counter -gt 0
+    for i in $traits_list
+        echo "  - $i" >>$md
+    end
+end
+echo --- >>$md
