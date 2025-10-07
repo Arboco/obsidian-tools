@@ -1,11 +1,102 @@
 #! /usr/bin/env fish 
 set script_dir (realpath (status dirname))
 set obsidian (ot_config_grab "ObsidianMainFolder")
+set main_res_folder (ot_config_grab "ObsidianResourceFolder")
+set main_note_folder (ot_config_grab "NotesFolder")
 set folder_note (ot_config_grab "CharacterNote")
 set folder_res (ot_config_grab "CharacterRes")
+set character_img $obsidian/$main_res_folder/character_db/vn
+set character_md $obsidian/$main_note_folder/character_db/vn
+set base_insert
 
-argparse --name=gn b/boy h/help 'n/name=' -- $argv
+argparse --name=gn a/myanimelist v/vndb b/boy h/help 'n/name=' -- $argv
 or return
+
+function base_tag_insert
+    if grep "  - chardb" $obsidian_md
+    else
+        sed -i '/^tags:/a\  - chardb' $obsidian_md
+    end
+
+    if not grep -q "```base" $obsidian_md; and test -f $base_insert
+        sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
+        sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
+        set input_file $obsidian_md
+        set insert_file $base_insert
+
+        set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+        set after_line (math $last_delim_line + 1)
+
+        head -n $last_delim_line $input_file >/tmp/temp_before.txt
+        tail -n +$after_line $input_file >/tmp/temp_after.txt
+        cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+        mv /tmp/temp_combined.txt $input_file
+    end
+end
+
+function vndb_function
+    echo "$argv[1]"
+    set html /tmp/vndb.html
+    curl -s -A Mozilla/5.0 "(X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0" "$argv[1]" >$html
+    set game_title (cat $html | grep -oP '(?<=ja-Latn">)[^<]*' | head -n 1)
+    set game_title (string trim --right "$game_title")
+    set santized_title (echo $game_title | sed -E 's/[^a-zA-Z0-9]+/ /g; s/^ //; s/ $//')
+    set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+    set begin_string (gum choose --limit 1 'Main character.*' 'Protagonist.*')
+
+    if cat $html | grep 'Side character'
+        set search_string "<h1>Side character"
+    else
+        set search_string ""
+    end
+
+    set jap_names (cat $html | grep -oP "$begin_string$search_string" | grep -oP '(?<=<small style="margin-right: 10px" lang="ja">)[^<]*')
+    set eng_names (cat $html | grep -oP "$begin_string$search_string"  | grep -oP '(?<=lang="ja-Latn">)[^<]*')
+    set img_links (cat $html | grep -oP "$begin_string$search_string"  | grep -oP '(?<=<img src=")https:[^"]*')
+
+    set final_folder "$character_md/$hyphen_title"
+    set final_img_folder "$character_img/$hyphen_title"
+    mkdir -p $final_folder
+    mkdir -p $final_img_folder
+    set num 1
+
+    for item in $jap_names
+        set md "$final_folder/$eng_names[$num].md"
+        set hyphen_name (echo $eng_names[$num] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        wget -O "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_links[$num]
+
+        echo "Attachement:"
+        read attachement
+        echo "Personality:"
+        read personality
+        echo "Design:"
+        read design
+
+        echo --- >>$md
+        echo "name: \"$eng_names[$num]\"" >>$md
+        echo "j_name: \"$jap_names[$num]\"" >>$md
+        echo "origin: \"[[$obs_name]]\"" >>$md
+        echo "url: \"$argv[1]\"" >>$md
+        echo "cover-img: \"[[$hyphen_name-$hyphen_title_series-chardb.jpg]]\"" >>$md
+        echo "tags:" >>$md
+        echo "  - chardb" >>$md
+        echo "medium: \"$medium\"" >>$md
+        echo "character: \"$gender\"" >>$md
+        echo "attachement: $attachement" >>$md
+        echo "personality: $personality" >>$md
+        echo "design: $design" >>$md
+        echo "traits:" >>$md
+        echo --- >>$md
+
+        set num (math $num + 1)
+        echo $num
+    end
+    set base_insert "$HOME/.config/ortscripts/base-character-insert"
+    base_tag_insert
+    exit
+end
 
 set gender female
 if set -q _flag_b
@@ -14,7 +105,7 @@ end
 
 set obsidian_md (rg -l "  - db" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 set obs_name (basename -s ".md" $obsidian_md)
-set hyphen_title (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+set hyphen_title_series (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
 if cat $obsidian_md | rg "platform: doujin"
     set medium doujin
@@ -36,8 +127,79 @@ else if cat $obsidian_md | rg "type: tv"
     set medium tv
 end
 
-echo "Character name:"
-read name
+if set -q _flag_a
+    for i in $argv
+        set array $array $i
+    end
+
+    for item in $array
+        curl $item >/tmp/myanime.html
+        set name (cat /tmp/myanime.html | grep -oP '(?<=<meta property="og:title" content=")[^"]*')
+        set name (string split " " $name)
+        set j_name (cat /tmp/myanime.html | grep -oP '(?<=normal;"><small>\()[^)]*')
+        set img_link (cat /tmp/myanime.html | grep -oP '(?<=og:image" content=")[^"]*')
+
+        set raw_title (cat /tmp/myanime.html | grep -oP '(?<=from )[^?]*' | head -n 1)
+        set santized_title (echo $raw_title | sed -E 's/[^a-zA-Z0-9]+/ /g; s/^ //; s/ $//')
+        set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+        if test (count $name) -eq 1
+        else if test (count $name) -gt 2
+            set name (cat /tmp/myanime.html | grep -oP '(?<=<meta property="og:title" content=")[^"]*')
+        else
+            set name "$name[2] $name[1]"
+        end
+
+        set hyphen_name (echo $name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        mkdir "$obsidian/$main_note_folder/character_db/anime/$hyphen_title"
+        set md "$obsidian/$main_note_folder/character_db/anime/$hyphen_title/$name - $obs_name.md.md"
+        mkdir "$obsidian/$main_res_folder/character_db/anime/$hyphen_title"
+        wget -O "$obsidian/$main_res_folder/character_db/anime/$hyphen_title/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_link
+
+        echo "Attachement:"
+        read attachement
+        echo "Personality:"
+        read personality
+        echo "Design:"
+        read design
+
+        echo --- >>$md
+        echo "name: \"$name\"" >>$md
+        if not test -z $j_name
+            echo "j_name: \"$j_name\"" >>$md
+        end
+        echo "origin: \"[[$obs_name]]\"" >>$md
+        echo "url: \"$item\"" >>$md
+        echo "cover-img: \"[[$hyphen_name-$hyphen_title_series-chardb.jpg]]\"" >>$md
+        echo "tags:" >>$md
+        echo "  - chardb" >>$md
+        echo "medium: \"$medium\"" >>$md
+        echo "character: \"$gender\"" >>$md
+        echo "attachement: $attachement" >>$md
+        echo "personality: $personality" >>$md
+        echo "design: $design" >>$md
+        echo "traits:" >>$md
+        echo --- >>$md
+    end
+
+    set base_insert "$HOME/.config/ortscripts/base-character-insert"
+    base_tag_insert
+    rm /tmp/myanime.html
+    exit
+end
+
+if set -q _flag_v
+    vndb_function $argv[1]
+    exit
+end
+
+set cover_image (find "$HOME/Pictures" -maxdepth 1 -type f | gum choose --select-if-one)
+if not test -z $argv[1]
+    set name $argv[1]
+else
+    echo "Character name:"
+    read name
+end
 echo "Attachement:"
 read attachement
 echo "Personality:"
@@ -45,50 +207,35 @@ read personality
 echo "Design:"
 read design
 
-set escape_sequence 0
-set loop_counter 0
-set origin_traits (awk '/^traits:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' (rg -l "traits:" .) | sort -u)
-set traits_list
-while string match 0 $escape_sequence
-    set traits (for i in $origin_traits; echo $i; end | sort -u | fzf --delimiter='/' --with-nth=-1)
-    if string match escape $traits
-        set escape_sequence 1
-    else
-        set traits_list $traits_list $traits
-        set loop_counter (math $loop_counter + 1)
-    end
-end
+set base_insert "$HOME/.config/ortscripts/base-media-insert"
+base_tag_insert
 
-set cover_image (gum file $HOME/Pictures)
+## trait selector, too slow to use currently 
+#set escape_sequence 0
+#set loop_counter 0
+#set origin_traits (awk '/^traits:/ {flag=1; next} flag && /^  - / {print $2} flag && !/^  - / {flag=0}' (rg -l "traits:" .) | sort -u)
+#set traits_list
+#while string match 0 $escape_sequence
+#    set traits (for i in $origin_traits; echo $i; end | sort -u | fzf --delimiter='/' --with-nth=-1)
+#    if string match escape $traits
+#        set escape_sequence 1
+#    else
+#        set traits_list $traits_list $traits
+#        set loop_counter (math $loop_counter + 1)
+#    end
+#end
+
 set suffix (echo (string split '.' $cover_image)[-1])
-set cover_name "$name-$hyphen_title-cover.$suffix"
+set cover_name "$name-$hyphen_title_series-cover.$suffix"
 mv $cover_image $folder_res/$cover_name
-
-if grep "  - chardb" $obsidian_md
-else
-    sed -i '/^tags:/a\  - chardb' $obsidian_md
-end
-
-if not grep -q "```base" $obsidian_md; and test -f $HOME/.config/ortscripts/base-media-insert
-    sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
-    sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
-    set input_file $obsidian_md
-    set insert_file $HOME/.config/ortscripts/base-media-insert
-
-    set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
-    set after_line (math $last_delim_line + 1)
-
-    head -n $last_delim_line $input_file >/tmp/temp_before.txt
-    tail -n +$after_line $input_file >/tmp/temp_after.txt
-    cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
-
-    mv /tmp/temp_combined.txt $input_file
-end
 
 set md "$folder_note/$name - $obs_name.md"
 
 echo --- >>$md
 echo "name: \"$name\"" >>$md
+if not test -z $argv[2]
+    echo "j_name: \"$argv[2]\"" >>$md
+end
 echo "origin: \"[[$obs_name]]\"" >>$md
 echo "cover-img: \"[[$cover_name]]\"" >>$md
 echo "tags:" >>$md
@@ -99,9 +246,9 @@ echo "attachement: $attachement" >>$md
 echo "personality: $personality" >>$md
 echo "design: $design" >>$md
 echo "traits:" >>$md
-if test $loop_counter -gt 0
-    for i in $traits_list
-        echo "  - $i" >>$md
-    end
-end
+#if test $loop_counter -gt 0
+#    for i in $traits_list
+#        echo "  - $i" >>$md
+#    end
+#end
 echo --- >>$md
