@@ -9,7 +9,7 @@ set character_img $obsidian/$main_res_folder/character_db/vn
 set character_md $obsidian/$main_note_folder/character_db/vn
 set base_insert
 
-argparse --name=gn a/myanimelist v/vndb b/boy h/help 'n/name=' -- $argv
+argparse --name=gn a/myanimelist v/vndb s/skip b/boy h/help 'n/name=' -- $argv
 or return
 
 function base_tag_insert
@@ -45,6 +45,13 @@ function vndb_function
     set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
     set begin_string (gum choose --limit 1 'Main character.*' 'Protagonist.*')
+    echo "Do you want the skip option?"
+    set skip_option (gum choose --limit 1 "Yes" "No")
+    if string match Yes $skip_option
+        set skip 1
+    else
+        set skip 0
+    end
 
     if cat $html | grep 'Side character'
         set search_string "<h1>Side character"
@@ -63,10 +70,21 @@ function vndb_function
     set num 1
 
     for item in $jap_names
-        set md "$final_folder/$eng_names[$num].md"
+        set md "$final_folder/$eng_names[$num] - $obs_name.md"
         set hyphen_name (echo $eng_names[$num] | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         wget -O "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_links[$num]
 
+        kitty icat "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg"
+
+        if string match 1 $skip
+            echo "Skip? y or n"
+            read skip_pass
+            if string match y $skip_pass
+                set num (math $num + 1)
+                continue
+            end
+        end
+        echo $skip
         echo "Attachement:"
         read attachement
         echo "Personality:"
@@ -152,9 +170,11 @@ if set -q _flag_a
 
         set hyphen_name (echo $name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         mkdir "$obsidian/$main_note_folder/character_db/anime/$hyphen_title"
-        set md "$obsidian/$main_note_folder/character_db/anime/$hyphen_title/$name - $obs_name.md.md"
+        set md "$obsidian/$main_note_folder/character_db/anime/$hyphen_title/$name - $obs_name.md"
         mkdir "$obsidian/$main_res_folder/character_db/anime/$hyphen_title"
         wget -O "$obsidian/$main_res_folder/character_db/anime/$hyphen_title/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_link
+
+        kitty icat "$obsidian/$main_res_folder/character_db/anime/$hyphen_title/$hyphen_name-$hyphen_title_series-chardb.jpg"
 
         echo "Attachement:"
         read attachement
