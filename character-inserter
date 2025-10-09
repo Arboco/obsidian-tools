@@ -9,7 +9,7 @@ set character_img $obsidian/$main_res_folder/character_db/vn
 set character_md $obsidian/$main_note_folder/character_db/vn
 set base_insert
 
-argparse --name=gn a/myanimelist v/vndb s/skip b/boy h/help 'n/name=' -- $argv
+argparse --name=gn a/myanimelist v/vndb s/skip h/help 'n/name=' -- $argv
 or return
 
 function base_tag_insert
@@ -116,10 +116,7 @@ function vndb_function
     exit
 end
 
-set gender female
-if set -q _flag_b
-    set gender male
-end
+set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
 
 set obsidian_md (rg -l "  - db" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 set obs_name (basename -s ".md" $obsidian_md)

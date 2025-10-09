@@ -44,7 +44,7 @@ if set -q _flag_i
     end
 
     set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
-    set selection_md (fd -t f -F $selection $obsidian/$notes)
+    set selection_md (fd -t f -g $selection $obsidian/$notes)
     if rg "^profile:" $selection_md
         set profile (rg -oP '(?<=profile: ).*' $selection_md)
     else
