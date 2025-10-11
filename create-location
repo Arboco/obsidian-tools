@@ -22,6 +22,7 @@ echo "  - mp" >>$target_note
 echo "origin: \"[[$obsidian_name]]\"" >>$target_note
 echo "map: \"$name_location\"" >>$target_note
 echo "cover-img: \"[[$cover_name]]\"" >>$target_note
+echo "category:" >>$md
 echo --- >>$target_note
 
 echo "" >>$target_note

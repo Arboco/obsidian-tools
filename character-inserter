@@ -19,8 +19,8 @@ function base_tag_insert
     end
 
     if not grep -q "```base" $obsidian_md; and test -f $base_insert
-        sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
-        sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
+        #sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
+        # sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
         set input_file $obsidian_md
         set insert_file $base_insert
 
@@ -105,7 +105,8 @@ function vndb_function
         echo "attachement: $attachement" >>$md
         echo "personality: $personality" >>$md
         echo "design: $design" >>$md
-        echo "traits:" >>$md
+        echo "traits: $traits" >>$md
+        echo "category: Character" >>$md
         echo --- >>$md
 
         set num (math $num + 1)
@@ -127,11 +128,13 @@ if cat $obsidian_md | rg "platform: doujin"
 else if cat $obsidian_md | rg "  - vn"
     set medium vn
 else if cat $obsidian_md | rg "  - weg"
-    set medium game
+    set medium weg
 else if cat $obsidian_md | rg "  - game"
     set medium game
 else if cat $obsidian_md | rg "  - anime"
     set medium anime
+else if cat $obsidian_md | rg "  - hentai"
+    set medium hentai
 else if cat $obsidian_md | rg "  - manga"
     set medium manga
 else if cat $obsidian_md | rg "  - ln"
@@ -196,6 +199,7 @@ if set -q _flag_a
         echo "personality: $personality" >>$md
         echo "design: $design" >>$md
         echo "traits:" >>$md
+        echo "category: Character" >>$md
         echo --- >>$md
     end
 
@@ -263,6 +267,7 @@ echo "attachement: $attachement" >>$md
 echo "personality: $personality" >>$md
 echo "design: $design" >>$md
 echo "traits:" >>$md
+echo "category: Character" >>$md
 #if test $loop_counter -gt 0
 #    for i in $traits_list
 #        echo "  - $i" >>$md

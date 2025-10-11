@@ -1,0 +1,85 @@
+#! /usr/bin/env fish 
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set main_res_folder (ot_config_grab "ObsidianResourceFolder")
+set main_note_folder (ot_config_grab "NotesFolder")
+set folder_note (ot_config_grab "CharacterNote")
+set folder_res (ot_config_grab "CharacterRes")
+set base_insert
+
+argparse --name=gn h/help 'n/name=' -- $argv
+or return
+
+function base_tag_insert
+    if grep "  - highlight" $obsidian_md
+    else
+        sed -i '/^tags:/a\  - highlight' $obsidian_md
+    end
+
+    if not grep -q "```base" $obsidian_md; and test -f $base_insert
+        #sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
+        # sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
+        set input_file $obsidian_md
+        set insert_file $base_insert
+
+        set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
+        if cat $obsidian_md | grep "# Info"
+            set last_delim_line (grep -n '# Info' $input_file | cut -d: -f1 | tail -n 1)
+        end
+        set after_line (math $last_delim_line + 1)
+
+        head -n $last_delim_line $input_file >/tmp/temp_before.txt
+        tail -n +$after_line $input_file >/tmp/temp_after.txt
+        cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
+
+        mv /tmp/temp_combined.txt $input_file
+    end
+end
+
+set obsidian_md (rg -l "  - db" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+set obs_name (basename -s ".md" $obsidian_md)
+set hyphen_title_series (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+if cat $obsidian_md | rg "platform: doujin"
+    set medium doujin
+else if cat $obsidian_md | rg "  - vn"
+    set medium vn
+else if cat $obsidian_md | rg "  - weg"
+    set medium weg
+else if cat $obsidian_md | rg "  - game"
+    set medium game
+else if cat $obsidian_md | rg "  - anime"
+    set medium anime
+else if cat $obsidian_md | rg "  - manga"
+    set medium manga
+else if cat $obsidian_md | rg "  - ln"
+    set medium ln
+else if cat $obsidian_md | rg "type: movie"
+    set medium film
+else if cat $obsidian_md | rg "type: tv"
+    set medium tv
+end
+
+echo "Name of the Highlight:"
+read name
+echo "Value of the Highlight:"
+read value
+
+set base_insert "$HOME/.config/ortscripts/base-media-insert"
+base_tag_insert
+
+set md "$folder_note/$name - $obs_name.md"
+
+echo --- >>$md
+echo "name: \"$name\"" >>$md
+echo "origin: \"[[$obs_name]]\"" >>$md
+echo "tags:" >>$md
+echo "value: $value" >>$md
+echo "medium: \"$medium\"" >>$md
+echo "highlight: \"$highlight\"" >>$md
+echo "details: \"$details\"" >>$md
+echo "sequence: " >>$md
+echo "counter: " >>$md
+echo "last_seen: " >>$md
+echo "category: Highlight" >>$md
+echo --- >>$md
