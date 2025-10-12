@@ -18,6 +18,7 @@ set screenshot_button (ot_config_grab "PoolScreenshotButton")
 set record_button (ot_config_grab "PoolRecordButton")
 set audio_button (ot_config_grab "PoolAudioButton")
 set select_screenshot (ot_config_grab "PoolSelectScreenshotButton")
+set insert_key (ot_config_grab "PoolInsertKey")
 
 mkdir -p $screenshot_folder
 
@@ -26,6 +27,19 @@ yes | evtest >/dev/null 2>/tmp/evtest-info.txt
 set devinput (cat /tmp/evtest-info.txt | grep "$device_name" | head -n 1 | grep -oP '/dev/input/event[0-9]+')
 
 evtest $devinput | while read line
+
+    if string match -q "*$insert_key), value 1" "$line"
+        set clipboard_new (xclip -o -selection clipboard)
+        if string match $clipboard_old $clipboard_new
+        else
+            newline_prepper $note_file
+            set cur_date (date +"%d-%m-%Y %H:%M:%S")
+            set clipboard_old $clipboard_new
+            echo ">[!quote] `$cur_date`" >>$note_file
+            echo $clipboard_new >>$note_file
+            echo \a
+        end
+    end
 
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
