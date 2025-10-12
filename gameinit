@@ -162,7 +162,6 @@ if grep "# Info" $selection_md >/dev/null 2>&1
 else
     echo "# Info" >>$selection_md
     echo "## Timeline" >>$selection_md
-    echo "" >>$selection_md
     echo "#" >>$selection_md
 end
 

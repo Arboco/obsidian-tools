@@ -18,7 +18,7 @@ function help_function
     echo "  -q       Transforms last recorded file into Q card"
 end
 
-argparse --name=gn h/help t/task d/delete r/research q/question s/space i/inspiration l/link 'n/name=' -- $argv
+argparse --name=gn h/help c/cite g/gold t/task d/delete r/research q/question s/space i/inspiration l/link 'n/name=' -- $argv
 or return
 
 if set -q _flag_h
@@ -26,10 +26,11 @@ if set -q _flag_h
     exit
 end
 
+newline_prepper $obsidian_file
+
 if set -q _flag_t
     echo "$argv[1]" >>$obsidian_file
     echo "$argv[2]" >>$obsidian_file
-    echo "" >>$obsidian_file
     exit
 end
 
@@ -45,7 +46,6 @@ if set -q _flag_i
     echo "I: $argv[1]" >>$obsidian_file
     echo "$argv[2]" >>$obsidian_file
     echo "$file" >>$obsidian_file
-    echo "" >>$obsidian_file
     exit
 end
 
@@ -56,7 +56,6 @@ if set -q _flag_q
     echo "Q: $argv[1]" >>$obsidian_file
     echo "$argv[2]" >>$obsidian_file
     echo "$file" >>$obsidian_file
-    echo "" >>$obsidian_file
     exit
 end
 
@@ -71,36 +70,40 @@ if set -q _flag_l
 end
 
 if set -q _flag_c
-    set raw_quote
-    set highlight
-    echo -n | xclip -selection clipboard
-    echo "Insert Quote"
+    echo 0 | xclip -selection clipboard
+    set clipboard_old 0
     while true
-        set clipboard (xclip -o -selection clipboard)
-        if not test -z $clipboard
-            set raw_quote (echo $clipboard)
-            echo -n | xclip -selection clipboard
-            echo "Insert Highlight"
-            while test -z $highlight
-                set highlight (xclip -o -selection clipboard)
-                sleep 1
-            end
-            set format_quote (echo $raw_quote | sed "s/$highlight/==$highlight==/g")
-            echo "" >>$obsidian_file
-            echo ">[!quote] $format_quote" >>$obsidian_file
-            echo -n | xclip -selection clipboard
-            set -e highlight
-            echo "Insert Quote"
-
-            if set -q _flag_s
-                echo "" >>$obsidian_file
-            end
+        set clipboard_new (xclip -o -selection clipboard)
+        if string match $clipboard_old $clipboard_new
+        else
+            set cur_date (date +"%d-%m-%Y %H:%M:%S")
+            set clipboard_old $clipboard_new
+            echo ">[!quote] `$cur_date`" >>$obsidian_file
+            echo $clipboard_new >>$obsidian_file
+            echo \a
         end
+
         sleep 1
     end
+end
+
+if set -q _flag_g
+    if not test -z $argv[2]
+        set header $argv[1]
+    end
+    set cur_date (date +"%d-%m-%Y %H:%M:%S")
+    if not test -z $header
+        echo ">[!gold] $header `$cur_date`" >>$obsidian_file
+        echo "$argv[2]" >>$obsidian_file
+        echo \a
+    else
+        echo ">[!gold] `$cur_date`" >>$obsidian_file
+        echo "$argv[1]" >>$obsidian_file
+        echo \a
+    end
+    exit
 end
 
 set cur_date (date +"%d-%m-%Y %H:%M:%S")
 echo ">[!note] `$cur_date`" >>$obsidian_file
 echo "$argv[1]" >>$obsidian_file
-echo "" >>$obsidian_file

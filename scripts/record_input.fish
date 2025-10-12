@@ -112,6 +112,7 @@ while true
 
             # for mindpalace
             if string match -q "*$mindpalace_button), value 1" "$line"; and test $hold_trigger -eq 1
+                newline_prepper $note_file
                 echo \a
                 set timestamp (date +%F_%H%M%S)
                 set fs_name "$folder_title-$timestamp.jpg"
@@ -131,13 +132,13 @@ while true
                 echo "mpid: $mind_palace_uuid" >>$note_file
                 echo ">" >>$note_file
                 echo "![[$fs_name]]" >>$note_file
-                echo "" >>$note_file
 
                 set mindpalace_number (math $mindpalace_number + 1)
             end
 
             # for generic screenshots 
             if string match -q "*$screenshot_button), value 1" "$line"; and test $hold_trigger -eq 1
+                newline_prepper $note_file
                 echo \a
                 set timestamp (date +%F_%H%M%S)
                 set fs_name "$folder_title-$timestamp.jpg"
@@ -152,17 +153,18 @@ while true
                     gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
                 end
 
-                echo -e "![[$fs_name]]\n" >>"$note_file"
+                echo "![[$fs_name]]" >>"$note_file"
                 echo "![[$fs_name]]" >$last_recorded_file
             end
 
             # for screen capture
             if string match -q "*$record_button), value 1" "$line"; and test $hold_trigger -eq 1
+                newline_prepper $note_file
                 echo \a
                 sleep 0.5
                 set timestamp (date +%F_%H%M%S)
                 set fv_name "$folder_title-vid-$timestamp.mp4"
-                echo -e "![[$fv_name]]\n" >>"$note_file"
+                echo "![[$fv_name]]" >>"$note_file"
                 echo "![[$fv_name]]" >$last_recorded_file
 
                 # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
@@ -191,11 +193,12 @@ while true
             end
 
             if string match -q "*$audio_button), value 1" "$line"; and test $hold_trigger -eq 1
+                newline_prepper $note_file
                 echo \a
                 sleep 0.5
                 set timestamp (date +%F_%H%M%S)
                 set fv_name "$folder_title-vid-$timestamp.mp3"
-                echo -e "![[$fv_name]]\n" >>"$note_file"
+                echo "![[$fv_name]]" >>"$note_file"
                 echo "![[$fv_name]]" >$last_recorded_file
 
                 # Audio button serves as reset to start new mind palace chain 
@@ -224,11 +227,12 @@ while true
 
             if test $controller_check -eq 0
                 if string match -q "*$select_screenshot), value 1" "$line"
+                    newline_prepper $note_file
                     echo \a
                     set timestamp (date +%F_%H%M%S)
                     set fs_name "$folder_title-$timestamp.jpg"
                     scrot -s $screenshot_folder/$fs_name
-                    echo -e "![[$fs_name]]\n" >>"$note_file"
+                    echo "![[$fs_name]]" >>"$note_file"
                     echo "![[$fs_name]]" >$last_recorded_file
 
                     set url "http://127.0.0.1:8081"

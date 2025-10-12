@@ -29,6 +29,7 @@ evtest $devinput | while read line
 
     # for screenshots
     if string match -q "*$screenshot_button), value 1" "$line"
+        newline_prepper $note_file
         echo \a
         set timestamp (date +%F_%H%M%S)
         set fs_name "$folder_title-$timestamp.jpg"
@@ -42,20 +43,21 @@ evtest $devinput | while read line
         end
 
         gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
-        echo -e "![[$fs_name]]\n" >>"$note_file"
-        echoe "![[$fs_name]]" >$last_recorded_file
+        echo "![[$fs_name]]" >>"$note_file"
+        echo "![[$fs_name]]" >$last_recorded_file
 
     end
 
     # for screenshots where you can select area
     if string match -q "*$select_screenshot), value 1" "$line"
+        newline_prepper $note_file
         echo \a
         set timestamp (date +%F_%H%M%S)
         set fs_name "$folder_title-$timestamp.jpg"
         scrot -s $screenshot_folder/$fs_name
 
         if grep -q "cover-img:" $note_file
-            echo -e "![[$fs_name]]\n" >>"$note_file"
+            echo "![[$fs_name]]" >>"$note_file"
             echo "![[$fs_name]]" >$last_recorded_file
         else
             sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$note_file"
@@ -65,11 +67,12 @@ evtest $devinput | while read line
 
     # for screen capture
     if string match -q "*$record_button), value 1" "$line"
+        newline_prepper $note_file
         echo \a
         sleep 0.5
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp4"
-        echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >>"$note_file"
         echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
@@ -92,11 +95,12 @@ evtest $devinput | while read line
     end
 
     if string match -q "*$audio_button), value 1" "$line"
+        newline_prepper $note_file
         echo \a
         sleep 0.5
         set timestamp (date +%F_%H%M%S)
         set fv_name "$folder_title-vid-$timestamp.mp3"
-        echo -e "![[$fv_name]]\n" >>"$note_file"
+        echo "![[$fv_name]]" >>"$note_file"
         echo "![[$fv_name]]" >$last_recorded_file
 
         # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
