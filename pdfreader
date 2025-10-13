@@ -67,11 +67,11 @@ while qdbus | grep $okular_instance
     set clipboard_new (xclip -o -selection clipboard)
     if string match $clipboard_old $clipboard_new
     else
+        newline_prepper $obsidian_md
         set cur_date (date +"%d-%m-%Y %H:%M:%S")
         set clipboard_old $clipboard_new
         echo ">[!quote] Page: $current_page `$cur_date`" >>$obsidian_md
         echo $clipboard_new >>$obsidian_md
-        echo "" >>$obsidian_md
     end
 
     sleep 1

@@ -17,8 +17,9 @@ set devinput (cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | gr
 evtest $devinput | while read line
 
     if string match -q "*$screenshot_button), value 1" "$line"
+        newline_prepper $pdf_md
         set timestamp (date +%F_%H%M%S)
         scrot -s $screenshot_folder/$folder_title-$timestamp.jpg
-        echo -e "![[$folder_title-$timestamp.jpg]]\n" >>$pdf_md
+        echo "![[$folder_title-$timestamp.jpg]]" >>$pdf_md
     end
 end

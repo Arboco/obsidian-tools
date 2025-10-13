@@ -33,14 +33,14 @@ inotifywait -m -e create --format '%w%f' "$a_path" | while read FILE
     set codec (ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 $FILE)
     set file_end (echo "$(basename $FILE)" | grep -o '...$')
     set timestamp (date +%F_%H%M%S)
+    newline_prepper $episode_md
 
     # x265 hevc codec doesn't work on my obsidian so I convert it into a friendlier codec 
     #if test $codec = 'hevc' 
     #echo "hevc codec detected, conversion started."
     set lang (echo '{ "command": ["get_property", "track-list"] }' | socat - /tmp/mpvsocket | jq '.data[] | select(.type == "audio" and .selected == true)' | jq '.["id"]')
     ffmpeg -i $FILE -c:v libx264 -crf 25 -preset slow -c:a aac -b:a 320k -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -map 0:v -map 0:$lang[1] $screenshot_folder/$folder_title$timestamp.mp4
-    echo -e "![[$folder_title$timestamp.mp4]]\n" >>$episode_md
-    echo "" >>$episode_md
+    echo "![[$folder_title$timestamp.mp4]]" >>$episode_md
     echo "![[$folder_title$timestamp.mp4]]" >$last_recorded_file
 
     rm $FILE

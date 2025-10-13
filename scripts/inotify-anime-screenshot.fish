@@ -18,6 +18,7 @@ end
 mkdir -p $screenshot_folder
 
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
+    newline_prepper $obsidian_md
     set timestamp (date +%F_%H%M%S)
     mv $FILE $screenshot_folder/$folder_title$timestamp.jpg
     if string match film $argv[3]
@@ -32,7 +33,6 @@ inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
         end
     end
 
-    echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
-    echo "" >>$obsidian_md
+    echo "![[$folder_title$timestamp.jpg]]" >>$obsidian_md
     echo "![[$folder_title$timestamp.jpg]]" >$last_recorded_file
 end

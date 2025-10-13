@@ -24,13 +24,14 @@ set devinput (cat /tmp/evtest-info.txt | grep -P "$device_name" | head -n 1 | gr
 evtest $devinput | while read line
 
     if string match -q "*$screenshot_button), value 1" "$line"
+        newline_prepper $volume_md
         set timestamp (date +%F_%H%M%S)
         if rg -q "cover-img:" $volume_md
         else
             sed -i "/^origin:/a\\cover-img: \"\[\[$folder_title-$timestamp.jpg\]\]\"" $volume_md
         end
         scrot -s $screenshot_folder/$folder_title-$timestamp.jpg
-        echo -e "![[$folder_title-$timestamp.jpg]]\n" >>$volume_md
+        echo "![[$folder_title-$timestamp.jpg]]" >>$volume_md
         echo "![[$folder_title-$timestamp.jpg]]" >$last_recorded_file
     end
 end

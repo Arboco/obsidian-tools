@@ -16,7 +16,8 @@ else
 end
 
 inotifywait -m -e create --format '%w%f' $screenshot_folder | while read FILE
+    newline_prepper $obsidian_md
     set timestamp (date +%s)
     mv $FILE $screenshot_folder/$folder_title$timestamp.jpg
-    echo -e "![[$folder_title$timestamp.jpg]]\n" >>$obsidian_md
+    echo "![[$folder_title$timestamp.jpg]]" >>$obsidian_md
 end
