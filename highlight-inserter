@@ -36,7 +36,7 @@ function base_tag_insert
     end
 end
 
-set obsidian_md (rg -l "  - db" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 set obs_name (basename -s ".md" $obsidian_md)
 set hyphen_title_series (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 

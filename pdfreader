@@ -19,7 +19,7 @@ if set -q _flag_i
     set last (rg -oP "(?<=last_read: ).*" $obsidian_folder/$notes)
     for i in $last
         set mdsplit (echo $i | string split ":")[1]
-        if rg -q '^pdfpath:' $mdsplit
+        if rg -q '^pdf:' $mdsplit
             set title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
             set last_read (echo $i | string split ".md:")[2]
             set final_string "$last_read | $title"
@@ -36,15 +36,17 @@ if set -q _flag_i
 end
 
 if not set -q _flag_i
-    set obsidian_md (rg -l "pdfpath:" $obsidian_folder | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set obsidian_md (rg -l "pdf:" $obsidian_folder | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
 set raw_file_name (basename -s ".md" $obsidian_md)
 
 echo "$obsidian_md" >/tmp/obsidian_last.txt
 $script_dir/scripts/pdf_input.fish "$obsidian_md" &
 
-set pdf_path (cat $obsidian_md | grep 'pdfpath:')
-set pdf_path (echo $pdf_path | grep -oP '(?<=pdfpath: ).*$')
+set pdf_path (cat $obsidian_md | grep 'pdf:')
+set pdf_path (string replace -r -a '\[|\]|"' '' -- "$pdf_path")
+set pdf_path (echo $pdf_path | grep -oP '(?<=pdf: ).*$')
+set pdf_path (fd -t f -F "$pdf_path" $obsidian_folder/$resources)
 
 if cat $obsidian_md | grep -q "pages:"
     set page_num (cat $obsidian_md | rg "pages:" | rg -o "[0-9]+")
@@ -57,6 +59,12 @@ okular --page $page_num $pdf_path &
 sleep 2
 set okular_instance (echo (qdbus | grep okular)[1] | string trim -lr)
 echo $okular_instance
+
+set total_pages (pdfinfo $pdf_path | awk '/^Pages:/ {print $2}')
+if cat $obsidian_md | grep "pages_total:"
+else
+    sed -i "/^pdf:/a\\pages_total: $total_pages" "$obsidian_md"
+end
 
 echo 0 | xclip -selection clipboard
 set clipboard_old 0
@@ -82,7 +90,7 @@ kill $(jobs -p)
 if grep -q "pages:" $obsidian_md
     sed -i '/pages:/d' "$obsidian_md"
 end
-sed -i "/^pdfpath:/a\\pages: $current_page" "$obsidian_md"
+sed -i "/^pdf:/a\\pages: $current_page" "$obsidian_md"
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_read:" $obsidian_md

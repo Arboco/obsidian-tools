@@ -10,7 +10,7 @@ function help_function
     echo "  -m       Generic message"
     echo "  -t       the-card insert"
     echo "  -r       Create something to #research"
-    echo "  -l       Create link"
+    echo "  -l       Create link name link"
     echo "  -s       Add newline after quote"
     echo "  -d       Create message to delete"
     echo "  -c       Continously cite copied text"
@@ -35,7 +35,7 @@ if set -q _flag_t
 end
 
 if set -q _flag_d
-    echo -e "- [f] #delete $argv[1]\n" >>$obsidian_file
+    echo "- [f] #delete $argv[1]" >>$obsidian_file
     exit
 end
 
@@ -60,12 +60,12 @@ if set -q _flag_q
 end
 
 if set -q _flag_r
-    echo -e "- [ ] #research $argv[1]\n" >>$obsidian_file
+    echo "- [ ] #research $argv[1]" >>$obsidian_file
     exit
 end
 
 if set -q _flag_l
-    echo -e "[$argv[1]]($argv[2])\n" >>$obsidian_file
+    echo "[$argv[1]]($argv[2])" >>$obsidian_file
     exit
 end
 

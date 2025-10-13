@@ -113,9 +113,9 @@ if grep -qoP "(?<=session: ).*" $target_md
 else
     set session_number 1
 end
-echo "" >>$target_md
+
+newline_prepper $target_md
 echo "# Session $session_number" >>$target_md
-echo "" >>$target_md
 
 xset s off
 xset -dpms
@@ -130,16 +130,19 @@ end
 
 set start (date +%s)
 
-echo "From 0-100 describe the value of this subject:"
+echo "1 to end session and log it"
 read user_value
 while true
-    if string match -qr '^(100|[1-9]?[0-9])$' -- $user_value
+    if string match -qr 1 $user_value
         break
     else
-        echo "Invalid input, only number 0-100 allowed, try again:"
+        echo "Invalid input, only 1 is allowed, try again:"
         read user_value
     end
 end
+
+echo "Enter what this session was about"
+read header_title
 
 xset s on
 xset +dpms
@@ -178,113 +181,13 @@ if test $user_value -eq 0
     sed -i "/# Session $session_number/d" "$target_md"
 end
 
-if grep -q 'value:' $target_md
-    sed -i '/value:/d' "$target_md"
-end
-
-sed -i "/^time:/a\\value: $user_value" "$target_md"
-
 set date_last (date +%Y-%m-%d)
 if grep -q 'date:' $target_md
     sed -i '/date:/d' "$target_md"
 end
 sed -i "/^tags:/i\\date: $date_last" "$target_md"
-sed -i "/^# Session $session_number/a\\ >[!info] Invested: $result_minutes minutes - $cur_date Value: $user_value" "$target_md"
-
-# parent child functionality 
-if grep -q 'parent:' $target_md
-    set parent_title (grep -oP "(?<=parent: \"\[\[)[^\]]*" "$target_md")
-    set parent_md (find $obsidian_folder/$notes -type f -name "$parent_title.md")
-    set clean_target_name (basename -s ".md" $target_md)
-
-    set sesssion_child (grep -oP "(?<=session: ).*" $target_md)
-    set time_child (grep -oP "(?<=time: ).*" $target_md)
-
-    if test $user_value -gt 0
-        if grep -q "\[\[$clean_target_name\]\]" $parent_md
-            if grep -q 'session:' $parent_md
-                cp $parent_md /tmp/clone.md
-                awk '/session:/ { 
-  for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + 1; 
-    } 
-    } { print }' /tmp/clone.md >$parent_md
-            else
-                sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
-            end
-
-            if grep -q 'time:' $parent_md
-                cp $parent_md /tmp/clone.md
-                awk -v var="$result_time" '/time:/ { 
-  for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + var; 
-    } 
-    } { print }' /tmp/clone.md >$parent_md
-            else
-                sed -i "/^session:/i\\time: $time_child" "$parent_md"
-            end
-
-        else
-
-            if grep -q 'session:' $parent_md
-                cp $parent_md /tmp/clone.md
-                awk -v var="$sesssion_child" '/session:/ { 
-  for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + var; 
-    } 
-    } { print }' /tmp/clone.md >$parent_md
-            else
-                sed -i "/^tags:/i\\session: $sesssion_child" "$parent_md"
-            end
-
-            if grep -q 'time:' $parent_md
-                cp $parent_md /tmp/clone.md
-                awk -v var="$time_child" '/time:/ { 
-  for (i = 1; i <= NF; i++) { 
-        if ($i ~ /^[0-9]+$/) $i = $i + var; 
-    } 
-    } { print }' /tmp/clone.md >$parent_md
-            else
-                sed -i "/^session:/i\\time: $time_child" "$parent_md"
-            end
-        end
-
-        if grep -q 'child:' $parent_md
-            if grep -q "\[\[$clean_target_name\]\]" $parent_md
-                echo "Clean: $clean_target_name"
-            else
-                sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
-            end
-        else
-            sed -i "/^tags:/i\\child:" "$parent_md"
-            sed -i "/^child:/a\\  - \"[[$clean_target_name]]\"" "$parent_md"
-        end
-    end
-
-    if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/pool-parent-insert
-        sed -i "/^tags:/i\\cssclasses:" "$parent_md"
-        sed -i "/^cssclasses:/a\\  - cards" "$parent_md"
-        sed -i "/^cssclasses:/a\\  - cards-16-9" "$parent_md"
-        sed -i "/^cssclasses:/a\\  - table-max" "$parent_md"
-        set input_file $parent_md
-        set insert_file $HOME/.config/ortscripts/pool-parent-insert
-
-        set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
-        set after_line (math $last_delim_line + 1)
-
-        head -n $last_delim_line $input_file >/tmp/temp_before.txt
-        tail -n +$after_line $input_file >/tmp/temp_after.txt
-        cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
-
-        mv /tmp/temp_combined.txt $input_file
-    end
-
-    if grep -q 'date:' $parent_md
-        sed -i '/date:/d' "$parent_md"
-    end
-
-    sed -i "/^tags:/i\\date: $date_last" "$parent_md"
-end
+sed -i "/^# Session $session_number/a\\>[!info] $result_minutes minutes - $cur_date" "$target_md"
+sed -i "s/Session $session_number/S$session_number - $header_title/g" $target_md
 
 rm /tmp/the-pool.txt
 rm /tmp/obsidian_last.txt
