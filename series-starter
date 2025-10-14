@@ -85,11 +85,6 @@ set episode_md "$raw_file_name Season - $current_season Episode - $current_episo
 set episode_md_final "$obsidian/$notes/tv_db/obsidian-tools/series/$folder_title/$episode_md"
 echo "$episode_md_final" >/tmp/obsidian_last.txt
 
-set rewatch 0
-if rg finished-date $episode_md_final
-    set rewatch 1
-end
-
 if rg "anachronic: true" $obsidian_md
     if set -q _flag_i
         set episode_to_play (echo "$history_selection" | rg -oP "(?<=FilePath:).*")
@@ -223,12 +218,7 @@ if test $episode_completed -eq 1
                         } { print }' /tmp/clone.md >$obsidian_md
         rm /tmp/clone.md
     end
-    if test $rewatch -eq 1
-        sed -i "/rewatch-date:/d" $episode_md_final
-        sed -i "/^origin:/a\\rewatch-date: $cur_date" "$episode_md_final"
-    else
-        sed -i "/^origin:/a\\finished-date: $cur_date" "$episode_md_final"
-    end
+
     if rg -q "status: Completed" $episode_md_final
     else
         if test $current_episode -eq $episodes_total
@@ -240,7 +230,6 @@ if test $episode_completed -eq 1
                 "Completed Series with this Episode!"
             ffplay -nodisp -autoexit $script_dir/helper/delight-emote-animal-crossing.mp3 >/dev/null 2>&1
             sed -i "/$raw_file_name/d" ~/.config/ortscripts/series-history
-            sed -i "/^score:/a\\finished: $cur_date" "$parent_md"
             for i in $obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/*
                 set eps_obs_name (basename -s ".md" $i)
                 echo "[[$eps_obs_name]]" >>$parent_md
@@ -249,26 +238,6 @@ if test $episode_completed -eq 1
             exit
         end
     end
-    if test $rewatch -eq 1
-        if rg -q "rewatched:" $episode_md_final
-            set old_rewatch (rg "rewatched:" $episode_md_final | rg -o "[0-9]+")
-            set new_rewatch (math $old_rewatch + 1)
-            sed -i "s/rewatched: $old_rewatch/rewatched: $new_rewatch/g" $episode_md_final
-        else
-            sed -i "/^episode:/i\\rewatched: 1" "$episode_md_final"
-            set new_rewatch 1
-        end
-    end
-end
-
-if test $rewatch -eq 1
-    if test $episode_completed -eq 1
-        set rewatch_text "Rewatched this already $new_rewatch times"
-    else
-        set rewatch_text "Partial Rewatch Detected"
-    end
-else
-    set rewatch_text "Original Run Detected"
 end
 
 gum style \

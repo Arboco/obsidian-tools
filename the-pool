@@ -90,7 +90,7 @@ if test $multi_flag_check -eq 0
 end
 
 if test -z "$target_md"
-    set target_md (rg -l "\- pool" $obsidian_folder/$notes | fzf --delimiter='/' --with-nth=-1)
+    set target_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
 
 set base_name (basename $target_md)
@@ -181,11 +181,11 @@ if test $user_value -eq 0
     sed -i "/# Session $session_number/d" "$target_md"
 end
 
-set date_last (date +%Y-%m-%d)
-if grep -q 'date:' $target_md
-    sed -i '/date:/d' "$target_md"
+set date_last (date +"%Y-%m-%dT%H:%M:%S")
+if grep -q 'last_seen:' $target_md
+    sed -i '/last_seen:/d' "$target_md"
 end
-sed -i "/^tags:/i\\date: $date_last" "$target_md"
+sed -i "/^tags:/i\\last_seen: $date_last" "$target_md"
 sed -i "/^# Session $session_number/a\\>[!info] $result_minutes minutes - $cur_date" "$target_md"
 sed -i "s/Session $session_number/S$session_number - $header_title/g" $target_md
 
