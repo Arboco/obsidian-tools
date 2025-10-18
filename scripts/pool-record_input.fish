@@ -19,6 +19,7 @@ set record_button (ot_config_grab "PoolRecordButton")
 set audio_button (ot_config_grab "PoolAudioButton")
 set select_screenshot (ot_config_grab "PoolSelectScreenshotButton")
 set insert_key (ot_config_grab "PoolInsertKey")
+set avif_key (ot_config_grab "PoolAvifKey")
 
 mkdir -p $screenshot_folder
 
@@ -106,6 +107,35 @@ evtest $devinput | while read line
             -video_size "$WIDTH"x"$HEIGHT" \
             -thread_queue_size 1024 -f x11grab -framerate 30 -i :0.0+$X,$Y \
             -c:v libx264 -preset slow -vsync 1 -c:a aac $screenshot_folder/$fv_name >/dev/null 2>&1
+    end
+
+    if string match -q "*$avif_key), value 1" "$line"
+        newline_prepper $note_file
+        echo \a
+        sleep 0.5
+        set timestamp (date +%F_%H%M%S)
+        set fv_name "$folder_title-vid-$timestamp"
+        echo "![[$fv_name.avif]]" >>"$note_file"
+        echo "![[$fv_name.avif]]" >$last_recorded_file
+
+        # required because ffmpeg is buggy as a background process so this serves as a watcher to escape screen capture on demand 
+        $script_dir/pool-escaper.fish 1 &
+
+        # required to grab active window data so that in windowed mode only the game is captured 
+        for line in (xdotool getactivewindow getwindowgeometry --shell)
+            set -gx (echo $line | cut -d= -f1) (echo $line | cut -d= -f2)
+        end
+
+        ffmpeg \
+            -f x11grab -draw_mouse 0 \
+            -video_size "$WIDTH"x"$HEIGHT" \
+            -framerate 30 -i :0.0+$X,$Y \
+            -c:v libvpx-vp9 -b:v 1M -crf 30 -pix_fmt yuv420p \
+            -an -vsync 1 -threads 4 \
+            ~/Videos/$fv_name.webm
+
+        ffmpeg -i ~/Videos/$fv_name.webm -c:v librav1e -speed 10 -still-picture 0 -an -f avif "$screenshot_folder/$fv_name.avif"
+
     end
 
     if string match -q "*$audio_button), value 1" "$line"

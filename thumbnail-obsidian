@@ -1,6 +1,6 @@
 #! /usr/bin/env fish
 
-argparse --name=gameinit p/pool h/help l/last 'n/name=' -- $argv
+argparse --name=gameinit p/pool h/help 'n/name=' -- $argv
 or return
 
 set obsidian_main (ot_config_grab "ObsidianMainFolder")
@@ -11,49 +11,47 @@ set final_folder "$obsidian_main/$resource_folder/thumbnail"
 set pool_folder (ot_config_grab "ThePoolFolder")
 set screenshot_folder $obsidian_main/$resource_folder/$pool_folder
 
-set last_active_file (cat /tmp/obsidian_last.txt)
+set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 
-set sanitized_name (basename $last_active_file | sed 's/[^a-zA-Z0-9 ]//g; s/.md//g; s/ /-/g' | tr '[:upper:]' '[:lower:]')
-
-if set -q _flag_l
-    set last_active_file (find $obsidian_main/ -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
-end
+set sanitized_name (basename -s ".md" $obsidian_md | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]')
 
 if set -q _flag_p
-    if grep -q 'uuid:' $last_active_file
-        set uuid (grep -oP '(?<=uuid: ).*' $last_active_file)
+    if grep -q 'uuid:' $obsidian_md
+        set uuid (grep -oP '(?<=uuid: ).*' $obsidian_md)
     else
         set uuid (uuidgen)
-        sed -i "/^tags:/i\\uuid: $uuid" "$last_active_file"
+        sed -i "/^tags:/i\\uuid: $uuid" "$obsidian_md"
     end
 
     mkdir -p $screenshot_folder/$uuid
     echo \a
     set timestamp (date +%F_%H%M%S)
     set fs_name "$uuid-$timestamp.jpg"
-    scrot -s $screenshot_folder/$uuid/$fs_name
+    set cover_image (find "$HOME/Pictures/flameshot/" -maxdepth 1 -type f | gum choose)
+    mv $cover_image $screenshot_folder/$uuid/$fs_name
 
-    if grep "cover-img:" $last_active_file
-        echo -e "![[$fs_name]]\n" >>"$last_active_file"
+    if grep "cover-img:" $obsidian_md
+        echo -e "![[$fs_name]]\n" >>"$obsidian_md"
     else
-        sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$last_active_file"
+        sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$obsidian_md"
     end
 
     set date_last (date +%Y-%m-%d)
-    if grep -q 'date:' $last_active_file
-        sed -i '/date:/d' "$last_active_file"
+    if grep -q 'date:' $obsidian_md
+        sed -i '/date:/d' "$obsidian_md"
     end
-    sed -i "/^tags:/i\\date: $date_last" "$last_active_file"
+    sed -i "/^tags:/i\\date: $date_last" "$obsidian_md"
     exit
 end
 
 mkdir -p $final_folder
 set timestamp (date +%F_%H%M%S)
 set fs_name "$sanitized_name-$timestamp.jpg"
-scrot -s $final_folder/$fs_name
+set cover_image (find "$HOME/Pictures/flameshot/" -maxdepth 1 -type f | gum choose)
+mv $cover_image $final_folder/$fs_name
 
-if grep "cover-img:" $last_active_file
-    echo -e "![[$fs_name]]\n" >>"$last_active_file"
+if grep "cover-img:" $obsidian_md
+    echo -e "![[$fs_name]]\n" >>"$obsidian_md"
 else
-    sed -i "/^tags:/i\\cover-img: \"![[$fs_name]]\"" "$last_active_file"
+    sed -i "/^tags:/i\\cover-img: \"[[$fs_name]]\"" "$obsidian_md"
 end

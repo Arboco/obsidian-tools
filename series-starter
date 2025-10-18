@@ -219,6 +219,8 @@ if test $episode_completed -eq 1
         rm /tmp/clone.md
     end
 
+    sed -i "/^origin:/a\\finished-date: $cur_date" "$episode_md_final"
+
     if rg -q "status: Completed" $episode_md_final
     else
         if test $current_episode -eq $episodes_total
