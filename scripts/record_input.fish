@@ -28,7 +28,6 @@ set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
 
-set alt_button (ot_config_grab "Profile"$id"AltButton")
 set select_screenshot (ot_config_grab "Profile"$id"SelectScreenshotButton")
 set mindpalace_number 1
 set mind_palace_uuid (uuidgen)
@@ -50,9 +49,6 @@ if test -z $hold_button
 end
 if test -z $mindpalace_button
     set mindpalace_button mind_palace_button
-end
-if test -z $alt_button
-    set alt_button alt_button
 end
 
 mkdir -p $screenshot_folder
@@ -88,26 +84,6 @@ while true
                 end
             else
                 set hold_trigger 1
-            end
-
-            # switch to alternative buttons 
-            if string match -q "*$alt_button), value 1" "$line"; and test $hold_trigger -eq 1
-                if string match -q true $alt_controls
-                    set hold_button (ot_config_grab "Profile"$id"HoldButton")
-                    set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
-                    set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
-                    set record_button (ot_config_grab "Profile"$id"RecordButton")
-                    set audio_button (ot_config_grab "Profile"$id"AudioButton")
-                    set alt_controls false
-                else if string match -q false $alt_controls
-                    set hold_button (ot_config_grab "Profile"$id"HoldButtonAlt")
-                    set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButtonAlt")
-                    set mindpalace_button (ot_config_grab "Profile"$id"MindPalaceAlt")
-                    set record_button (ot_config_grab "Profile"$id"RecordButtonAlt")
-                    set audio_button (ot_config_grab "Profile"$id"AudioButtonAlt")
-                    set alt_controls true
-                end
-                echo \a
             end
 
             # for mindpalace
