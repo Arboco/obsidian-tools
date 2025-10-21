@@ -69,10 +69,12 @@ set base_insert "$HOME/.config/ortscripts/base-media-insert"
 base_tag_insert
 
 set md "$folder_note/$name - $obs_name.md"
+set creation_date (date +"%Y-%m-%dT%H:%M:%S")
 
 echo --- >>$md
 echo "name: \"$name\"" >>$md
 echo "origin: \"[[$obs_name]]\"" >>$md
+echo "creation_date: $creation_date" >>$md
 echo "tags:" >>$md
 echo "value: $value" >>$md
 echo "medium: \"$medium\"" >>$md

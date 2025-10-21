@@ -106,7 +106,13 @@ else
 end
 
 set parent_md $obsidian_md
-if not grep -q "```dataview" $parent_md; and test -f $HOME/.config/ortscripts/anime-dataview-insert
+
+set dataviewcheck false
+if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md
+    set dataviewcheck true
+end
+
+if string match false $dataviewcheck; and test -f $HOME/.config/ortscripts/anime-dataview-insert
     sed -i "/^tags:/i\\cssclasses:" "$parent_md"
     sed -i "/^cssclasses:/a\\  - cards" "$parent_md"
     sed -i "/^cssclasses:/a\\  - table-max" "$parent_md"
