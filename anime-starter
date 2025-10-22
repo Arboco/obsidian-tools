@@ -1,6 +1,10 @@
 #! /usr/bin/env fish
 
 set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set anime_folder (ot_config_grab "AnimeFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if test -e ~/.config/ortscripts/anime-dataview-insert
 else
     cp "$script_dir/conifg-examples/anime-dataview-insert" ~/.config/ortscripts/
@@ -22,11 +26,29 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/anime-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set selection_last_seen (rg -oP "(?<=last_seen: ).*" $obsidian/$notes)
+    echo brot1
+    for i in $selection_last_seen
+        set mdsplit (echo $i | string split ":")[1]
+        echo brot
+        if rg -q '^animepath:' $mdsplit
+            set t_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set t_last_played (echo $i | string split ".md:")[2]
+            set final_string "$t_last_played | $t_title"
+            set final_list $final_list $final_string
+        end
+    end
+    set final_sorted_list (printf "%s\n" $final_list | sort -r)
+    for i in $final_sorted_list
+        set cleaned_final_sorted_list $cleaned_final_sorted_list (echo $i | string split "| ")[2].md
+    end
+
+    set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set obsidian_md (fd -t f -g $selection $obsidian/$notes)
+
     if echo $history_selection | rg "#Memento"
         set _flag_m 1
     end
-    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
 set player mpv
@@ -34,10 +56,6 @@ if set -q _flag_m
     set player memento
 end
 
-set obsidian (ot_config_grab "ObsidianMainFolder")
-set notes (ot_config_grab "NotesFolder")
-set anime_folder (ot_config_grab "AnimeFolder")
-set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if not set -q _flag_i
     set obsidian_md (rg -l "animepath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
@@ -74,7 +92,6 @@ set screenshot_folder $obsidian/$resources_folder/$anime_folder/media/screenshot
 mkdir -p $screenshot_folder
 mkdir -p $obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/
 set episode_md_final "$obsidian/$notes/anime_db/obsidian-tools/anime/$folder_title/$episode_md"
-echo "$episode_md_final" >/tmp/obsidian_last.txt
 
 set rewatch 0
 if rg finished-date $episode_md_final
@@ -149,6 +166,17 @@ rm /tmp/mpvsocket
 # inotify is very persistent so it needs to be explicitly killed
 # this is a watcher that continously looks up if video player still runs and it not it kills the innotify watchers 
 $script_dir/scripts/inotify-killer.fish $last_pid &
+
+if grep obsidian-tools $obsidian_md
+else
+    sed -i '/^tags:/a\  - obsidian-tools' $obsidian_md
+end
+
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+if rg "^last_seen:" $obsidian_md
+    sed -i '/last_seen:/d' $obsidian_md
+end
+sed -i "/^date:/a\\last_seen: $cur_date" $obsidian_md
 
 set calculated_percentage (math $watched_seconds / $seconds_anime x 100)
 set percentage_int (echo "$calculated_percentage" | string split "." )[1]
@@ -238,20 +266,3 @@ gum style \
     --foreground 79 --border-foreground 79 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "$result_test" "$rewatch_text"
-
-if test $anime_episode_completed -eq 1
-    set completed_text ">>> Advance to next Episode >>>"
-end
-
-if set -q _flag_m
-    set completed_text "$completed_text #Memento"
-end
-
-if rg -q "$obsidian_md" ~/.config/ortscripts/anime-history
-    sed -i "/$raw_file_name/d" ~/.config/ortscripts/anime-history
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/anime-history
-else
-    echo "$obsidian_md | Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/anime-history
-end
-
-rm /tmp/obsidian_last.txt

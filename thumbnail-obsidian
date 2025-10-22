@@ -11,8 +11,7 @@ set final_folder "$obsidian_main/$resource_folder/thumbnail"
 set pool_folder (ot_config_grab "ThePoolFolder")
 set screenshot_folder $obsidian_main/$resource_folder/$pool_folder
 
-set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
-
+set obsidian_md (fd -t f -F ".md" $obsidian_main/$notes_folder | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 set sanitized_name (basename -s ".md" $obsidian_md | sed 's/ /-/g' | tr '[:upper:]' '[:lower:]')
 
 if set -q _flag_p
