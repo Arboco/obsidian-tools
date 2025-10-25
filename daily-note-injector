@@ -1,0 +1,34 @@
+#! /usr/bin/env fish 
+
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
+set daily_note_folder (ot_config_grab "DailyNoteFolder")
+set daily_note_folder "$obsidian/$daily_note_folder"
+
+set today_date (date +%Y-%m-%d)
+set today_note "$daily_note_folder/$today_date.md"
+
+if test -f $today_note
+else
+    echo --- >>$today_note
+    echo "tags:" >>$today_note
+    echo "cssclasses:" >>$today_note
+    echo "  - table-max" >>$today_note
+    echo --- >>$today_note
+end
+
+set property $argv[1]
+set number $argv[2]
+
+if rg "$property:" $today_note
+else
+    sed -i "/^tags:/i\\$property: 0" $today_note
+end
+
+cp $today_note /tmp/clone.md
+awk -v var="$number" '/'"$property"':/ { 
+  for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + var; 
+    } 
+    } { print }' /tmp/clone.md >$today_note

@@ -219,8 +219,13 @@ if test $anime_episode_completed -eq 1
     if test $rewatch -eq 1
         sed -i "/rewatch-date:/d" $episode_md_final
         sed -i "/^origin:/a\\rewatch-date: $cur_date" "$episode_md_final"
+        set d_date (date +%Y-%m-%d)
+        daily-note-injector animestarter $save_time
     else
         sed -i "/^origin:/a\\finished-date: $cur_date" "$episode_md_final"
+        set d_date (date +%Y-%m-%d)
+        sed -i "/^finished-date:/a\\dailynote: \"\[\[$d_date\]\]\"" "$episode_md_final"
+        daily-note-injector animestarter $save_time
     end
     if rg -q "status: Completed" $episode_md_final
     else

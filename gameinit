@@ -179,7 +179,7 @@ set info_time_calculation_info (echo "SecondsPlayed IdleSeconds StartupCompensat
 set info_time_calculation_raw (echo "$calculation_seconds - $second_reduction - $startup_compensator = $result_seconds")
 set info_time_added (echo "$result_seconds seconds get added to playtime")
 
-set cur_date (date +%d.%m.%y)
+set cur_date (date +%Y-%m-%d)
 set cur_hour (date +%H:%M)
 
 if test $timeline_option -eq 1
@@ -198,7 +198,7 @@ if test $timeline_option -eq 1
 
         sed "/^## Timeline/{:a; n; /^#/!ba; i\\
 \\
->[!info] Played: $result_minutes minutes - $cur_date
+>[!info] Played: $result_minutes minutes [[$cur_date]]
 }" $selection_md >/tmp/clone2.md
         mv /tmp/clone2.md $selection_md
 
@@ -222,6 +222,7 @@ else
     } { print }' /tmp/clone.md >$selection_md
 
     set info_final_playtime (grep -oP "(?<=playtime: ).*" $selection_md)
+    daily-note-injector gameinit "$result_seconds"
 end
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
