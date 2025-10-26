@@ -87,6 +87,8 @@ end
 
 kill $(jobs -p)
 
+set page_difference (math $current_page - $page_num)
+
 if grep -q "pages:" $obsidian_md
     sed -i '/pages:/d' "$obsidian_md"
 end
@@ -97,6 +99,36 @@ if rg "^last_read:" $obsidian_md
     sed -i '/last_read:/d' $obsidian_md
 end
 sed -i "/^date:/a\\last_read: $cur_date" $obsidian_md
+
+if grep "# Info" $obsidian_md
+else
+    echo "# Info" >>$obsidian_md
+    echo "## Timeline" >>$obsidian_md
+    echo "#" >>$obsidian_md
+end
+
+set cur_date (date +%Y-%m-%d)
+
+if test $current_page -gt $page_num
+    if grep "Read:.*$cur_date" $obsidian_md
+        set info_session_time (echo "Existing session is getting increased by $page_difference pages.")
+        cp $obsidian_md /tmp/clone.md
+        awk -v ex="$page_difference" -v date="$cur_date" '$0 ~ date {
+      for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + ex;} 
+        }
+        { print }' /tmp/clone.md >$obsidian_md
+    else
+
+        sed "/^## Timeline/{:a; n; /^#/!ba; i\\
+\\
+>[!info] Read: $page_difference pages [[$cur_date]]
+}" $obsidian_md >/tmp/clone2.md
+        mv /tmp/clone2.md $obsidian_md
+    end
+end
+
+daily-note-injector pagesread $page_difference
 
 echo $obsidian_md
 echo $pdf_path

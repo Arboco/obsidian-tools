@@ -1,0 +1,30 @@
+#! /usr/bin/env fish 
+
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
+set daily_note_folder (ot_config_grab "DailyNoteFolder")
+set daily_note_folder "$obsidian/$daily_note_folder"
+
+set today_date (date +%Y-%m-%d)
+set today_note "$daily_note_folder/$today_date.md"
+
+function help_function
+    echo -e "Usage: gn \"message\""
+    echo "Options:"
+    echo "  -m       Generic message"
+end
+
+argparse --name=gn h/help 'n/name=' -- $argv
+or return
+
+if set -q _flag_h
+    help_function
+    exit
+end
+
+newline_prepper $today_note
+
+set cur_date (date +"%d-%m-%Y %H:%M:%S")
+echo ">[!note] `$cur_date`" >>$today_note
+echo "$argv[1]" >>$today_note
