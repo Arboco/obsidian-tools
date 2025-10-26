@@ -223,6 +223,7 @@ if test $episode_completed -eq 1
     set d_date (date +%Y-%m-%d)
     sed -i "/^finished-date:/a\\dailynote: \"\[\[$d_date\]\]\"" "$episode_md_final"
     daily-note-injector seriesstarter $save_time
+    daily-note-injector seriesepisode 1
 
     if rg -q "status: Completed" $episode_md_final
     else
