@@ -1,0 +1,89 @@
+#! /usr/bin/env fish 
+echo "hello world"
+set html "/tmp/goodreads.html"
+set file_path /home/anon/ortup/important/notes/ortvault/notes/book_db/goodreads_downloader.md
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/book_db
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/book_db/books
+set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
+set script_dir (realpath (status dirname))
+
+argparse --name=gn h/help s/series c/completed j/japan 'n/name=' -- $argv
+
+#set link_array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\3/p' $file_path)
+for i in $argv
+    set link_array $link_array $i
+end
+
+for item in $link_array
+    node $script_dir/fetch-goodreads.js "$item" >$html
+
+    set title (cat $html | grep -oP '(?<=Book title: )[^"]*' | string split :)
+    set subtitle (string trim "$title[2]")
+    set md_title (echo $title[1] | sed 's/://g; s/[\|/]/ /g')
+    set hyphen_title (echo "$md_title-book" | tr '[:upper:]' '[:lower:]' | sed $sed_string)
+
+    if set -q _flag_s
+        set title (cat $html | grep -oP '(?<=Book title: )[^"]*')
+        set subtitle
+        set md_title (echo $title | sed 's/://g; s/[\|/]/ /g')
+        set hyphen_title (echo "$md_title-book" | tr '[:upper:]' '[:lower:]' | sed $sed_string)
+    end
+
+    if cat $html | grep -oP '(?<=<p data-testid="publicationInfo">First published )[^<]*'
+        set raw_date (cat $html | grep -oP '(?<=<p data-testid="publicationInfo">First published )[^<]*')
+    else
+        set raw_date (cat $html | grep -oP '(?<=<p data-testid="publicationInfo">Published )[^<]*')
+    end
+
+    set month (date -d "$raw_date" +%m)
+    set day (date -d "$raw_date" +%d)
+    set year (date -d "$raw_date" +%Y)
+    set img_link (cat $html | grep -oP '(?<=role="presentation" src=")[^"]*' | head -n 1)
+    set author (cat $html | grep -oP '(?<=data-testid="name">)[^<]*' | head -n 1)
+    set genres (cat $html | grep -oP '(?<=<div data-testid="genresList" class="BookPageMetadataSection).*?<div class="BookDetails"' | grep -oP '(?<="Button__labelItem">)[^<]*')
+
+    if test $genres[-1] = "...show all"
+        set genres $genres[1..-2]
+    end
+
+    set md "$md_folder/$md_title.md"
+    wget -O "$img_folder/$hyphen_title.jpg" $img_link
+    set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+
+    echo --- >>$md
+    echo "title: \"$title[1]\"" >>$md
+    if test -n $subtitle
+        echo "subtitle: \"$subtitle\"" >>$md
+    end
+    echo "author: \"$author\"" >>$md
+    echo "url: \"$item\"" >>$md
+
+    if set -q _flag_c
+        echo "status: Completed" >>$md
+    else
+        echo "status: " >>$md
+    end
+
+    echo "date: \"$year-$month-$day\"" >>$md
+    echo "creation_date: $creation_date" >>$md
+    echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md
+
+    if set -q _flag_j
+        echo "tags:" >>$md
+        echo "  - book" >>$md
+        echo "  - db" >>$md
+        echo "  - japan" >>$md
+    else
+        echo "tags:" >>$md
+        echo "  - book" >>$md
+        echo "  - db" >>$md
+    end
+
+    echo "genre:" >>$md
+
+    for genre in $genres
+        echo "  - $genre" >>$md
+    end
+
+    echo --- >>$md
+end

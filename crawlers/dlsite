@@ -1,0 +1,85 @@
+#! /usr/bin/env fish
+
+set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/dlsite_downloader.md
+set platform doujin
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/doujin
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/doujin
+set array $argv
+#set array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
+set html "/tmp/dlsite.html"
+
+#for line in (cat $file_path)
+#  set array $array $line 
+#end 
+
+for item in $array
+    curl "$item" >$html
+
+    set rj (echo "$item" | grep -oP '(?<=product_id/)[^.]*')
+    set x (cat $html | grep -o -m 1 "https\?://[^/]*\/[^\"]*"$rj"_img[^\"]*")
+    set sample_array (cat $html | grep -oP '(?<=<div data-src="//).*img_smp.?[0-9].jpg')
+    wget -O "$img_folder/$rj.jpg" $x
+    wget -P "$img_folder/" $sample_array
+
+    set num 1
+    for i in $sample_array
+        set img_name_array[$num] (echo $i | grep -oP '(?<=0/)(R|VJ).*_img.*')
+        set num (math $num +1)
+    end
+
+    set genre_array (cat $html | grep '\.genre')
+    set num 1
+    for i in $genre_array
+        set genre_name_array[$num] (echo $i | grep -oP '(?<=.genre">)[^<]*')
+        set num (math $num +1)
+    end
+
+    set game_title (cat $html | grep -oP '(?<=content=").*?(?=\s\[)')
+    set circle (cat $html | grep "\[.*\] | DLsite" | head -n 1)
+    set circle (echo $circle | grep -oP "(?<=\[)[^]]*")
+    set date (cat $html | grep -oP '(?<=\"regist_date\":\")[^"]*')
+    set date (echo $date | sed 's;\\\/;-;g')
+    set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+    set work_type (cat $html | grep 'work_type/')
+    set work_type (echo $work_type | grep -oP '(?<=title=")[^"]*' | head -n 1)
+
+    echo --- >>$md_folder/$game_title.md
+    echo "title: \"$game_title\"" >>$md_folder/$game_title.md
+    echo "circle: \"$circle\"" >>$md_folder/$game_title.md
+    echo "type: \"$work_type\"" >>$md_folder/$game_title.md
+    echo "url: $item" >>$md_folder/$game_title.md
+    echo "code: $rj" >>$md_folder/$game_title.md
+    echo "genre:" >>$md_folder/$game_title.md
+
+    for i in $genre_name_array
+        echo "  - $i" >>$md_folder/$game_title.md
+    end
+
+    echo "platform: $platform" >>$md_folder/$game_title.md
+    echo "status: Interest" >>$md_folder/$game_title.md
+    echo "date: $date" >>$md_folder/$game_title.md
+    echo "creation_date: $creation_date" >>$md_folder/$game_title.md
+    echo "cover-img: \"[[$rj.jpg]]\"" >>$md_folder/$game_title.md
+    echo "tags:" >>$md_folder/$game_title.md
+    echo "  - game" >>$md_folder/$game_title.md
+    echo "  - db" >>$md_folder/$game_title.md
+    echo "  - nsfw" >>$md_folder/$game_title.md
+    echo "  - japan" >>$md_folder/$game_title.md
+    echo "obsidianUIMode: preview" >>$md_folder/$game_title.md
+    echo --- >>$md_folder/$game_title.md
+
+    echo "" >>$md_folder/$game_title.md
+    echo "# Preview" >>$md_folder/$game_title.md
+    echo "![[$rj.jpg]]" >>$md_folder/$game_title.md
+    echo "" >>$md_folder/$game_title.md
+    for i in $img_name_array
+        echo "![[$i]]" >>$md_folder/$game_title.md
+    end
+    echo "# Main" >>$md_folder/$game_title.md
+
+    set -e sample_array
+    set -e genre_array
+    set -e genre_name_array
+    set -e img_name_array
+    rm $html
+end

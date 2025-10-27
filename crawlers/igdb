@@ -1,0 +1,69 @@
+#! /usr/bin/env fish 
+
+#set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/igdb_downloader.md
+#set platform ""
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/igdb
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/igdb
+set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
+set html "/tmp/igdb.html"
+set script_dir (realpath (status dirname))
+#for line in (cat $file_path)
+#    set array $array $line
+#end
+
+for i in $argv
+    set array $array $i
+end
+
+echo "Array contents:"
+for item in $array
+
+    node $script_dir/fetch-page.js "$item" >/tmp/igdb.html
+    set org_title (cat /tmp/igdb.html | grep -oP '(?<=MuiTypography-h3">)[^<]*' | sed 's/[[:blank:]]*$//; s/&#39;//g')
+    set game_title (echo $org_title | sed 's/://g; s/[\|/]/ /g')
+    set game_hyphen (echo $game_title | tr '[:upper:]' '[:lower:]' | sed $sed_string)
+
+    set raw_date (cat /tmp/igdb.html | grep -oP '(?<=MuiTypography-h6">)[^ ]*' | head -n 1)
+    set month (echo $raw_date | grep -oP '^\d+')
+    set day (echo $raw_date | grep -oP '(?<=\/)\d+(?=\/)')
+    set year (echo $raw_date | grep -oP '(?<=\/)\d{4}$')
+
+    if test (string length $month) -eq 1
+        set month "0$month"
+    end
+
+    if test (string length $day) -eq 1
+        set day "0$day"
+    end
+
+    echo $org_title
+    echo $game_hyphen
+    echo $game_title
+    set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+
+    #set year (cat $html | rg -oP '(?<=\()[0-9]{4}' | head -n 1)
+
+    set md $md_folder/$game_title.md
+
+    echo --- >>$md
+    echo "title: \"$org_title\"" >>$md
+    echo "url: https://www.igdb.com/games/$game_hyphen" >>$md
+    echo "platform:" >>$md
+    echo "status: " >>$md
+    echo "date: $year-$month-$day" >>$md
+    echo "creation_date: $creation_date" >>$md
+
+    set game_cover (cat /tmp/igdb.html | grep -oP '(?<=<img src="//)images.igdb.com[^"]*' | head -n 1)
+
+    wget -O "$img_folder/$game_hyphen-cover.jpg" $game_cover
+
+    echo "cover-img: \"[[$game_hyphen-cover.jpg]]\"" >>$md
+    echo "tags:" >>$md
+    echo "  - game" >>$md
+    echo "  - db" >>$md
+    echo --- >>$md
+
+    set game_cover
+    sleep 1
+
+end

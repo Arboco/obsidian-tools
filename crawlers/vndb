@@ -1,0 +1,79 @@
+#! /usr/bin/env fish
+
+set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/vndb_downloader.md
+set platform PC
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/vn
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/vn
+set character_img /home/anon/ortup/important/notes/ortvault/resources/character_db/vn
+set character_md /home/anon/ortup/important/notes/ortvault/notes/character_db/vn
+#set array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
+for i in $argv
+    set array $array $i
+end
+set html "/tmp/vndb.html"
+set weg false
+
+#for line in (cat $file_path)
+#  set array $array $line 
+#end 
+
+argparse --name=gn d/download c/character p/protagonist h/help 'n/name=' -- $argv
+or return
+
+function help_function
+    echo "Flags:"
+    echo "-h       Help"
+    echo "-d       Default, downloads the game into your database"
+    echo "-c       Character, downloads the main characters of the vndb character page"
+    echo "-p       Protagonist, same as the above just including the protagonist"
+end
+
+if set -q _flag_h
+    help_function
+end
+
+for item in $array
+    set link (echo $item | tr -cd '\11\12\15\40-\176')
+    echo $link
+    curl -s -A Mozilla/5.0 "(X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0" "$link" >$html
+
+    set img (cat $html | grep -oP -m 1 '(?<=<img src=")[^"]*')
+    set game_title (cat $html | grep -oP '(?<=ja-Latn">)[^<]*' | head -n 1)
+    if test -z $game_title
+        set game_title (cat $html | grep -oP '(?<=/><title>)[^|]*')
+        set weg true
+    end
+    set game_title (string trim --right "$game_title")
+    set year (cat $html | grep -oP '(?<="tc1">)[^<]*' | head -n 1)
+    set developer (cat $html | grep -oP '(?<=">)[^<]*(?=</a></td>)' | head -n 1)
+
+    set santized_title (echo $game_title | sed -E 's/[\/\\]/ /g;s/^ //; s/ $//')
+    set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+    set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+    wget -O "$img_folder/$hyphen_title.jpg" $img
+
+    echo --- >>$md_folder/$santized_title.md
+    echo "title: \"$game_title\"" >>$md_folder/$santized_title.md
+    echo "developer: \"$developer\"" >>$md_folder/$santized_title.md
+    echo "url: $item" >>$md_folder/$santized_title.md
+    echo "platform: $platform" >>$md_folder/$santized_title.md
+    echo "status:" >>$md_folder/$santized_title.md
+    echo "date: $year" >>$md_folder/$santized_title.md
+    echo "creation_date: $creation_date" >>$md_folder/$santized_title.md
+    echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md_folder/$santized_title.md
+
+    if string match true $weg
+        echo "tags:" >>$md_folder/$santized_title.md
+        echo "  - game" >>$md_folder/$santized_title.md
+        echo "  - db" >>$md_folder/$santized_title.md
+        echo "  - weg" >>$md_folder/$santized_title.md
+    else
+        echo "tags:" >>$md_folder/$santized_title.md
+        echo "  - game" >>$md_folder/$santized_title.md
+        echo "  - db" >>$md_folder/$santized_title.md
+        echo "  - vn" >>$md_folder/$santized_title.md
+    end
+
+    echo --- >>$md_folder/$santized_title.md
+    rm $html
+end

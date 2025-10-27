@@ -1,0 +1,89 @@
+#! /usr/bin/env fish
+
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/tv_cover
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/tv_db
+set series_folder /home/anon/ortup/important/notes/ortvault/notes/tv_db/series
+set movies_folder /home/anon/ortup/important/notes/ortvault/notes/tv_db/movies
+
+function get_json
+    curl --request GET \
+        --url "https://api.themoviedb.org/3/$argv[1]/$argv[2]" \
+        --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxMDkyZmZiZDdlYjhlNTQyMmJhZDU1Mzg0YjljOGM3OSIsIm5iZiI6MTc1MTA0MjQzNC41MjQsInN1YiI6IjY4NWVjOTgyNTkzMmMwNDg1MDdlY2Q3ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ADkARMFje3yAjXRb5J84Lzm25LDVdIhPuX0kDN3AWXg' | jq >/tmp/tmdb.json
+
+    curl --request GET \
+        --url "https://api.themoviedb.org/3/$argv[1]/$argv[2]/credits" \
+        --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxMDkyZmZiZDdlYjhlNTQyMmJhZDU1Mzg0YjljOGM3OSIsIm5iZiI6MTc1MTA0MjQzNC41MjQsInN1YiI6IjY4NWVjOTgyNTkzMmMwNDg1MDdlY2Q3ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ADkARMFje3yAjXRb5J84Lzm25LDVdIhPuX0kDN3AWXg' | jq >/tmp/tmdb_credits.json
+end
+
+function get_real_date
+    curl --request GET \
+        --url "https://api.themoviedb.org/3/$argv[1]/$argv[2]/release_dates" \
+        --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxMDkyZmZiZDdlYjhlNTQyMmJhZDU1Mzg0YjljOGM3OSIsIm5iZiI6MTc1MTA0MjQzNC41MjQsInN1YiI6IjY4NWVjOTgyNTkzMmMwNDg1MDdlY2Q3ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ADkARMFje3yAjXRb5J84Lzm25LDVdIhPuX0kDN3AWXg' | jq -r '[.results[].release_dates[] | .release_date] | sort | .[0]' | rg -o "....-..-.."
+end
+
+for item in $argv
+    set type (echo "$item" | rg -o "\b(movie|tv)\b")
+    set id_target (echo "$item" | rg -o "(tv|movie)/[0-9]*" | rg -o "[0-9]*" | grep -v '^$' )
+    get_json $type $id_target
+    set json_file /tmp/tmdb.json
+    set credits_file /tmp/tmdb_credits.json
+    set genres (jq '.genres[].name' $json_file)
+    set base_img_url "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
+    set poster_path (jq '.poster_path' $json_file | sed 's/"//g')
+    set final_img_url "$base_img_url$poster_path"
+
+    if string match movie $type
+        set date (get_real_date $type $id_target)
+        set title (jq '.title' $json_file | sed 's/"//g')
+        set org_title (jq '.original_title' $json_file | sed 's/"//g')
+        set creator (jq -r '.crew[] | select(.job == "Director") | .name' $credits_file)
+        set santized_title (echo $title | sed -E 's/[\/\\]/ /g;s/^ //; s/ $//')
+        set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        set md_final $movies_folder/$santized_title.md
+    else if string match tv $type
+        set date (jq '.first_air_date' $json_file)
+        set title (jq '.name' $json_file | sed 's/"//g')
+        set org_title (jq '.original_name' $json_file | sed 's/"//g')
+        set creator (jq -r '.created_by[].name' $json_file)
+        set santized_title (echo $title | sed -E 's/[\/\\:]/ /g; s/^ //; s/ $//')
+        set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        set md_final $series_folder/$santized_title.md
+        set season_number (jq '[.seasons[].season_number] | max' $json_file)
+    end
+
+    set original_language (jq '.original_language' $json_file)
+    set top_cast (jq -r '.cast | sort_by(.order) | .[:10] | .[].name' $credits_file)
+
+    set image_final "$img_folder/$hyphen_title-$type.jpg"
+    wget -O "$image_final" $final_img_url
+
+    echo --- >>$md_final
+    echo "title: \"$org_title\"" >>$md_final
+    echo "language: $original_language" >>$md_final
+    echo "url: $item" >>$md_final
+    echo "Creator:" >>$md_final
+    for i in $creator
+        echo " - $i" >>$md_final
+    end
+    echo "type: $type" >>$md_final
+    echo "released: $date" >>$md_final
+    echo "status:" >>$md_final
+    echo "score:" >>$md_final
+    echo "cover-img: \"[[$hyphen_title-$type.jpg]]\"" >>$md_final
+    echo "tags:" >>$md_final
+    echo " - tvdb" >>$md_final
+    echo " - db" >>$md_final
+    echo "genre:" >>$md_final
+    for i in $genres
+        echo " - $i" >>$md_final
+    end
+    echo "Cast:" >>$md_final
+    for i in $top_cast
+        echo " - $i" >>$md_final
+    end
+    if string match tv $type
+        echo "seasons: $season_number" >>$md_final
+        echo "c_seasons:" >>$md_final
+    end
+    echo --- >>$md_final
+end

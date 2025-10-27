@@ -1,0 +1,38 @@
+#! /usr/bin/env fish 
+echo "hello world"
+set html "/tmp/discogs.html"
+set file_path /home/anon/ortup/important/notes/ortvault/notes/music_db/discogs_downloader.md
+set img_folder /home/anon/ortup/important/notes/ortvault/resources/music_db/albums
+set md_folder /home/anon/ortup/important/notes/ortvault/notes/music_db/albums
+set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
+set script_dir (realpath (status dirname))
+
+set link_array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
+for item in $link_array
+    node $script_dir/fetch-page.js "$item" >$html
+    set interpret (cat $html | grep -oP '<h1 class="MuiTypography-root.*</h1>' | grep -oP '(?<=/artist/)[^"]*' | sed 's/[0-9]//g; s/-/ /g; s/^[ \t]*//;s/[ \t]*$//')
+    set title (cat $html | grep -oP '<h1 class="MuiTypography-root.*</h1>' | grep -oP '(?<=<!-- -->)[^<]*')
+    set subtitle (string trim "$title[2]")
+    set md_title (echo $title[1] | sed 's/://g; s/[\|/]/ /g')
+    set hyphen_title (echo "$md_title-album" | tr '[:upper:]' '[:lower:]' | sed $sed_string)
+    set img_link (cat $html | grep -oP '(?<=<img src=")[^"]*' | head -n 1)
+    set raw_date (cat $html | grep -oP '(?<=<time datetime=")[^"]*' | head -n 1)
+    set month (date -d "$raw_date" +%m)
+    set day (date -d "$raw_date" +%d)
+    set year (date -d "$raw_date" +%Y)
+
+    set md "$md_folder/$md_title.md"
+    wget -O "$img_folder/$hyphen_title.jpg" $img_link
+
+    echo --- >>$md
+    echo "title: \"$title[1]\"" >>$md
+    echo "interpret: \"$interpret\"" >>$md
+    echo "url: \"$item\"" >>$md
+    echo "date: \"$year-$month-$day\"" >>$md
+    echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md
+    echo "tags:" >>$md
+    echo "  - music" >>$md
+    echo "  - db" >>$md
+    echo "  - albums" >>$md
+    echo --- >>$md
+end
