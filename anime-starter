@@ -27,10 +27,8 @@ end
 
 if set -q _flag_i
     set selection_last_seen (rg -oP "(?<=last_seen: ).*" $obsidian/$notes)
-    echo brot1
     for i in $selection_last_seen
         set mdsplit (echo $i | string split ":")[1]
-        echo brot
         if rg -q '^animepath:' $mdsplit
             set t_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
             set t_last_played (echo $i | string split ".md:")[2]

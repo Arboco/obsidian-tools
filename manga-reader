@@ -1,6 +1,10 @@
 #! /usr/bin/env fish 
 
 set script_dir (realpath (status dirname))
+set browser (ot_config_grab "BrowserManga")
+set obsidian_folder (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
 
 function help_function
     echo "Options:"
@@ -16,15 +20,25 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/manga-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
-    set manga_md (echo $history_selection | string split "|" | string trim -r)[1]
+    set selection_last_seen (rg -oP "(?<=last_read: ).*" $obsidian_folder/$notes)
+    for i in $selection_last_seen
+        set mdsplit (echo $i | string split ":")[1]
+        if rg -q '^mangapath:' $mdsplit
+            set t_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set t_last_played (echo $i | string split ".md:")[2]
+            set final_string "$t_last_played | $t_title"
+            set final_list $final_list $final_string
+        end
+    end
+    set final_sorted_list (printf "%s\n" $final_list | sort -r)
+    for i in $final_sorted_list
+        set cleaned_final_sorted_list $cleaned_final_sorted_list (echo $i | string split "| ")[2].md
+    end
+
+    set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set manga_md (fd -t f -g $selection $obsidian/$notes)
 end
 
-set browser (ot_config_grab "BrowserManga")
-set obsidian_folder (ot_config_grab "ObsidianMainFolder")
-set notes (ot_config_grab "NotesFolder")
-set resources (ot_config_grab "ObsidianResourceFolder")
-set script_dir (realpath (status dirname))
 if test -z $manga_md
     set manga_md (rg -l "mangapath:" $obsidian_folder/$notes/ | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
@@ -67,6 +81,12 @@ kill $(jobs -p)
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 set short_date (date +"%Y-%m-%d")
 
+if cat $volume_md | rg "pages:"
+    set old_page (cat $volume_md | rg "pages:" | rg -o "[0-9]+")
+else
+    set old_page 0
+end
+
 if grep -q "pages:" $volume_md
     sed -i '/pages:/d' "$volume_md"
 end
@@ -85,7 +105,12 @@ if string match f $selection
     end
 end
 
-if not grep -q "```dataview" $manga_md; and test -f $HOME/.config/ortscripts/manga-dataview-insert
+set dataviewcheck false
+if grep -q "```dataview" $manga_md; or grep -q "```base" $manga_md
+    set dataviewcheck true
+end
+
+if string match false $dataviewcheck; and test -f $HOME/.config/ortscripts/manga-dataview-insert
     sed -i "/^tags:/i\\cssclasses:" "$manga_md"
     sed -i "/^cssclasses:/a\\  - cards" "$manga_md"
     sed -i "/^cssclasses:/a\\  - table-max" "$manga_md"
@@ -102,11 +127,45 @@ if not grep -q "```dataview" $manga_md; and test -f $HOME/.config/ortscripts/man
     mv /tmp/temp_combined.txt $input_file
 end
 
-if rg -q "$folder_title" ~/.config/ortscripts/manga-history
-    sed -i "/$folder_title/d" ~/.config/ortscripts/manga-history
-    echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history
+set current_page $selection
+
+echo $current_page
+echo $old_page
+echo $volume_md
+
+set page_difference (math $current_page - $old_page)
+set cur_date (date +%Y-%m-%d)
+
+if grep "# Info" $volume_md
 else
-    echo "$manga_md | Volume $volume_number ($short_date) --- Page: $selection" >>~/.config/ortscripts/manga-history
+    echo "# Info" >>$volume_md
+    echo "## Timeline" >>$volume_md
+    echo "#" >>$volume_md
 end
 
-rm /tmp/obsidian_last.txt
+if test $current_page -gt $old_page
+    if grep "Read:.*$cur_date" $volume_md
+        set info_session_time (echo "Existing session is getting increased by $page_difference pages.")
+        cp $volume_md /tmp/clone.md
+        awk -v ex="$page_difference" -v date="$cur_date" '$0 ~ date {
+      for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + ex;} 
+        }
+        { print }' /tmp/clone.md >$volume_md
+    else
+
+        sed "/^## Timeline/{:a; n; /^#/!ba; i\\
+\\
+>[!info] Read: $page_difference pages [[$cur_date]]
+}" $volume_md >/tmp/clone2.md
+        mv /tmp/clone2.md $volume_md
+    end
+end
+
+daily-note-injector mangapages $page_difference
+
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+if rg "^last_read:" $manga_md
+    sed -i '/last_read:/d' $manga_md
+end
+sed -i "/^date:/a\\last_read: $cur_date" $manga_md
