@@ -1,8 +1,10 @@
 #! /usr/bin/env fish 
 
-set file_path /home/anon/ortup/important/notes/ortvault/notes/anime_db/manga_downloader.md
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/anime_db/manga
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/anime_db/manga
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set img_folder $obsidian_res/anime_db/manga
+set md_folder $obsidian_note/anime_db/manga
 
 #set array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
 for i in $argv

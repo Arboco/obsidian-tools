@@ -1,9 +1,11 @@
 #! /usr/bin/env fish
 
-set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/dlsite_downloader.md
 set platform doujin
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/doujin
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/doujin
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set img_folder $obsidian_res/game/cover/doujin
+set md_folder $obsidian_note/game_db/doujin
 set array $argv
 #set array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
 set html "/tmp/dlsite.html"

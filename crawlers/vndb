@@ -1,11 +1,13 @@
 #! /usr/bin/env fish
 
-set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/vndb_downloader.md
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
 set platform PC
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/vn
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/vn
-set character_img /home/anon/ortup/important/notes/ortvault/resources/character_db/vn
-set character_md /home/anon/ortup/important/notes/ortvault/notes/character_db/vn
+set img_folder $obsidian_res/game/cover/vn
+set md_folder $obsidian_note/game_db/vn
+set character_img $obsidian_res/character_db/vn
+set character_md $obsidian_note/character_db/vn
 #set array (sed -n 's/.*\(http[s]\?:\/\/[^ ]*\).*/\1/p' $file_path)
 for i in $argv
     set array $array $i

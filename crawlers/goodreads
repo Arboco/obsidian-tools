@@ -1,11 +1,13 @@
-#! /usr/bin/env fish 
-echo "hello world"
-set html "/tmp/goodreads.html"
-set file_path /home/anon/ortup/important/notes/ortvault/notes/book_db/goodreads_downloader.md
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/book_db
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/book_db/books
-set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
+#! /usr/bin/env fish
+
 set script_dir (realpath (status dirname))
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set html "/tmp/goodreads.html"
+set img_folder $obsidian_res/book_db
+set md_folder $obsidian_note/book_db/books
+set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
 
 argparse --name=gn h/help s/series c/completed j/japan 'n/name=' -- $argv
 

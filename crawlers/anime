@@ -1,7 +1,10 @@
 #! /usr/bin/env fish 
-set file_path "/home/anon/ortup/important/notes/ortvault/notes/anime_db/myanimelist_downloader.md"
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/anime_db/anime
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/anime_db/anime
+
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set img_folder $obsidian_res/anime_db/anime
+set md_folder $obsidian_note/anime_db/anime
 
 function help_function
     echo "myanimelist -c"

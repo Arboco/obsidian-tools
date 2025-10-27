@@ -2,8 +2,11 @@
 
 #set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/igdb_downloader.md
 #set platform ""
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/game/cover/igdb
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/game_db/igdb
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set img_folder $obsidian_res/game/cover/igdb
+set md_folder $obsidian_note/game_db/igdb
 set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
 set html "/tmp/igdb.html"
 set script_dir (realpath (status dirname))

@@ -1,9 +1,10 @@
 #! /usr/bin/env fish 
-echo "hello world"
 set html "/tmp/discogs.html"
-set file_path /home/anon/ortup/important/notes/ortvault/notes/music_db/discogs_downloader.md
-set img_folder /home/anon/ortup/important/notes/ortvault/resources/music_db/albums
-set md_folder /home/anon/ortup/important/notes/ortvault/notes/music_db/albums
+set obsidian_main (ot_config_grab "ObsidianMainFolder")
+set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
+set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
+set img_folder $obsidian_res/music_db/albums
+set md_folder $obsidian_note/music_db/albums
 set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
 set script_dir (realpath (status dirname))
 
