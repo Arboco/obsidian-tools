@@ -25,7 +25,9 @@ PoolScreenshotButton: KEY_SYSRQ
 PoolSelectScreenshotButton: KEY_DELETE
 PoolRecordButton: KEY_INSERT
 PoolAudioButton: KEY_F1
-PoolEscapeButton: KEY_BACKSPACE
+PoolEscapeButton: KEY_END
+PoolInsertKey: KEY_RIGHTCTRL
+PoolAvifKey: KEY_RIGHTALT
 
 
 # Profile 1 flag -v 
@@ -55,14 +57,6 @@ Profile2EscapeButton: ABS_HAT0Y
 Profile2HookCounter: 30
 Profile2IdleCounter: 180
 Profile2InputBlock: ABS_R?[XY].*value -?[0-9]{1,4}([^0-9]|$) 
-Profile2AltButton: BTN_TR
-
-Profile2HoldButtonAlt: BTN_THUMBL
-Profile2ScreenshotButtonAlt: BTN_WEST
-Profile2MindPalaceAlt: BTN_EAST
-Profile2RecordButtonAlt: BTN_MODE
-Profile2AudioButtonAlt: BTN_THUMBR
-Profile2EscapeButtonAlt: ABS_HAT0Y
 
 
 # Profile 2 flag -w
@@ -104,3 +98,7 @@ ValueSeconds: 21600
 
 # manga-reader
 BrowserManga: firefox
+
+# daily-note-injector
+InjectDailyNote: true 
+DailyNoteFolder: daily_notes
