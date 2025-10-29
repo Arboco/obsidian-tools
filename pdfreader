@@ -13,7 +13,6 @@ or return
 set obsidian_folder (ot_config_grab "ObsidianMainFolder")
 set notes (ot_config_grab "NotesFolder")
 set resources (ot_config_grab "ObsidianResourceFolder")
-set script_dir (realpath (status dirname))
 
 if set -q _flag_i
     set last (rg -oP "(?<=last_read: ).*" $obsidian_folder/$notes)

@@ -1,0 +1,107 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
+
+function help_function
+    echo "Options:"
+    echo "  -i       History"
+end
+
+argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+or return
+
+if set -q _flag_i
+    set last (rg -oP "(?<=last_worked_on: ).*" $obsidian_folder/$notes)
+    for i in $last
+        set mdsplit (echo $i | string split ":")[1]
+        if rg -q '  - dialog' $mdsplit
+            set title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set last_read (echo $i | string split ".md:")[2]
+            set final_string "$last_read | $title"
+            set final_list $final_list $final_string
+        end
+    end
+    set final_sorted_list (printf "%s\n" $final_list | sort -r)
+    for i in $final_sorted_list
+        set cleaned_final_sorted_list $cleaned_final_sorted_list (echo $i | string split "| ")[2].md
+    end
+
+    set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set obsidian_md (fd -t f -F $selection $obsidian/$notes)
+end
+
+if not set -q _flag_i
+    set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+end
+set character_array (rg -oP '(?<=>\[!)[^]]*' $obsidian_md | sort -u)
+set character_array_clean
+for i in $character_array
+    if string match info $i
+    else
+        set character_array_clean $character_array_clean $i
+    end
+end
+
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+if rg "^last_worked_on:" $obsidian_md
+    sed -i '/last_worked_on:/d' $obsidian_md
+end
+sed -i "/^tags:/i\\last_worked_on: $cur_date" $obsidian_md
+
+while true
+    echo (for i in $character_array_clean; echo $i; end)
+    read character
+    if string match exit $character
+        break
+    end
+
+    echo "Enter dialog"
+    read dialog
+    set words (string split ' ' $dialog)
+    set words (count $words)
+    set chars (string length $dialog)
+
+    newline_prepper $obsidian_md
+    if test -z $character
+        echo $dialog >>$obsidian_md
+    else
+        echo ">[!$character_array[$character]]" >>$obsidian_md
+        echo $dialog >>$obsidian_md
+    end
+
+    daily-note-injector devdialog_words $words
+    daily-note-injector devdialog_chars $chars
+    set -e character
+
+end
+
+if grep "# Info" $obsidian_md
+else
+    echo "# Info" >>$obsidian_md
+    echo "## Timeline" >>$obsidian_md
+    echo "#" >>$obsidian_md
+end
+
+set cur_date (date +%Y-%m-%d)
+
+if test $current_page -gt $page_num
+    if grep "Written:.*$cur_date" $obsidian_md
+        set info_session_time (echo "Existing session is getting increased by $page_difference pages.")
+        cp $obsidian_md /tmp/clone.md
+        awk -v ex="$words" -v date="$cur_date" '$0 ~ date {
+      for (i = 1; i <= NF; i++) { 
+        if ($i ~ /^[0-9]+$/) $i = $i + ex;} 
+        }
+        { print }' /tmp/clone.md >$obsidian_md
+    else
+
+        sed "/^## Timeline/{:a; n; /^#/!ba; i\\
+\\
+>[!info] Written: $words words [[$cur_date]]
+}" $obsidian_md >/tmp/clone2.md
+        mv /tmp/clone2.md $obsidian_md
+    end
+end
