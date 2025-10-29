@@ -10,14 +10,32 @@ function help_function
     echo "  -i       History"
 end
 
-argparse --name=gameinit i/history h/help 'n/name=' -- $argv
+argparse --name=gameinit i/history o/origin h/help 'n/name=' -- $argv
 or return
+
+if set -q _flag_o
+    set origin_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set base_origin (basename -s ".md" $origin_md)
+    echo "Title of file:"
+    read md_title
+    set md_title "$md_title $base_origin"
+    set obsidian_md "$obsidian_md/$notes/dev/dialog/$md_title"
+
+    echo --- >>$obsidian_md
+    echo "original: \"[[$base_origin]]\"" >>$obsidian_md
+    echo tags
+    echo "value:" >>$obsidian_md
+    echo "state:" >>$obsidian_md
+    echo "cover-img:" >>$obsidian_md
+    echo "category: Dialog" >>$obsidian_md
+    echo --- >>$obsidian_md
+end
 
 if set -q _flag_i
     set last (rg -oP "(?<=last_worked_on: ).*" $obsidian_folder/$notes)
     for i in $last
         set mdsplit (echo $i | string split ":")[1]
-        if rg -q '  - dialog' $mdsplit
+        if rg -q 'category: Dialog' $mdsplit
             set title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
             set last_read (echo $i | string split ".md:")[2]
             set final_string "$last_read | $title"
@@ -33,7 +51,7 @@ if set -q _flag_i
     set obsidian_md (fd -t f -F $selection $obsidian/$notes)
 end
 
-if not set -q _flag_i
+if not set -q _flag_i; and not set -q _flag_o
     set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
 set old_note /tmp/old_obsidian.md
@@ -44,8 +62,12 @@ set words_old (echo $words_old | string trim -lr)
 set chars_old (echo $chars_old | string trim -lr)
 #set character_array (rg -oP '(?<=>\[!)[^]]*' $obsidian_md | sort -u)
 
+set start (date +%s)
 nvim $obsidian_md
 sleep 1
+set end (date +%s)
+set result_time (math $end - $start)
+
 set words_new (wc -w $obsidian_md | rg -o '[0-9]*' | string trim -lr)
 set chars_new (wc --chars $obsidian_md | rg -o '[0-9]*' | string trim -lr)
 set words_new (echo $words_new | string trim -lr)
@@ -64,6 +86,44 @@ end
 
 daily-note-injector devdialog_words $words
 daily-note-injector devdialog_chars $chars
+daily-note-injector devdialog_sessions 1
+daily-note-injector devdialog_time $result_time
+
+if rg "^devdialog_words:" $obsidian_md
+    set info_devwords (grep -oP "(?<=devdialog_words: ).*" $obsidian_md)
+    set words (math $words + $info_devwords)
+    sed -i '/devdialog_words:/d' $obsidian_md
+    sed -i "/^category:/a\\devdialog_words: $words" $obsidian_md
+else
+    sed -i "/^category:/a\\devdialog_words: $words" $obsidian_md
+end
+
+if rg "^devdialog_chars:" $obsidian_md
+    set info_devchars (grep -oP "(?<=devdialog_chars: ).*" $obsidian_md)
+    set chars (math $chars + $info_devchars)
+    sed -i '/devdialog_chars:/d' $obsidian_md
+    sed -i "/^category:/a\\devdialog_chars: $chars" $obsidian_md
+else
+    sed -i "/^category:/a\\devdialog_chars: $chars" $obsidian_md
+end
+
+if rg "^sessions:" $obsidian_md
+    set info_sessions (grep -oP "(?<=sessions: ).*" $obsidian_md)
+    set sessions (math $info_sessions + 1)
+    sed -i '/sessions:/d' $obsidian_md
+    sed -i "/^category:/a\\sessions: $sessions" $obsidian_md
+else
+    sed -i "/^category:/a\\sessions: 1" $obsidian_md
+end
+
+if rg "^time:" $obsidian_md
+    set info_time (grep -oP "(?<=time: ).*" $obsidian_md)
+    set time (math $info_time + $result_time)
+    sed -i '/time:/d' $obsidian_md
+    sed -i "/^category:/a\\time: $time" $obsidian_md
+else
+    sed -i "/^category:/a\\time: $result_time" $obsidian_md
+end
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_worked_on:" $obsidian_md
@@ -108,3 +168,9 @@ gum style \
     --foreground 190 --border-foreground 190 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "Chars changed from $chars_old to $chars_new which is a difference of $chars"
+
+gum style \
+    --foreground 190 --border-foreground 172 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Times increased from $info_time to $time" \
+    "Sessions increased from $info_sessions to $sessions"
