@@ -36,47 +36,40 @@ end
 if not set -q _flag_i
     set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
-set character_array (rg -oP '(?<=>\[!)[^]]*' $obsidian_md | sort -u)
-set character_array_clean
-for i in $character_array
-    if string match info $i
-    else
-        set character_array_clean $character_array_clean $i
-    end
+set old_note /tmp/old_obsidian.md
+cp $obsidian_md $old_note
+set words_old (wc -w $old_note | rg -o '[0-9]*')
+set chars_old (wc --chars $old_note | rg -o '[0-9]*')
+set words_old (echo $words_old | string trim -lr)
+set chars_old (echo $chars_old | string trim -lr)
+#set character_array (rg -oP '(?<=>\[!)[^]]*' $obsidian_md | sort -u)
+
+nvim $obsidian_md
+sleep 1
+set words_new (wc -w $obsidian_md | rg -o '[0-9]*' | string trim -lr)
+set chars_new (wc --chars $obsidian_md | rg -o '[0-9]*' | string trim -lr)
+set words_new (echo $words_new | string trim -lr)
+set chars_new (echo $chars_new | string trim -lr)
+
+set words (math $words_new - $words_old)
+set chars (math $chars_new - $chars_old)
+
+if test $words -lt 0
+    set words (math $words x -1)
 end
+
+if test $chars -lt 0
+    set chars (math $chars x -1)
+end
+
+daily-note-injector devdialog_words $words
+daily-note-injector devdialog_chars $chars
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_worked_on:" $obsidian_md
     sed -i '/last_worked_on:/d' $obsidian_md
 end
 sed -i "/^tags:/i\\last_worked_on: $cur_date" $obsidian_md
-
-while true
-    echo (for i in $character_array_clean; echo $i; end)
-    read character
-    if string match exit $character
-        break
-    end
-
-    echo "Enter dialog"
-    read dialog
-    set words (string split ' ' $dialog)
-    set words (count $words)
-    set chars (string length $dialog)
-
-    newline_prepper $obsidian_md
-    if test -z $character
-        echo $dialog >>$obsidian_md
-    else
-        echo ">[!$character_array[$character]]" >>$obsidian_md
-        echo $dialog >>$obsidian_md
-    end
-
-    daily-note-injector devdialog_words $words
-    daily-note-injector devdialog_chars $chars
-    set -e character
-
-end
 
 if grep "# Info" $obsidian_md
 else
@@ -100,8 +93,18 @@ if test $current_page -gt $page_num
 
         sed "/^## Timeline/{:a; n; /^#/!ba; i\\
 \\
->[!info] Written: $words words [[$cur_date]]
+>[!info] Written: $total_words words [[$cur_date]]
 }" $obsidian_md >/tmp/clone2.md
         mv /tmp/clone2.md $obsidian_md
     end
 end
+
+gum style \
+    --foreground 212 --border-foreground 212 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Words changed from $words_old to $words_new which is a difference of $words"
+
+gum style \
+    --foreground 190 --border-foreground 190 --border double \
+    --align center --width 70 --margin "1 2" --padding "2 4" \
+    "Chars changed from $chars_old to $chars_new which is a difference of $chars"
