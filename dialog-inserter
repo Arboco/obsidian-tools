@@ -19,11 +19,11 @@ if set -q _flag_o
     echo "Title of file:"
     read md_title
     set md_title "$md_title $base_origin"
-    set obsidian_md "$obsidian_md/$notes/dev/dialog/$md_title"
+    set obsidian_md "$obsidian/$notes/dev/dialog/$md_title.md"
 
     echo --- >>$obsidian_md
     echo "original: \"[[$base_origin]]\"" >>$obsidian_md
-    echo tags
+    echo "tags:" >>$obsidian_md
     echo "value:" >>$obsidian_md
     echo "state:" >>$obsidian_md
     echo "cover-img:" >>$obsidian_md
