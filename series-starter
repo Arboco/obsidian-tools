@@ -1,6 +1,10 @@
 #! /usr/bin/env fish
 
 set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set series_folder tvseries
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if test -e ~/.config/ortscripts/series-dataview-insert
 else
     cp "$script_dir/conifg-examples/series-dataview-insert" ~/.config/ortscripts/
@@ -22,11 +26,27 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/series-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set selection_last_seen (rg -oP "(?<=last_seen: ).*" $obsidian/$notes)
+    for i in $selection_last_seen
+        set mdsplit (echo $i | string split ":")[1]
+        if rg -q '^seriespath:' $mdsplit
+            set t_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set t_last_played (echo $i | string split ".md:")[2]
+            set final_string "$t_last_played | $t_title"
+            set final_list $final_list $final_string
+        end
+    end
+    set final_sorted_list (printf "%s\n" $final_list | sort -r)
+    for i in $final_sorted_list
+        set cleaned_final_sorted_list $cleaned_final_sorted_list (echo $i | string split "| ")[2].md
+    end
+
+    set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set obsidian_md (fd -t f -g $selection $obsidian/$notes)
+
     if echo $history_selection | rg "#Memento"
         set _flag_m 1
     end
-    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
 set player mpv
@@ -34,10 +54,6 @@ if set -q _flag_m
     set player memento
 end
 
-set obsidian (ot_config_grab "ObsidianMainFolder")
-set notes (ot_config_grab "NotesFolder")
-set series_folder tvseries
-set resources_folder (ot_config_grab "ObsidianResourceFolder")
 if not set -q _flag_i
     set obsidian_md (rg -l "seriespath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 end
@@ -268,11 +284,8 @@ if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
     set -e season_info
 end
 
-if rg -q "$obsidian_md" ~/.config/ortscripts/series-history
-    sed -i "/$raw_file_name/d" ~/.config/ortscripts/series-history
-    echo "$obsidian_md | $season_info Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
-else
-    echo "$obsidian_md | $season_info Episode $current_episode ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/series-history
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+if rg "^last_seen:" $obsidian_md
+    sed -i '/last_seen:/d' $obsidian_md
 end
-
-rm /tmp/obsidian_last.txt
+sed -i "/^released:/a\\last_seen: $cur_date" $obsidian_md
