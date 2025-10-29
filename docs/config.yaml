@@ -102,3 +102,5 @@ BrowserManga: firefox
 # daily-note-injector
 InjectDailyNote: true 
 DailyNoteFolder: daily_notes
+# name of the dailynote template file inside your note folder
+DailyNoteTemplate: dailynote template

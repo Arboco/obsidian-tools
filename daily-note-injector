@@ -7,6 +7,8 @@ set daily_note_folder (ot_config_grab "DailyNoteFolder")
 set daily_note_folder "$obsidian/$daily_note_folder"
 set inject_permission false
 set inject_permission (ot_config_grab "InjectDailyNote")
+set dailynote_template (ot_config_grab "DailyNoteTemplate")
+set template_md (fd -t f -F "$dailynote_template" "$obsidian/$note")
 
 set today_date (date +%Y-%m-%d)
 set today_note "$daily_note_folder/$today_date.md"
@@ -14,11 +16,12 @@ set today_note "$daily_note_folder/$today_date.md"
 if test -d $daily_note_folder; and string match -q true $inject_permission
     if test -f $today_note
     else
-        echo --- >>$today_note
-        echo "tags:" >>$today_note
-        echo "cssclasses:" >>$today_note
-        echo "  - table-max" >>$today_note
-        echo --- >>$today_note
+        if test -f $template_md
+            cp $template_md $today_note
+        else
+            echo "No template found, exiting operation"
+            exit
+        end
     end
 
     set property $argv[1]
