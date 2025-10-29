@@ -224,13 +224,13 @@ else
     set info_final_playtime (grep -oP "(?<=playtime: ).*" $selection_md)
 end
 
-if rg "^sessions:" $obsidian_md
-    set info_sessions (grep -oP "(?<=sessions: ).*" $obsidian_md)
+if rg -q "^sessions:" $selection_md
+    set info_sessions (grep -oP "(?<=sessions: ).*" $selection_md)
     set sessions (math $info_sessions + 1)
-    sed -i '/sessions:/d' $obsidian_md
-    sed -i "/^playtime:/a\\sessions: $sessions" $obsidian_md
+    sed -i '/sessions:/d' $selection_md
+    sed -i "/^playtime:/a\\sessions: $sessions" $selection_md
 else
-    sed -i "/^playtime:/a\\sessions: 1" $obsidian_md
+    sed -i "/^playtime:/a\\sessions: 1" $selection_md
 end
 
 daily-note-injector gameinit_sessions 1
@@ -272,7 +272,8 @@ end
 gum style \
     --foreground 79 --border-foreground 79 --border double \
     --align center --width 70 --margin "1 2" --padding "2 4" \
-    "Playtime updated from $info_start_playtime to $info_final_playtime seconds."
+    "Playtime updated from $info_start_playtime to $info_final_playtime seconds." \
+    "Sessions updated from $info_sessions to $sessions sessions."
 
 if set -q _flag_j
     kill (pgrep -f jap-trans-server.py)
