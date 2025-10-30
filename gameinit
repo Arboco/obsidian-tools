@@ -233,8 +233,16 @@ else
     sed -i "/^playtime:/a\\sessions: 1" $selection_md
 end
 
-daily-note-injector gameinit_sessions 1
-daily-note-injector gameinit_time "$result_seconds"
+if rg -q "  - vn" $selection_md
+    daily-note-injector vn_sessions 1
+    daily-note-injector vn_time "$result_seconds"
+else if rg -q "platform: doujin" $selection_md
+    daily-note-injector doujin_sessions 1
+    daily-note-injector doujin_time "$result_seconds"
+else
+    daily-note-injector gameinit_sessions 1
+    daily-note-injector gameinit_time "$result_seconds"
+end
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_played:" $selection_md

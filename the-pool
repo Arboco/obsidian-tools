@@ -149,9 +149,12 @@ xset +dpms
 kill $(jobs -p)
 
 set end (date +%s)
-set cur_date (date +%d.%m.%y)
+set cur_date (date +%Y-%m-%d)
 set result_time (math $end - $start)
 set result_minutes (math round $result_time / 60)
+
+daily-note-injector pool_time $result_time
+daily-note-injector pool_sessions 1
 
 if test $user_value -gt 0
     if grep -q 'session:' $target_md
@@ -186,7 +189,7 @@ if grep -q 'last_seen:' $target_md
     sed -i '/last_seen:/d' "$target_md"
 end
 sed -i "/^tags:/i\\last_seen: $date_last" "$target_md"
-sed -i "/^# Session $session_number/a\\>[!info] $result_minutes minutes - $cur_date" "$target_md"
+sed -i "/^# Session $session_number/a\\>[!info] $result_minutes minutes \[\[$cur_date\]\]" "$target_md"
 sed -i "s/Session $session_number/S$session_number - $header_title/g" $target_md
 
 rm /tmp/the-pool.txt

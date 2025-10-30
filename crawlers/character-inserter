@@ -260,12 +260,21 @@ if set -q _flag_p
         set cover_name "$name-$hyphen_title_series-cover.$suffix"
         mv $cover_image $folder_res/$cover_name
 
+        if rg "series:" $obsidian_md
+            set series (grep "series:" $obsidian_md)
+        end
+
         set md "$folder_note/$name - $obs_name.md"
         set creation_date (date +"%Y-%m-%dT%H:%M:%S")
 
         echo --- >>$md
         echo "name: \"$name\"" >>$md
         echo "origin: \"[[$obs_name]]\"" >>$md
+
+        if not test -z $series
+            echo "$series" >>$md
+        end
+
         echo "creation_date: $creation_date" >>$md
         echo "cover-img: \"[[$cover_name]]\"" >>$md
         echo "tags:" >>$md

@@ -46,7 +46,7 @@ end
 mkdir -p $final_folder
 set timestamp (date +%F_%H%M%S)
 set fs_name "$sanitized_name-$timestamp.jpg"
-set cover_image (find "$HOME/Pictures/flameshot/" -maxdepth 1 -type f | gum choose)
+set cover_image (find "$HOME/Pictures/" -maxdepth 1 -type f | gum choose)
 mv $cover_image $final_folder/$fs_name
 
 if grep "cover-img:" $obsidian_md
