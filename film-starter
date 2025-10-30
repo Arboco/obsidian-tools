@@ -1,6 +1,9 @@
 #! /usr/bin/env fish
 
 set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources_folder (ot_config_grab "ObsidianResourceFolder")
 
 function help_function
     echo "You can give a number as argument which opens that episode directly"
@@ -18,11 +21,27 @@ if set -q _flag_h
 end
 
 if set -q _flag_i
-    set history_selection (tac ~/.config/ortscripts/film-history | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set selection_last_seen (rg -oP "(?<=last_seen: ).*" $obsidian/$notes)
+    for i in $selection_last_seen
+        set mdsplit (echo $i | string split ":")[1]
+        if rg -q '^filmpath:' $mdsplit
+            set t_title (echo $i | rg -o -r '$1' '.*/([^/]+)\.md:' )
+            set t_last_played (echo $i | string split ".md:")[2]
+            set final_string "$t_last_played | $t_title"
+            set final_list $final_list $final_string
+        end
+    end
+    set final_sorted_list (printf "%s\n" $final_list | sort -r)
+    for i in $final_sorted_list
+        set cleaned_final_sorted_list $cleaned_final_sorted_list (echo $i | string split "| ")[2].md
+    end
+
+    set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set obsidian_md (fd -t f -g $selection $obsidian/$notes)
+
     if echo $history_selection | rg "#Memento"
         set _flag_m 1
     end
-    set obsidian_md (echo $history_selection | string split "|" | string trim -r)[1]
 end
 
 set player mpv
@@ -30,9 +49,6 @@ if set -q _flag_m
     set player memento
 end
 
-set obsidian (ot_config_grab "ObsidianMainFolder")
-set notes (ot_config_grab "NotesFolder")
-set resources_folder (ot_config_grab "ObsidianResourceFolder")
 set film_folder film
 if not set -q _flag_i
     set obsidian_md (rg -l "filmpath:" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
@@ -127,6 +143,11 @@ if test $film_completed -eq 1
     else
         sed -i "/^filmpath:/a\\finished: $cur_date" "$obsidian_md"
     end
+
+    set d_date (date +%Y-%m-%d)
+    sed -i "/^finished:/a\\dailynote: \"\[\[$d_date\]\]\"" "$obsidian_md"
+    daily-note-injector filmstarter_time $save_time
+    daily-note-injector filmstarter_films 1
 end
 
 if test $rewatch -eq 1
@@ -154,11 +175,8 @@ if test $film_completed -eq 1
     exit
 end
 
-if rg -q "$obsidian_md" ~/.config/ortscripts/film-history
-    sed -i "/$raw_file_name/d" ~/.config/ortscripts/film-history
-    echo "$obsidian_md | ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/film-history
-else
-    echo "$obsidian_md | ($short_date) --- $percentage_int% $completed_text" >>~/.config/ortscripts/film-history
+set cur_date (date +"%Y-%m-%dT%H:%M:%S")
+if rg "^last_seen:" $obsidian_md
+    sed -i '/last_seen:/d' $obsidian_md
 end
-
-rm /tmp/obsidian_last.txt
+sed -i "/^released:/a\\last_seen: $cur_date" $obsidian_md
