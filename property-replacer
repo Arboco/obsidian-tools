@@ -1,0 +1,33 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
+
+function string_cleaner
+    set temp (string replace -a '[' '\[' -- $argv[2])
+    set $argv[1] (string replace -a ']' '\]' -- $temp)
+end
+
+set source_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+set old_property (for i in (cat $source_md ); echo $i; end | fzf --style=full)
+
+set target_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+set new_property (for i in (cat $target_md ); echo $i; end | fzf --style=full)
+
+string_cleaner old_property $old_property
+string_cleaner new_property $new_property
+
+set property_list (rg -l "$old_property" $obsidian/$notes)
+
+set counter 0
+for i in $property_list
+    sed -i "/^$old_property/c\\$new_property" $i
+    set counter (math $counter + 1)
+end
+
+echo "Changed $counter files:"
+for i in $property_list
+    echo $i
+end

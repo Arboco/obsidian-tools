@@ -1,7 +1,5 @@
 #! /usr/bin/env fish 
 
-#set file_path /home/anon/ortup/important/notes/ortvault/notes/game_db/igdb_downloader.md
-#set platform ""
 set obsidian_main (ot_config_grab "ObsidianMainFolder")
 set obsidian_res $obsidian_main/(ot_config_grab "ObsidianResourceFolder")
 set obsidian_note $obsidian_main/(ot_config_grab "NotesFolder")
@@ -10,9 +8,10 @@ set md_folder $obsidian_note/game_db/igdb
 set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
 set html "/tmp/igdb.html"
 set script_dir (realpath (status dirname))
-#for line in (cat $file_path)
-#    set array $array $line
-#end
+
+function string_sanitizer
+    string replace -a '&amp;' '&' -- "$argv[1]"
+end
 
 for i in $argv
     set array $array $i
@@ -44,13 +43,125 @@ for item in $array
     echo $game_title
     set creation_date (date +"%Y-%m-%dT%H:%M:%S")
 
+    if rg -oP '(?<=href="/game_engines/)[^<]*' $html
+        set engines (rg -oP '(?<=href="/game_engines/)[^<]*' $html | sort -u)
+        set clean_engines
+        for i in $engines
+            set temp_engines (echo $i | string split '>')[2]
+            set temp_engines (string_sanitizer $temp_engines)
+            set clean_engines $clean_engines $temp_engines
+        end
+    end
+
+    if rg -oP '(?<=href="/genres/)[^<]*' $html
+        set genres (rg -oP '(?<=href="/genres/)[^<]*' $html | sort -u)
+        set clean_genre
+        for i in $genres
+            set temp_genre (echo $i | string split '>')[2]
+            set temp_genre (string_sanitizer $temp_genre)
+            set clean_genre $clean_genre $temp_genre
+        end
+    end
+
+    if rg -oP '(?<=href="/themes/)[^<]*' $html
+        set themes (rg -oP '(?<=href="/themes/)[^<]*' $html | sort -u)
+        set clean_themes
+        for i in $themes
+            set temp_themes (echo $i | string split '>')[2]
+            set temp_themes (string_sanitizer $temp_themes)
+            set clean_themes $clean_themes $temp_themes
+        end
+    end
+
+    if rg -oP '(?<=Publishers</h6><a class=)[^<]*' $html
+        set publisher (rg -oP '(?<=Publishers</h6><a class=)[^<]*' $html | sort -u)
+        set clean_publisher
+        for i in $publisher
+            set temp_publisher (echo $i | string split '>')[2]
+            set temp_publisher (string_sanitizer $temp_publisher)
+            set clean_publisher $clean_publisher $temp_publisher
+        end
+    end
+
+    if rg -oP '(?<=Main Developers</h6><a class=)[^<]*' $html
+        set developers (rg -oP '(?<=Main Developers</h6><a class=)[^<]*' $html | sort -u)
+        set clean_developers
+        for i in $developers
+            set temp_developer (echo $i | string split '>')[2]
+            set temp_developer (string_sanitizer $temp_developer)
+            set clean_developers $clean_developers $temp_developer
+        end
+    end
+
+    if rg -oP '(?<=href="/franchises/)[^<]*' $html
+        set franchises (rg -oP '(?<=href="/franchises/)[^<]*' $html | sort -u)
+        set clean_franchises
+        for i in $franchises
+            set temp_franchises (echo $i | string split '>')[2]
+            set temp_franchises (string_sanitizer $temp_franchises)
+            set clean_franchises $clean_franchises $temp_franchises
+        end
+    end
+
+    if rg -oP '(?<=href="/collections/)[^<]*' $html
+        set collections (rg -oP '(?<=href="/collections/)[^<]*' $html | sort -u)
+        set clean_collections
+        for i in $collections
+            set temp_collections (echo $i | string split '>')[2]
+            set temp_collections (string_sanitizer $temp_collections)
+            set clean_collections $clean_collections $temp_collections
+        end
+    end
+
     #set year (cat $html | rg -oP '(?<=\()[0-9]{4}' | head -n 1)
 
     set md $md_folder/$game_title.md
 
     echo --- >>$md
     echo "title: \"$org_title\"" >>$md
-    echo "url: https://www.igdb.com/games/$game_hyphen" >>$md
+    echo "developer:" >>$md
+    if not test -z $developers
+        for i in $clean_developers
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "publisher:" >>$md
+    if not test -z $publisher
+        for i in $clean_publisher
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "collections:" >>$md
+    if not test -z $collections
+        for i in $clean_collections
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "series:" >>$md
+    if not test -z $franchises
+        for i in $clean_franchises
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "themes:" >>$md
+    if not test -z $themes
+        for i in $clean_themes
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "genres:" >>$md
+    if not test -z $genres
+        for i in $clean_genre
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "engine:" >>$md
+    if not test -z $engines
+        for i in $clean_engines
+            echo "  - \"[[$i]]\"" >>$md
+        end
+    end
+    echo "url: $item" >>$md
     echo "platform:" >>$md
     echo "status: " >>$md
     echo "date: $year-$month-$day" >>$md
