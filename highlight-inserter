@@ -71,8 +71,19 @@ base_tag_insert
 set md "$folder_note/$name - $obs_name.md"
 set creation_date (date +"%Y-%m-%dT%H:%M:%S")
 
+if rg "series:" $obsidian_md
+    set series (rg -zPU 'series:[\s\S]*?(?=\n[a-zA-Z])' $obsidian_md)
+end
+
 echo --- >>$md
 echo "name: \"$name\"" >>$md
+
+if not test -z $series
+    for i in $series
+        echo $i >>$md
+    end
+end
+
 echo "origin: \"[[$obs_name]]\"" >>$md
 echo "creation_date: $creation_date" >>$md
 echo "tags:" >>$md

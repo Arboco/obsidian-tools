@@ -9,8 +9,12 @@ set sed_string "s/ & /-and-/g; s/+/-plus/g; s/ /-/g; s/'/-/g; s/[!:.]//g"
 set html "/tmp/igdb.html"
 set script_dir (realpath (status dirname))
 
+argparse --name=gameinit d/duplicate 'n/name=' -- $argv
+or return
+
 function string_sanitizer
-    string replace -a '&amp;' '&' -- "$argv[1]"
+    set temp_string (string replace -a '&amp;' '&' -- "$argv[1]")
+    string replace -a ':' '' -- $temp_string
 end
 
 for i in $argv
@@ -115,7 +119,11 @@ for item in $array
 
     #set year (cat $html | rg -oP '(?<=\()[0-9]{4}' | head -n 1)
 
-    set md $md_folder/$game_title.md
+    if set -q _flag_d
+        set md "$md_folder/$game_title ($year).md"
+    else
+        set md $md_folder/$game_title.md
+    end
 
     echo --- >>$md
     echo "title: \"$org_title\"" >>$md

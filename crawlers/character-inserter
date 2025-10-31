@@ -104,7 +104,9 @@ function vndb_function
         echo "origin: \"[[$obs_name]]\"" >>$md
 
         if not test -z $series
-            echo "$series" >>$md
+            for i in $series
+                echo $i >>$md
+            end
         end
 
         echo "creation_date: $creation_date" >>$md
@@ -136,7 +138,7 @@ set obs_name (basename -s ".md" $obsidian_md)
 set hyphen_title_series (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
 if rg "series:" $obsidian_md
-    set series (grep "series:" $obsidian_md)
+    set series (rg -zPU 'series:[\s\S]*?(?=\n[a-zA-Z])' $obsidian_md)
 end
 
 if cat $obsidian_md | rg "platform: doujin"
@@ -213,7 +215,9 @@ if set -q _flag_a
         echo "origin: \"[[$obs_name]]\"" >>$md
 
         if not test -z $series
-            echo "$series" >>$md
+            for i in $series
+                echo $i >>$md
+            end
         end
 
         echo "creation_date: $creation_date" >>$md
@@ -282,7 +286,9 @@ if set -q _flag_p
         echo "origin: \"[[$obs_name]]\"" >>$md
 
         if not test -z $series
-            echo "$series" >>$md
+            for i in $series
+                echo $i >>$md
+            end
         end
 
         echo "creation_date: $creation_date" >>$md
@@ -354,7 +360,9 @@ end
 echo "origin: \"[[$obs_name]]\"" >>$md
 
 if not test -z $series
-    echo "$series" >>$md
+    for i in $series
+        echo $i >>$md
+    end
 end
 
 echo "creation_date: $creation_date" >>$md
