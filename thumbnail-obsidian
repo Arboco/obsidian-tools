@@ -1,6 +1,6 @@
 #! /usr/bin/env fish
 
-argparse --name=gameinit p/pool h/help 'n/name=' -- $argv
+argparse --name=gameinit f/flameshot p/pool h/help 'n/name=' -- $argv
 or return
 
 set obsidian_main (ot_config_grab "ObsidianMainFolder")
@@ -46,7 +46,12 @@ end
 mkdir -p $final_folder
 set timestamp (date +%F_%H%M%S)
 set fs_name "$sanitized_name-$timestamp.jpg"
-set cover_image (find "$HOME/Pictures/" -maxdepth 1 -type f | gum choose)
+
+set default_folder "$HOME/Pictures/"
+if set -q _flag_f
+    set default_folder "$HOME/Pictures/flameshot/"
+end
+set cover_image (find $default_folder -maxdepth 1 -type f | gum choose)
 mv $cover_image $final_folder/$fs_name
 
 if grep "cover-img:" $obsidian_md

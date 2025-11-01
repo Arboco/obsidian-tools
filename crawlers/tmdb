@@ -69,7 +69,7 @@ for item in $argv
         echo " - $i" >>$md_final
     end
     echo "type: $type" >>$md_final
-    echo "released: $date" >>$md_final
+    echo "date: $date" >>$md_final
     echo "status:" >>$md_final
     echo "score:" >>$md_final
     echo "cover-img: \"[[$hyphen_title-$type.jpg]]\"" >>$md_final
