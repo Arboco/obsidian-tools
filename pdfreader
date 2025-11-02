@@ -31,7 +31,7 @@ if set -q _flag_i
     end
 
     set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
-    set obsidian_md (fd -t f -F $selection $obsidian/$notes)
+    set obsidian_md (fd -t f -F $selection $obsidian_folder/$notes)
 end
 
 if not set -q _flag_i
@@ -53,7 +53,6 @@ if cat $obsidian_md | grep -q "pages:"
 else
     set page_num 0
 end
-
 okular --page $page_num $pdf_path &
 sleep 2
 set okular_instance (echo (qdbus | grep okular)[1] | string trim -lr)

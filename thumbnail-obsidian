@@ -56,6 +56,8 @@ mv $cover_image $final_folder/$fs_name
 
 if grep "cover-img:" $obsidian_md
     echo -e "![[$fs_name]]\n" >>"$obsidian_md"
-else
+else if grep "tags:" $obsidian_md
     sed -i "/^tags:/i\\cover-img: \"[[$fs_name]]\"" "$obsidian_md"
+else
+    sed -i "0,/^---/a\\cover-img: \"[[$fs_name]]\"" "$obsidian_md"
 end

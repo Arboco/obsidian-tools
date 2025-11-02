@@ -101,7 +101,6 @@ function vndb_function
         echo --- >>$md
         echo "name: \"$eng_names[$num]\"" >>$md
         echo "j_name: \"$jap_names[$num]\"" >>$md
-        echo "origin: \"[[$obs_name]]\"" >>$md
 
         if not test -z $series
             for i in $series
@@ -109,6 +108,7 @@ function vndb_function
             end
         end
 
+        echo "origin: \"[[$obs_name]]\"" >>$md
         echo "creation_date: $creation_date" >>$md
         echo "url: \"$argv[1]\"" >>$md
         echo "cover-img: \"[[$hyphen_name-$hyphen_title_series-chardb.jpg]]\"" >>$md
