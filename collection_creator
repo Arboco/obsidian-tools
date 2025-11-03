@@ -1,0 +1,52 @@
+#! /usr/bin/env fish
+
+set script_dir (realpath (status dirname))
+set obsidian (ot_config_grab "ObsidianMainFolder")
+set notes (ot_config_grab "NotesFolder")
+set resources (ot_config_grab "ObsidianResourceFolder")
+
+function string_cleaner
+    set temp (string replace -a '[' '\[' -- $argv[2])
+    set $argv[1] (string replace -a ']' '\]' -- $temp)
+end
+
+set member 123
+echo "Set search string:"
+read searchstring
+while not test -z $member
+    set list (fd -t f -i ".*$searchstring.*.md" $obsidian/$notes)
+
+    set result
+
+    for item in $list
+        if not contains $item $member_list
+            set result $result $item
+        end
+    end
+
+    set member (for i in $result; echo $i; end | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
+    set member_list $member_list $member
+end
+
+for i in $member_list
+    echo $i
+end
+
+set collection_name (rg -I "  - \"\[\[" $member_list | sort -u | fzf --delimiter='/' --with-nth=-1 --style=full)
+
+echo "Select Collection Type"
+set collection_type (gum choose --limit 1 "series" "collection" )
+echo "Select above where to insert"
+set collection_insert (gum choose --limit 1 "themes" "origin" )
+
+for i in $member_list
+    if rg "$collection_type:" $i
+        if rg -F "$collection_name" $i
+        else
+            sed -i "/^$collection_type:/a\\$collection_name" $i
+        end
+    else
+        sed -i "/^$collection_insert:/i\\$collection_type:" $i
+        sed -i "/^$collection_type:/a\\$collection_name" $i
+    end
+end
