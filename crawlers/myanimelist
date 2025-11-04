@@ -54,8 +54,10 @@ for item in $array
         set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         set hyphen_title "$hyphen_title-a"
         set file_title (echo $title | sed 's/://g; s/[\|/]/ /g')
-        if set -q _flag_t; or not test -f "$md_folder/$file_title.md"
+        set path_exists (fd -t f "$file_title.md" $obsidian_note)
+        if not test -z $path_exists
             set file_title (echo "$file_title (TV)")
+            set hyphen_title "$hyphen_title-tv"
         end
         set jap_title (cat $html | grep -oP '(?<=Japanese:</span> ).*')
 

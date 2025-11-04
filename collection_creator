@@ -35,9 +35,9 @@ end
 set collection_name (rg -I "  - \"\[\[" $member_list | sort -u | fzf --delimiter='/' --with-nth=-1 --style=full)
 
 echo "Select Collection Type"
-set collection_type (gum choose --limit 1 "series" "collection" )
+set collection_type (gum choose --limit 1 "series" "collection")
 echo "Select above where to insert"
-set collection_insert (gum choose --limit 1 "themes" "origin" )
+set collection_insert (gum choose --limit 1 "themes" "origin" "genre")
 
 for i in $member_list
     if rg "$collection_type:" $i

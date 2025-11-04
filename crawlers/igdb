@@ -42,6 +42,10 @@ for item in $array
         set day "0$day"
     end
 
+    set org_title (string_sanitizer $game_title)
+    set game_title (string_sanitizer $game_title)
+    set game_hyphen (string_sanitizer $game_hyphen)
+
     echo $org_title
     echo $game_hyphen
     echo $game_title
@@ -119,8 +123,9 @@ for item in $array
 
     #set year (cat $html | rg -oP '(?<=\()[0-9]{4}' | head -n 1)
 
-    if set -q _flag_d
+    if set -q _flag_d; or not test -f (fd -t f "^$game_title.md" $obsidian_note)
         set md "$md_folder/$game_title ($year).md"
+        set game_hyphen "$game_hyphen-$year"
     else
         set md $md_folder/$game_title.md
     end

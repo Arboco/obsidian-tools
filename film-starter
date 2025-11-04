@@ -179,4 +179,4 @@ set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_seen:" $obsidian_md
     sed -i '/last_seen:/d' $obsidian_md
 end
-sed -i "/^released:/a\\last_seen: $cur_date" $obsidian_md
+sed -i "/^date:/a\\last_seen: $cur_date" $obsidian_md

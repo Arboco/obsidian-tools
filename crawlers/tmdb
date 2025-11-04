@@ -54,6 +54,11 @@ for item in $argv
         set season_number (jq '[.seasons[].season_number] | max' $json_file)
     end
 
+    set year (echo $date | rg -o "[0-9]{4}")
+    if fd -t f "^$santized_title.md" $obsidian_note
+        set md_final "$series_folder/$santized_title ($year).md"
+    end
+
     set original_language (jq '.original_language' $json_file)
     set top_cast (jq -r '.cast | sort_by(.order) | .[:10] | .[].name' $credits_file)
 
