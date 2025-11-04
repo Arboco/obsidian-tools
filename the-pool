@@ -153,8 +153,16 @@ set cur_date (date +%Y-%m-%d)
 set result_time (math $end - $start)
 set result_minutes (math round $result_time / 60)
 
-daily-note-injector pool_time $result_time
-daily-note-injector pool_sessions 1
+if rg "pool: godot" $target_md
+    daily-note-injector godot_time $result_time
+    daily-note-injector godot_sessions 1
+else if rg "pool: art" $target_md
+    daily-note-injector art_time $result_time
+    daily-note-injector art_sessions 1
+else
+    daily-note-injector pool_time $result_time
+    daily-note-injector pool_sessions 1
+end
 
 if test $user_value -gt 0
     if grep -q 'session:' $target_md

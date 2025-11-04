@@ -123,7 +123,8 @@ for item in $array
 
     #set year (cat $html | rg -oP '(?<=\()[0-9]{4}' | head -n 1)
 
-    if set -q _flag_d; or not test -f (fd -t f "^$game_title.md" $obsidian_note)
+    set path_exists (fd -t f "$game_title.md" $obsidian_note)
+    if not test -z $path_exists
         set md "$md_folder/$game_title ($year).md"
         set game_hyphen "$game_hyphen-$year"
     else

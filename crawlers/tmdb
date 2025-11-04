@@ -40,7 +40,7 @@ for item in $argv
         set title (jq '.title' $json_file | sed 's/"//g')
         set org_title (jq '.original_title' $json_file | sed 's/"//g')
         set creator (jq -r '.crew[] | select(.job == "Director") | .name' $credits_file)
-        set santized_title (echo $title | sed -E 's/[\/\\]/ /g;s/^ //; s/ $//')
+        set santized_title (echo $title | sed 's/://g; s/[\|/]/ /g')
         set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         set md_final $movies_folder/$santized_title.md
     else if string match tv $type
@@ -48,15 +48,17 @@ for item in $argv
         set title (jq '.name' $json_file | sed 's/"//g')
         set org_title (jq '.original_name' $json_file | sed 's/"//g')
         set creator (jq -r '.created_by[].name' $json_file)
-        set santized_title (echo $title | sed -E 's/[\/\\:]/ /g; s/^ //; s/ $//')
+        set santized_title (echo $title | sed 's/://g; s/[\|/]/ /g')
         set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         set md_final $series_folder/$santized_title.md
         set season_number (jq '[.seasons[].season_number] | max' $json_file)
     end
 
     set year (echo $date | rg -o "[0-9]{4}")
-    if fd -t f "^$santized_title.md" $obsidian_note
+    set path_exists (fd -t f "$santized_title.md" $obsidian_note)
+    if not test -z $path_exists
         set md_final "$series_folder/$santized_title ($year).md"
+        set hyphen_title "$santized_title-$year"
     end
 
     set original_language (jq '.original_language' $json_file)

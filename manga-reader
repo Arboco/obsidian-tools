@@ -36,7 +36,7 @@ if set -q _flag_i
     end
 
     set selection (for i in $cleaned_final_sorted_list; echo $i; end | fzf --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
-    set manga_md (fd -t f -g $selection $obsidian/$notes)
+    set manga_md (fd -t f "^$selection" $obsidian_folder/$notes)
 end
 
 if test -z $manga_md
@@ -74,8 +74,14 @@ end
 $script_dir/scripts/manga_input.fish "$manga_md" "$volume_md" &
 firefox "$volume_path"
 
+echo "Number to save pages. f to indicate volume is finished."
 read selection
-
+set finished_manga 0
+if string match f $selection
+    set finished_manga 1
+    echo "How many pages did volume have?"
+    read selection
+end
 kill $(jobs -p)
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
@@ -92,8 +98,7 @@ if grep -q "pages:" $volume_md
 end
 sed -i "/^volume:/a\\pages: $selection" "$volume_md"
 
-if string match f $selection
-    sed -i '/pages:/d' "$volume_md"
+if string match 1 $finished_manga
     sed -i '/volumepath:/d' "$manga_md"
     sed -i "/^tags:/i\\finished-date: $cur_date" "$volume_md"
     sed -i "/read-volumes:/d" "$manga_md"
@@ -163,6 +168,7 @@ if test $current_page -gt $old_page
 end
 
 daily-note-injector mangapages $page_difference
+daily-note-injector mangavolume 1
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_read:" $manga_md
