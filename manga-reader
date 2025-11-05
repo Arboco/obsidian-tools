@@ -141,6 +141,11 @@ echo $volume_md
 set page_difference (math $current_page - $old_page)
 set cur_date (date +%Y-%m-%d)
 
+if string match 1 $finished_manga
+    daily-note-injector mangapages $selection
+    daily-note-injector mangavolume 1
+end
+
 if grep "# Info" $volume_md
 else
     echo "# Info" >>$volume_md
@@ -166,9 +171,6 @@ if test $current_page -gt $old_page
         mv /tmp/clone2.md $volume_md
     end
 end
-
-daily-note-injector mangapages $page_difference
-daily-note-injector mangavolume 1
 
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
 if rg "^last_read:" $manga_md
