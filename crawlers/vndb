@@ -46,8 +46,9 @@ for item in $array
         set weg true
     end
     set game_title (string trim --right "$game_title")
+    set jap_title (rg -o --multiline --multiline-dotall '<tr class="title"><td>.*?</span>' $html | rg -oP '(?<=<span lang="ja">)[^<]*')
     set year (cat $html | grep -oP '(?<="tc1">)[^<]*' | head -n 1)
-    set developer (cat $html | grep -oP '(?<=">)[^<]*(?=</a></td>)' | head -n 1)
+    set developer (rg -o --multiline --multiline-dotall '<td>Developer</td>.*?</td>' $html | rg -oP '(?<=title=")[^"]*')
 
     set santized_title (echo $game_title | sed -E 's/[\/\\]/ /g;s/^ //; s/ $//')
     set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
@@ -56,10 +57,16 @@ for item in $array
 
     echo --- >>$md_folder/$santized_title.md
     echo "title: \"$game_title\"" >>$md_folder/$santized_title.md
-    echo "developer: \"$developer\"" >>$md_folder/$santized_title.md
+    echo "j_title: \"$jap_title\"" >>$md_folder/$santized_title.md
+    echo "developer:" >>$md_folder/$santized_title.md
+    for i in $developer
+        echo "  - \"[[$i]]\"" >>$md_folder/$santized_title.md
+    end
     echo "url: $item" >>$md_folder/$santized_title.md
     echo "platform: $platform" >>$md_folder/$santized_title.md
     echo "status:" >>$md_folder/$santized_title.md
+    echo "themes:" >>$md_folder/$santized_title.md
+    echo "genres:" >>$md_folder/$santized_title.md
     echo "date: $year" >>$md_folder/$santized_title.md
     echo "creation_date: $creation_date" >>$md_folder/$santized_title.md
     echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md_folder/$santized_title.md

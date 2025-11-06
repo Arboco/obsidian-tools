@@ -63,6 +63,12 @@ function vndb_function
         set search_string ""
     end
 
+    echo "Do you want to go trough all characters?"
+    set full_option (gum choose --limit 1 "Yes" "No")
+    if string match Yes $full_option
+        set search_string ""
+    end
+
     set jap_names (cat $html | grep -oP "$begin_string$search_string" | grep -oP '(?<=<small style="margin-right: 10px" lang="ja">)[^<]*')
     set eng_names (cat $html | grep -oP "$begin_string$search_string"  | grep -oP '(?<=lang="ja-Latn">)[^<]*')
     set img_links (cat $html | grep -oP "$begin_string$search_string"  | grep -oP '(?<=<img src=")https:[^"]*')
@@ -87,6 +93,7 @@ function vndb_function
                 set num (math $num + 1)
                 continue
             end
+            set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
         end
         echo $skip
         echo "Attachement:"

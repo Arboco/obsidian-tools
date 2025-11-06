@@ -142,9 +142,9 @@ set page_difference (math $current_page - $old_page)
 set cur_date (date +%Y-%m-%d)
 
 if string match 1 $finished_manga
-    daily-note-injector mangapages $selection
     daily-note-injector mangavolume 1
 end
+daily-note-injector mangapages $page_difference
 
 if grep "# Info" $volume_md
 else

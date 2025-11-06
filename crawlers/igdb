@@ -26,6 +26,7 @@ for item in $array
 
     node $script_dir/fetch-page.js "$item" >/tmp/igdb.html
     set org_title (cat /tmp/igdb.html | grep -oP '(?<=MuiTypography-h3">)[^<]*' | sed 's/[[:blank:]]*$//; s/&#39;//g')
+    set jap_title (rg -oP '(?<=<strong>Japan:</strong> )[^<]*' $html)
     set game_title (echo $org_title | sed 's/://g; s/[\|/]/ /g')
     set game_hyphen (echo $game_title | tr '[:upper:]' '[:lower:]' | sed $sed_string)
 
@@ -133,6 +134,9 @@ for item in $array
 
     echo --- >>$md
     echo "title: \"$org_title\"" >>$md
+    if not test -z $jap_title
+        echo "j_title: \"$jap_title\"" >>$md
+    end
     echo "developer:" >>$md
     if not test -z $developers
         for i in $clean_developers
