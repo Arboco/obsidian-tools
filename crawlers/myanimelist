@@ -35,6 +35,8 @@ for item in $array
         set type_selector ln
     else if echo $type | rg Manga
         set type_selector manga
+    else if echo $type | rg Manhwa
+        set type_selector manhwa
     else if echo $type | rg One-shot
         set type_selector manga
     else
@@ -274,6 +276,86 @@ for item in $array
         echo "  - db" >>$md
         echo "creation_date: $creation_date" >>$md
         echo --- >>$md
+    else if string match manhwa $type_selector
+        echo "Processing manwha metadata:"
+
+        set title (cat $html | grep -oP '(?<=title" content=")[^"]*')
+        set total_chapter (cat $html | grep -oP '(?<=Chapters:</span> ).*')
+        set total_volumes (cat $html | grep -oP '(?<=Volumes:</span> ).*')
+
+        set santized_title (echo $title | sed -E 's/[^a-zA-Z0-9]+/ /g; s/^ //; s/ $//')
+        set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        set hyphen_title "$hyphen_title-ml"
+        set file_title (echo $title | sed 's/://g; s/[\|/]/ /g')
+        set jap_title (cat $html | grep -oP '(?<=Japanese:</span> )[^<]*')
+
+        set genres (rg --multiline --multiline-dotall '<span class="dark_text">Genres?:</span>.*?</div>' $html)
+        set genres (echo $genres | rg -oP '(?<=title=")[^"]*')
+
+        set themes (rg --multiline --multiline-dotall '<span class="dark_text">Themes?:</span>.*?</div>' $html)
+        set themes (echo $themes | rg -oP '(?<=title=")[^"]*')
+
+        set demographic (rg --multiline --multiline-dotall '<span class="dark_text">Demographic?:</span>.*?</div>' $html)
+        set demographic (echo $demographic | rg -oP '(?<=title=")[^"]*')
+
+        set serialization (rg --multiline --multiline-dotall '<span class="dark_text">Serialization?:</span>.*?</div>' $html)
+        set serialization (echo $serialization | rg -oP '(?<=title=")[^"]*')
+
+        set authors (rg -oP '(?<=<a href="/people/)[^<]*' $html | sort -u)
+        set trim_list
+        for i in $authors
+            set trim (string split '>' $i)[2]
+            set trim (string replace ',' '' $trim)
+            set trim_list $trim_list $trim
+        end
+        set authors $trim_list
+
+        set md "$md_folder/$file_title.md"
+        set date (cat $html | grep -oP '... .?[0-9]+, [0-9]{4}' | head -n 1)
+        set date (date -d $date +"%Y-%m-%d")
+        set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+
+        wget -O $img_folder/$hyphen_title.jpg (cat $html | grep -oP -m 1 '(?<=data-src=")[^"]*')
+
+        echo --- >>$md
+        echo "title: \"$title\"" >>$md
+        echo "k_title: \"$jap_title\"" >>$md
+        echo "authors:" >>$md
+        for i in $authors
+            echo "  - \"[[$i]]\"" >>$md
+        end
+        echo "date: $date" >>$md
+        echo "demographic:" >>$md
+        for i in $demographic
+            echo "  - \"[[$i]]\"" >>$md
+        end
+        echo "serialization:" >>$md
+        for i in $serialization
+            echo "  - \"[[$i]]\"" >>$md
+        end
+        echo "themes:" >>$md
+        for i in $themes
+            echo "  - \"[[$i]]\"" >>$md
+        end
+        echo "genres:" >>$md
+        for i in $genres
+            echo "  - \"[[$i]]\"" >>$md
+        end
+        echo "url: $item" >>$md
+        echo "type: $type" >>$md
+        echo "volumes: $total_volumes" >>$md
+        echo "read-volumes:" >>$md
+        echo "chapters: $total_chapter" >>$md
+        echo "read-chapters:" >>$md
+        echo "score: $score" >>$md
+        echo "status: \"Plan to Read\"" >>$md
+        echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md
+        echo "tags:" >>$md
+        echo "  - manga" >>$md
+        echo "  - db" >>$md
+        echo "creation_date: $creation_date" >>$md
+        echo --- >>$md
+
     else
         echo "No type found, exiting"
         exit

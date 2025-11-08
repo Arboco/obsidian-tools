@@ -13,10 +13,6 @@ argparse --name=gn a/myanimelist p/personality v/vndb s/skip h/help 'n/name=' --
 or return
 
 function base_tag_insert
-    if grep "  - chardb" $obsidian_md
-    else
-        sed -i '/^tags:/a\  - chardb' $obsidian_md
-    end
 
     if not grep -q "```base" $obsidian_md; and test -f $base_insert
         #sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
@@ -133,8 +129,72 @@ function vndb_function
         set num (math $num + 1)
         echo $num
     end
-    set base_insert "$HOME/.config/ortscripts/base-character-insert"
-    base_tag_insert
+    exit
+end
+
+function vndbsingle_function
+    for url in $argv
+        set html /tmp/vndb.html
+        curl -s -A Mozilla/5.0 "(X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0" "$url" >$html
+        set game_title (cat $html | grep -oP '(?<=ja-Latn">)[^<]*' | head -n 1)
+        set game_title (string trim --right "$game_title")
+        set santized_title (echo $game_title | sed -E 's/[^a-zA-Z0-9]+/ /g; s/^ //; s/ $//')
+        set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+        set jap_names (rg -oP '(?<=<h2 class="alttitle" lang="ja">)[^<]*' $html)
+        set eng_names $game_title
+        set img_links (rg -oP '(?<=<img src=")[^"]*' $html)[1]
+
+        set final_folder "$character_md/$hyphen_title"
+        set final_img_folder "$character_img/$hyphen_title"
+        mkdir -p $final_folder
+        mkdir -p $final_img_folder
+        set num 1
+
+        set md "$final_folder/$eng_names - $obs_name.md"
+        set hyphen_name (echo $eng_names | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+        wget -O "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_links
+        kitty icat "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg"
+
+        set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
+
+        echo "Attachement:"
+        read attachement
+        echo "Personality:"
+        read personality
+        echo "Design:"
+        read design
+
+        set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+
+        echo --- >>$md
+        echo "name: \"$eng_names\"" >>$md
+        echo "j_name: \"$jap_names\"" >>$md
+
+        if not test -z $series
+            for i in $series
+                echo $i >>$md
+            end
+        end
+
+        echo "origin: \"[[$obs_name]]\"" >>$md
+        echo "creation_date: $creation_date" >>$md
+        echo "url: \"$url\"" >>$md
+        echo "cover-img: \"[[$hyphen_name-$hyphen_title_series-chardb.jpg]]\"" >>$md
+        echo "tags:" >>$md
+        echo "  - chardb" >>$md
+        echo "medium: \"$medium\"" >>$md
+        echo "character: \"$gender\"" >>$md
+        echo "attachement: $attachement" >>$md
+        echo "personality: $personality" >>$md
+        echo "design: $design" >>$md
+        echo "traits: $traits" >>$md
+        echo "category: Character" >>$md
+        echo --- >>$md
+
+        set num (math $num + 1)
+        echo $num
+    end
     exit
 end
 
@@ -170,6 +230,11 @@ else if cat $obsidian_md | rg "type: movie"
     set medium film
 else if cat $obsidian_md | rg "type: tv"
     set medium tv
+end
+
+if grep "  - chardb" $obsidian_md
+else
+    sed -i '/^tags:/a\  - chardb' $obsidian_md
 end
 
 if set -q _flag_a
@@ -242,14 +307,17 @@ if set -q _flag_a
         echo --- >>$md
     end
 
-    set base_insert "$HOME/.config/ortscripts/base-character-insert"
-    base_tag_insert
     rm /tmp/myanime.html
     exit
 end
 
 if set -q _flag_v
     vndb_function $argv[1]
+    exit
+end
+
+if echo $argv[1] | rg "vndb.org/c"
+    vndbsingle_function $argv
     exit
 end
 
@@ -277,9 +345,6 @@ if set -q _flag_p
         read personality
         echo "Design:"
         read design
-
-        set base_insert "$HOME/.config/ortscripts/base-media-insert"
-        base_tag_insert
 
         set suffix (echo (string split '.' $cover_image)[-1])
         set cover_name "$name-$hyphen_title_series-cover.$suffix"
@@ -333,9 +398,6 @@ echo "Personality:"
 read personality
 echo "Design:"
 read design
-
-set base_insert "$HOME/.config/ortscripts/base-media-insert"
-base_tag_insert
 
 ## trait selector, too slow to use currently 
 #set escape_sequence 0

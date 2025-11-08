@@ -83,6 +83,7 @@ for item in $argv
     echo "tags:" >>$md_final
     echo " - tvdb" >>$md_final
     echo " - db" >>$md_final
+    echo "themes:" >>$md_final
     echo "genre:" >>$md_final
     for i in $genres
         echo " - $i" >>$md_final

@@ -51,6 +51,7 @@ for item in $array
     echo "type: \"$work_type\"" >>$md_folder/$game_title.md
     echo "url: $item" >>$md_folder/$game_title.md
     echo "code: $rj" >>$md_folder/$game_title.md
+    echo "themes:" >>$md_folder/$game_title.md
     echo "genre:" >>$md_folder/$game_title.md
 
     for i in $genre_name_array
