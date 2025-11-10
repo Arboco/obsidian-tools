@@ -136,13 +136,13 @@ function vndbsingle_function
     for url in $argv
         set html /tmp/vndb.html
         curl -s -A Mozilla/5.0 "(X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0" "$url" >$html
-        set game_title (cat $html | grep -oP '(?<=ja-Latn">)[^<]*' | head -n 1)
+        set game_title $obs_name
         set game_title (string trim --right "$game_title")
         set santized_title (echo $game_title | sed -E 's/[^a-zA-Z0-9]+/ /g; s/^ //; s/ $//')
         set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
         set jap_names (rg -oP '(?<=<h2 class="alttitle" lang="ja">)[^<]*' $html)
-        set eng_names $game_title
+        set eng_names (cat $html | grep -oP '(?<=ja-Latn">)[^<]*' | head -n 1)
         set img_links (rg -oP '(?<=<img src=")[^"]*' $html)[1]
 
         set final_folder "$character_md/$hyphen_title"
@@ -154,9 +154,20 @@ function vndbsingle_function
         set md "$final_folder/$eng_names - $obs_name.md"
         set hyphen_name (echo $eng_names | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
         wget -O "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg" $img_links
+
+        echo $eng_names
+        echo $jap_names
+        echo $final_folder
         kitty icat "$final_img_folder/$hyphen_name-$hyphen_title_series-chardb.jpg"
 
-        set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
+        set crawled_gender (rg -oP '(?<=<abbr class=")[^<]*' $html | rg -oP '(?<=Sex: )[^"]*')
+        if string match Male $crawled_gender
+            set gender male
+        else if string match Female $crawled_gender
+            set gender female
+        else
+            set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
+        end
 
         echo "Attachement:"
         read attachement
@@ -198,7 +209,10 @@ function vndbsingle_function
     exit
 end
 
-set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
+if echo $argv[1] | rg "vndb.org/c"
+else
+    set gender (gum choose --limit 1 "female" "male" "object" "weapon" "creature")
+end
 
 set obsidian_md (fd -t f -F ".md" $obsidian | sort -r | fzf --delimiter='/' --with-nth=-1 --style=full --preview "$script_dir/scripts/media-fzf.fish {}")
 set obs_name (basename -s ".md" $obsidian_md)

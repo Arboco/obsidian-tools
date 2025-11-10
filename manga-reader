@@ -68,6 +68,7 @@ else
         \n"tags:" \
         \n"  - manga-reader" \
         \n"  - db" \
+        \n"score:" \
         \n"---" >>$volume_md
 end
 
@@ -111,7 +112,7 @@ if string match 1 $finished_manga
 end
 
 set dataviewcheck false
-if grep -q "```dataview" $manga_md; or grep -q "```base" $manga_md
+if grep -q "```dataview" $manga_md; or grep -q "```base" $manga_md; or grep -q "Info Base.base" $manga_md
     set dataviewcheck true
 end
 

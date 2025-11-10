@@ -5,7 +5,6 @@ set main_res_folder (ot_config_grab "ObsidianResourceFolder")
 set main_note_folder (ot_config_grab "NotesFolder")
 set folder_note (ot_config_grab "CharacterNote")
 set folder_res (ot_config_grab "CharacterRes")
-set base_insert
 
 argparse --name=gn h/help 'n/name=' -- $argv
 or return
@@ -16,23 +15,26 @@ function base_tag_insert
         sed -i '/^tags:/a\  - highlight' $obsidian_md
     end
 
-    if not grep -q "```base" $obsidian_md; and test -f $base_insert
+    if not grep -q "Info Base.base" $obsidian_md
         #sed -i "/^tags:/i\\cssclasses:" "$obsidian_md"
         # sed -i "/^cssclasses:/a\\  - table-max" "$obsidian_md"
-        set input_file $obsidian_md
-        set insert_file $base_insert
-
-        set last_delim_line (grep -n '^---$' $input_file | cut -d: -f1 | tail -n 1)
-        if cat $obsidian_md | grep "# Info"
-            set last_delim_line (grep -n '# Info' $input_file | cut -d: -f1 | tail -n 1)
+        if string match manga $medium
+            set input_file "![[Manga Info Base.base]]"
+        else if string match vn $medium
+            set input_file "![[VN Info Base.base]]"
+        else if string match anime $medium
+            set input_file "![[Anime Info Base.base]]"
+        else
+            set input_file "![[Game Info Base.base]]"
         end
-        set after_line (math $last_delim_line + 1)
 
-        head -n $last_delim_line $input_file >/tmp/temp_before.txt
-        tail -n +$after_line $input_file >/tmp/temp_after.txt
-        cat /tmp/temp_before.txt $insert_file /tmp/temp_after.txt >/tmp/temp_combined.txt
-
-        mv /tmp/temp_combined.txt $input_file
+        if cat $obsidian_md | grep "# Info"
+            sed -i "/# Info/a\\$input_file" $obsidian_md
+        else
+            sed -i "$(awk '/---/{c++} c==2{print NR; exit}' "$obsidian_md")a\\
+$input_file
+" "$obsidian_md"
+        end
     end
 end
 
@@ -65,11 +67,10 @@ read name
 echo "Value of the Highlight:"
 read value
 
-set base_insert "$HOME/.config/ortscripts/base-media-insert"
-base_tag_insert
-
 set md "$folder_note/$name - $obs_name.md"
 set creation_date (date +"%Y-%m-%dT%H:%M:%S")
+
+base_tag_insert
 
 if rg "series:" $obsidian_md
     set series (rg -zPU 'series:[\s\S]*?(?=\n[a-zA-Z])' $obsidian_md)
@@ -96,3 +97,5 @@ echo "counter: " >>$md
 echo "last_seen: " >>$md
 echo "category: Highlight" >>$md
 echo --- >>$md
+
+sed -i "/tags:/a\\  - highlight" $obsidian_md

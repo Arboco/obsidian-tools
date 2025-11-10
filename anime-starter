@@ -123,7 +123,7 @@ end
 set parent_md $obsidian_md
 
 set dataviewcheck false
-if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md
+if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md; or grep -q "Info Base.base" $parent_md
     set dataviewcheck true
 end
 

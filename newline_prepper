@@ -4,11 +4,9 @@ set x (tail -n 1 $argv[1])
 set newline_added 0
 while string match -q 0 $newline_added
     if test -z $x
-        echo "cleaning empty lines"
         sed -i '$d' $argv[1]
         set x (tail -n 1 $argv[1])
     else
-        echo "adding clean newline"
         echo "" >>$argv[1]
         set newline_added 1
     end
