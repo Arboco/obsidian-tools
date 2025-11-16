@@ -53,7 +53,8 @@ for item in $array
     set santized_title (echo $game_title | sed -E 's/[\/\\]/ /g;s/^ //; s/ $//')
     set hyphen_title (echo $santized_title | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
     set creation_date (date +"%Y-%m-%dT%H:%M:%S")
-    wget -O "$img_folder/$hyphen_title.jpg" $img
+    set cover_name $hyphen_title-vn.jpg
+    wget -O "$img_folder/$cover_name" $img
 
     echo --- >>$md_folder/$santized_title.md
     echo "title: \"$game_title\"" >>$md_folder/$santized_title.md
@@ -69,7 +70,7 @@ for item in $array
     echo "genres:" >>$md_folder/$santized_title.md
     echo "date: $year" >>$md_folder/$santized_title.md
     echo "creation_date: $creation_date" >>$md_folder/$santized_title.md
-    echo "cover-img: \"[[$hyphen_title.jpg]]\"" >>$md_folder/$santized_title.md
+    echo "cover-img: \"[[$cover_name]]\"" >>$md_folder/$santized_title.md
 
     if string match true $weg
         echo "tags:" >>$md_folder/$santized_title.md

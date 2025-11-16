@@ -24,6 +24,7 @@ set alt_controls false
 
 set hold_button (ot_config_grab "Profile"$id"HoldButton")
 set screenshot_button (ot_config_grab "Profile"$id"ScreenshotButton")
+set onebutton_screenshot (ot_config_grab "Profile"$id"OneButtonScreenshot")
 set mindpalace_button (ot_config_grab "Profile"$id"MindPalace")
 set record_button (ot_config_grab "Profile"$id"RecordButton")
 set audio_button (ot_config_grab "Profile"$id"AudioButton")
@@ -35,6 +36,9 @@ set mind_palace_uuid (uuidgen)
 if test -z $screenshot_button
     set screenshot_button screenshot_button
 end
+if test -z $onebutton_screenshot
+    set onebutton_screenshot onebutton_screenshot
+end
 if test -z $record_button
     set record_button record_button
 end
@@ -45,7 +49,7 @@ if test -z $select_screenshot
     set select_screenshot select_screenshot
 end
 if test -z $hold_button
-    set select_screenshot hold_screenshot
+    set hold_screenshot hold_screenshot
 end
 if test -z $mindpalace_button
     set mindpalace_button mind_palace_button
@@ -68,7 +72,6 @@ end
 while true
     if test -e $devinput
         evtest $devinput | while read line
-
             if test $controller_check -eq 1
                 if echo $line | grep -qP "$input_block"; or echo $line | grep -q SYN_REPORT
                 else
@@ -112,6 +115,27 @@ while true
                 set mindpalace_number (math $mindpalace_number + 1)
             end
 
+            # for one button screenshots 
+            if string match -q "*$onebutton_screenshot), value 1" "$line"
+                newline_prepper $note_file
+                echo \a
+                set timestamp (date +%F_%H%M%S)
+                set fs_name "$folder_title-$timestamp.jpg"
+                scrot -u $screenshot_folder/$fs_name
+
+                if grep "cut:" $note_file
+                    echo "cut found"
+                    set numcut (string split ' ' (grep -oP "(?<=cut: ).*" $note_file))
+                    gm mogrify -shave $numcut[1]x$numcut[2] $screenshot_folder/$fs_name
+                    sleep 1
+                else
+                    gm mogrify -fuzz 5% -trim $screenshot_folder/$fs_name
+                end
+
+                echo "![[$fs_name]]" >>"$note_file"
+                echo "![[$fs_name]]" >$last_recorded_file
+            end
+
             # for generic screenshots 
             if string match -q "*$screenshot_button), value 1" "$line"; and test $hold_trigger -eq 1
                 newline_prepper $note_file
@@ -131,6 +155,19 @@ while true
 
                 echo "![[$fs_name]]" >>"$note_file"
                 echo "![[$fs_name]]" >$last_recorded_file
+            end
+
+            # for screenshots where you can select area
+            if string match -q "*$select_screenshot), value 1" "$line"; and test $hold_trigger -eq 1
+                newline_prepper $note_file
+                echo \a
+                set timestamp (date +%F_%H%M%S)
+                set fs_name "$folder_title-$timestamp.jpg"
+                scrot -s $screenshot_folder/$fs_name
+
+                echo "![[$fs_name]]" >>"$note_file"
+                echo "![[$fs_name]]" >$last_recorded_file
+
             end
 
             # for screen capture
@@ -199,30 +236,6 @@ while true
                     ffplay -nodisp -autoexit $parent_dir/helper/pleased-emote-animal-crossing.mp3 >/dev/null 2>&1
                 end
 
-            end
-
-            if test $controller_check -eq 0
-                if string match -q "*$select_screenshot), value 1" "$line"
-                    newline_prepper $note_file
-                    echo \a
-                    set timestamp (date +%F_%H%M%S)
-                    set fs_name "$folder_title-$timestamp.jpg"
-                    scrot -s $screenshot_folder/$fs_name
-                    echo "![[$fs_name]]" >>"$note_file"
-                    echo "![[$fs_name]]" >$last_recorded_file
-
-                    set url "http://127.0.0.1:8081"
-                    # Use curl with --silent --head to send a HEAD request and check HTTP status
-                    curl --silent --head --fail $url >/dev/null
-                    if test $status -eq 0
-                        echo "Server is ready"
-                        set response (curl -s "$url/?q=$screenshot_folder/$fs_name")
-                        echo "$response" >>"$note_file"
-                    else
-                        echo "Server not reachable"
-                    end
-
-                end
             end
         end
     else

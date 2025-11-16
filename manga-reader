@@ -68,7 +68,7 @@ else
         \n"tags:" \
         \n"  - manga-reader" \
         \n"  - db" \
-        \n"score:" \
+        \n"rating:" \
         \n"---" >>$volume_md
 end
 

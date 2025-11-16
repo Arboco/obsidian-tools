@@ -3,7 +3,8 @@ set script_dir (realpath (status dirname))
 set obsidian (ot_config_grab "ObsidianMainFolder")
 set main_res_folder (ot_config_grab "ObsidianResourceFolder")
 set main_note_folder (ot_config_grab "NotesFolder")
-set folder_note (ot_config_grab "CharacterNote")
+set folder_note $obsidian/$main_note_folder/highlights
+mkdir -p $folder_note
 set folder_res (ot_config_grab "CharacterRes")
 
 argparse --name=gn h/help 'n/name=' -- $argv

@@ -47,15 +47,15 @@ for item in $array
 
     echo --- >>$md_folder/$game_title.md
     echo "title: \"$game_title\"" >>$md_folder/$game_title.md
-    echo "circle: \"$circle\"" >>$md_folder/$game_title.md
-    echo "type: \"$work_type\"" >>$md_folder/$game_title.md
+    echo "circle: \"[[$circle]]\"" >>$md_folder/$game_title.md
+    echo "type: \"[[$work_type]]\"" >>$md_folder/$game_title.md
     echo "url: $item" >>$md_folder/$game_title.md
     echo "code: $rj" >>$md_folder/$game_title.md
     echo "themes:" >>$md_folder/$game_title.md
-    echo "genre:" >>$md_folder/$game_title.md
+    echo "fetish:" >>$md_folder/$game_title.md
 
     for i in $genre_name_array
-        echo "  - $i" >>$md_folder/$game_title.md
+        echo "  - \"[[$i]]\"" >>$md_folder/$game_title.md
     end
 
     echo "platform: $platform" >>$md_folder/$game_title.md

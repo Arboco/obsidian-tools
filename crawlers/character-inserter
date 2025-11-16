@@ -220,6 +220,8 @@ set hyphen_title_series (echo $obs_name | tr '[:upper:]' '[:lower:]' | sed 's/ /
 
 if rg "series:" $obsidian_md
     set series (rg -zPU 'series:[\s\S]*?(?=\n[a-zA-Z])' $obsidian_md)
+else if rg "collections:" $obsidian_md
+    set series (rg -zPU 'collections:[\s\S]*?(?=\n[a-zA-Z])' $obsidian_md)
 end
 
 if cat $obsidian_md | rg "platform: doujin"
@@ -347,11 +349,15 @@ if set -q _flag_p
         set name (string replace " Personality" "" -- $name)
         set name (string replace -r '\s*\([^)]*\)' '' -- $name)
         set name (string replace -r -a '"' '\'' -- $name)
+        if echo $name | rg /
+            set name (string split '/' $name)[1]
+        end
+        set name (string trim -lr $name)
         set img_link (cat $html | grep -oP '(?<=<img src=")[^"]*' | head -n 1)
         wget -O ~/Pictures/$name.png $img_link
         set cover_image /home/anon/Pictures/$name.png
 
-        kitty icat "/home/anon/Pictures/$name.png"
+        kitty icat $cover_image
 
         echo "Attachement:"
         read attachement
