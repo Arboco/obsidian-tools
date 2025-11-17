@@ -43,9 +43,7 @@ echo "$obsidian_md" >/tmp/obsidian_last.txt
 $script_dir/scripts/pdf_input.fish "$obsidian_md" &
 
 set pdf_path (cat $obsidian_md | grep 'pdf:')
-set pdf_path (string replace -r -a '\[|\]|"' '' -- "$pdf_path")
-set pdf_path (echo $pdf_path | grep -oP '(?<=pdf: ).*$')
-set pdf_path (fd -t f -F "$pdf_path" $obsidian_folder/$resources)
+set pdf_path (echo $pdf_path | grep -oP '(?<=pdf: ).*')
 
 if cat $obsidian_md | grep -q "pages:"
     set page_num (cat $obsidian_md | rg "pages:" | rg -o "[0-9]+")

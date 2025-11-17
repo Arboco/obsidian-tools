@@ -73,7 +73,7 @@ for item in $argv
     echo "url: $item" >>$md_final
     echo "Creator:" >>$md_final
     for i in $creator
-        echo " - $i" >>$md_final
+        echo " - \"[[$i]]\"" >>$md_final
     end
     echo "type: $type" >>$md_final
     echo "date: $date" >>$md_final
@@ -90,7 +90,7 @@ for item in $argv
     end
     echo "Cast:" >>$md_final
     for i in $top_cast
-        echo " - $i" >>$md_final
+        echo " - \"[[$i]]\"" >>$md_final
     end
     if string match tv $type
         echo "seasons: $season_number" >>$md_final
