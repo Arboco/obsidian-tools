@@ -272,7 +272,7 @@ if set -q _flag_a
         if test (count $name) -eq 1
         else if test (count $name) -gt 2
             set name (cat /tmp/myanime.html | grep -oP '(?<=<meta property="og:title" content=")[^"]*')
-        else if echo $j_name | rg "・"
+        else if echo $j_name | rg "・"; or echo $j_name | rg "＝"
             set name "$name[1] $name[2]"
         else
             set name "$name[2] $name[1]"

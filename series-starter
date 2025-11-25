@@ -154,7 +154,7 @@ end
 set parent_md $obsidian_md
 
 set dataviewcheck false
-if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md
+if grep -q "```dataview" $parent_md; or grep -q "```base" $parent_md; or grep -q "Info Base.base" $parent_md
     set dataviewcheck true
 end
 
@@ -267,25 +267,8 @@ gum style \
     --align center --width 70 --margin "1 2" --padding "2 4" \
     "$result_test" "$rewatch_text"
 
-if test $episode_completed -eq 1
-    set completed_text ">>> Advance to next Episode >>>"
-end
-
-if set -q _flag_m
-    set completed_text "$completed_text #Memento"
-end
-
-if rg "anachronic: true" $parent_md
-    set completed_text "$completed_text #Anachronic FilePath:$episode_to_play"
-end
-
-set season_info "Season $current_season"
-if rg "linear: true" $obsidian_md; or rg "^seasons: 1" $obsidian_md
-    set -e season_info
-end
-
 set cur_date (date +"%Y-%m-%dT%H:%M:%S")
-if rg "^last_seen:" $obsidian_md
-    sed -i '/last_seen:/d' $obsidian_md
+if rg "^last_seen:" $parent_md
+    sed -i '/last_seen:/d' $parent_md
 end
-sed -i "/^released:/a\\last_seen: $cur_date" $obsidian_md
+sed -i "/^date:/a\\last_seen: $cur_date" $parent_md

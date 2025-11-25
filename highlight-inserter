@@ -11,7 +11,7 @@ argparse --name=gn h/help 'n/name=' -- $argv
 or return
 
 function base_tag_insert
-    if grep "  - highlight" $obsidian_md
+    if rg "  - highlight" $obsidian_md
     else
         sed -i '/^tags:/a\  - highlight' $obsidian_md
     end
@@ -98,5 +98,3 @@ echo "counter: " >>$md
 echo "last_seen: " >>$md
 echo "category: Highlight" >>$md
 echo --- >>$md
-
-sed -i "/tags:/a\\  - highlight" $obsidian_md
